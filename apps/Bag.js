@@ -27,8 +27,8 @@ export class FishingBag extends plugin {
         { reg: /^#?(我的(鱼护|鱼获)|钓鱼背包)$/, fnc: "bag" },
         { reg: /^#?一键出售(鱼获|鱼)?$/, fnc: "sellAll" },
         { reg: /^#?(出售)\s*(\S+?)\s*(\d+)?$/, fnc: "sell" },
-        // #丢弃垃圾 为旧指令，保留兼容聊天记录里的旧按钮
-        { reg: /^#?(清理|丢弃)(全部)?垃圾$/, fnc: "discard" },
+        // #回收垃圾 为别名；#丢弃垃圾 为旧指令，保留兼容聊天记录里的旧按钮
+        { reg: /^#?(清理|回收|丢弃)(全部)?垃圾$/, fnc: "discard" },
         { reg: /^#?(我的金币|钓鱼信息|我的钓鱼)$/, fnc: "info" },
         { reg: /^#?钓鱼图鉴\s*(.*)$/, fnc: "dex" },
       ],
@@ -139,7 +139,7 @@ export class FishingBag extends plugin {
     if (!n) return e.reply(withButtons(e, "✨ 鱼护里没有垃圾，干干净净~", [B.cast]))
     const guardian = (Config.titles || []).find(t => t.id === "guardian")
     const lines = [
-      `♻️ 已将 ${n} 件海洋垃圾集中清理，海洋又干净了一点~`,
+      `♻️ 已将 ${n} 件海洋垃圾送去回收站，海洋又干净了一点~`,
       `🌊 累计清理：${user.stats.junkCleaned} 件`,
     ]
     if (guardian && !user.titles.includes(guardian.id))
