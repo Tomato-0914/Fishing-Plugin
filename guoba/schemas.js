@@ -24,6 +24,12 @@ export default [
   num("fishing.cooldown", "挂鱼饵时间(秒)", "每次钓完后的等待时间", { max: 600 }),
   num("fishing.bagLimit", "鱼护容量", "背包最多存放多少件物品", { min: 10, max: 2000 }),
 
+  { label: "鱼饵", component: "SOFT_GROUP_BEGIN" },
+  num("bait.initial", "新手赠送鱼饵", "第一次钓鱼时赠送的鱼饵数量"),
+  num("bait.price", "鱼饵单价", "每个鱼饵的金币价格"),
+  num("bait.maxBuy", "单次最多购买", "", { min: 1, max: 99999 }),
+  num("bait.relief", "每日救济鱼饵", "鱼饵用完、买不起、也没有鱼可卖时每天可领一次，0 为关闭"),
+
   { label: "概率设置(%)", component: "SOFT_GROUP_BEGIN" },
   { component: "Divider", label: "总和建议为 100，不为 100 时按比例换算" },
   num("probability.empty", "空军", "什么都没钓到", { step: 0.01 }),

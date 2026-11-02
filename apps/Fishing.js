@@ -2,10 +2,10 @@ import { plugin } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { roll, triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
-import { recordResult, addGroup } from "../components/Game.js"
+import { recordResult, addGroup, welcome, consumeBait, reliefBait } from "../components/Game.js"
 import { checkTitles, getEffects, effectText } from "../components/Titles.js"
 import { withButtons, B } from "../components/Button.js"
-import { groupAllowed, displayName, updateNickname, pick } from "../components/common.js"
+import { groupAllowed, displayName, updateNickname, pick, itemMap } from "../components/common.js"
 
 /** 进行中的钓鱼：user_id → { stage: "waiting" | "bite", timer, castAt, biteAt, deadline } */
 const sessions = new Map()
@@ -57,6 +57,21 @@ export class Fishing extends plugin {
     updateNickname(user, e)
     const name = displayName(user)
     const fcfg = this.cfg.fishing || {}
+    const bcfg = this.cfg.bait || {}
+    const price = Number(bcfg.price ?? 2)
+
+    // 第一次钓鱼：欢迎 + 新手鱼饵，再继续抛竿
+    const isNew = !user.welcomed
+    const gift = welcome(user, bcfg.initial ?? 10)
+    if (isNew) {
+      addGroup(user, e.group_id)
+      UserData.save(id)
+      await this.send(e, [
+        `🎉 欢迎 ${name} 加入钓鱼佬行列！`,
+        `🎁 新手礼包：鱼饵 ×${gift}`,
+        `🪱 每次抛竿消耗 1 个鱼饵，用完可发送 #购买鱼饵 补充（${price} 金币/个）`,
+      ].join("\n"))
+    }
 
     const session = sessions.get(id)
     if (session) {
@@ -72,11 +87,27 @@ export class Fishing extends plugin {
     if (user.bag.length >= limit)
       return this.send(e, withButtons(e, `🎒 鱼护已经装满啦（${user.bag.length}/${limit}）~\n先出售鱼获或丢弃垃圾再来吧！`, [B.sellAll, B.discard], [B.bag]))
 
+    if (user.bait < 1) {
+      const items = itemMap()
+      const hasSellable = user.bag.some(x => items.get(x.id)?.rarity !== "junk")
+      const relief = reliefBait(user, { amount: bcfg.relief, price, hasSellable })
+      if (relief) {
+        UserData.save(id)
+        await this.send(e, `🎁 看你两手空空，钓鱼协会送了你 ${relief} 个鱼饵，继续加油吧！（每天限领一次）`)
+      } else {
+        const tips = [`🪱 鱼饵用完啦~`, `鱼饵 ${price} 金币/个，发送 #购买鱼饵 [数量] 补充`, `👛 当前金币：${user.gold}`]
+        if (user.gold < price && hasSellable) tips.push("💡 金币不够？先 #一键出售 卖掉鱼获吧")
+        return this.send(e, withButtons(e, tips.join("\n"),
+          user.gold < price && hasSellable ? [B.sellAll, B.bag] : [B.buyBait, B.buyBaitInput]))
+      }
+    }
+
     const effects = getEffects(user, Config.titles)
     const biteMin = Math.max(1, Number(fcfg.biteMin) || 3)
     const biteMax = Math.min(30, Math.max(biteMin, Number(fcfg.biteMax) || 18))
     const delay = Math.max(2, triangular(biteMin, biteMax) - (effects.biteReduce || 0)) * 1000
 
+    consumeBait(user)
     user.stats.casts++
     addGroup(user, e.group_id)
     UserData.save(id)
@@ -85,7 +116,7 @@ export class Fishing extends plugin {
     s.timer = setTimeout(() => this.bite(e, id, effects).catch(err => logger.error(err)), delay)
     sessions.set(id, s)
 
-    await this.send(e, `🎣 ${name} ${pick(CAST_TEXT)}`)
+    await this.send(e, `🎣 ${name} ${pick(CAST_TEXT)}\n🪱 剩余鱼饵：${user.bait}${user.bait === 0 ? "（已用完，记得 #购买鱼饵）" : user.bait <= 2 ? "（快用完了，记得 #购买鱼饵）" : ""}`)
     // 新称号（例如初出茅庐）
     await this.announceTitles(e, user)
     return true

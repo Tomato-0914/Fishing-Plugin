@@ -105,3 +105,47 @@ export function groupBag(user, itemMap) {
   }
   return [...map.values()]
 }
+
+/** 第一次钓鱼：赠送新手鱼饵，返回赠送数量（已领取过返回 0） */
+export function welcome(user, initial = 10) {
+  if (user.welcomed) return 0
+  user.welcomed = true
+  const n = Math.max(0, Number(initial) || 0)
+  user.bait = (user.bait || 0) + n
+  return n
+}
+
+/** 消耗 1 个鱼饵，不足返回 false */
+export function consumeBait(user) {
+  if ((user.bait || 0) < 1) return false
+  user.bait--
+  return true
+}
+
+/** 购买鱼饵 */
+export function buyBait(user, count, price) {
+  count = Math.floor(Number(count) || 0)
+  price = Math.max(0, Number(price) || 0)
+  if (count < 1) return { ok: false, reason: "count" }
+  const cost = count * price
+  if (user.gold < cost) return { ok: false, reason: "gold", cost, afford: price ? Math.floor(user.gold / price) : count }
+  user.gold -= cost
+  user.bait = (user.bait || 0) + count
+  user.stats.baitBought += count
+  user.stats.baitSpent += cost
+  return { ok: true, count, cost }
+}
+
+/**
+ * 救济鱼饵：鱼饵为 0、买不起、鱼护里也没有能卖的鱼时，每天发放一次
+ * @returns 发放数量，不满足条件返回 0
+ */
+export function reliefBait(user, { amount = 0, price = 0, hasSellable = false, now = new Date() } = {}) {
+  amount = Math.floor(Number(amount) || 0)
+  if (amount < 1 || user.bait > 0 || user.gold >= price || hasSellable) return 0
+  const today = periodKey("day", now)
+  if (user.reliefDay === today) return 0
+  user.reliefDay = today
+  user.bait = (user.bait || 0) + amount
+  return amount
+}

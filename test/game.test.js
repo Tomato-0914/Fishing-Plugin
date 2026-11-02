@@ -162,3 +162,26 @@ test("存档 YAML 读写、openid 文件名清洗", async () => {
   assert.equal(other.get("85273416").gold, 123)
   fs.rmSync(dir, { recursive: true, force: true })
 })
+
+test("鱼饵：新手赠送、消耗、购买、救济", async () => {
+  const { welcome, consumeBait, buyBait, reliefBait } = await import("../components/Game.js")
+  const u = newUser("10003")
+  assert.equal(u.bait, 0)
+  assert.equal(welcome(u, cfg.bait.initial), 10)
+  assert.equal(welcome(u, cfg.bait.initial), 0) // 只送一次
+  assert.equal(u.bait, 10)
+  for (let i = 0; i < 10; i++) assert.ok(consumeBait(u))
+  assert.equal(consumeBait(u), false)
+  assert.deepEqual(buyBait(u, 5, 2), { ok: false, reason: "gold", cost: 10, afford: 0 })
+  const now = new Date(2026, 10, 2)
+  assert.equal(reliefBait(u, { amount: 5, price: 2, hasSellable: true, now }), 0)
+  assert.equal(reliefBait(u, { amount: 5, price: 2, now }), 5)
+  u.bait = 0
+  assert.equal(reliefBait(u, { amount: 5, price: 2, now }), 0) // 每天一次
+  assert.equal(reliefBait(u, { amount: 5, price: 2, now: new Date(2026, 10, 3) }), 5)
+  u.gold = 25
+  assert.deepEqual(buyBait(u, 10, 2), { ok: true, count: 10, cost: 20 })
+  assert.equal(u.gold, 5)
+  assert.equal(u.bait, 15)
+  assert.equal(cfg.bait.price, 2)
+})

@@ -27,6 +27,8 @@ export const B = {
   sell: { text: "🏷️ 出售…", input: "#出售 " },
   discard: { text: "🗑️ 丢弃垃圾", callback: "#丢弃垃圾" },
   help: { text: "📖 钓鱼帮助", callback: "#钓鱼帮助" },
+  buyBait: { text: "🪱 买 10 个鱼饵", callback: "#购买鱼饵10" },
+  buyBaitInput: { text: "🪱 购买鱼饵…", input: "#购买鱼饵 " },
   dayRank: { text: "今日榜", callback: "#钓鱼排行榜" },
   weekRank: { text: "周榜", callback: "#钓鱼周排行榜" },
   monthRank: { text: "月榜", callback: "#钓鱼月排行榜" },

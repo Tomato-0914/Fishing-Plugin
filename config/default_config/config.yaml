@@ -45,6 +45,17 @@ size:
   medium: { label: 中, chance: 35, price: 1.0 }
   large:  { label: 大, chance: 10, price: 1.5 }
 
+# 鱼饵：每次抛竿消耗 1 个
+bait:
+  # 第一次钓鱼赠送的鱼饵
+  initial: 10
+  # 鱼饵单价（金币）
+  price: 2
+  # 单次最多购买数量
+  maxBuy: 999
+  # 救济：鱼饵用完、金币不够买、鱼护也没有可卖的鱼时，每天可领取一次的免费鱼饵（0 为关闭）
+  relief: 5
+
 # 钓到「人民碎片」后警局奖励的金币
 policeReward: 5000
 

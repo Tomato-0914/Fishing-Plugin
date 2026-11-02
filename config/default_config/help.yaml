@@ -3,7 +3,8 @@
   list:
     - { icon: 🎣, title: "#钓鱼 / #抛竿 / 🎣", desc: 甩出鱼竿，等待鱼儿上钩 }
     - { icon: 🪝, title: "#收杆", desc: 浮漂下沉后及时收杆，太早太晚都会空手 }
-    - { icon: 🪱, title: 挂鱼饵, desc: 每次钓完需要挂鱼饵，稍等片刻再抛竿 }
+    - { icon: 🪱, title: "#购买鱼饵 [数量]", desc: 每次抛竿消耗 1 个鱼饵，新人赠送 10 个 }
+    - { icon: 🧺, title: "#我的鱼饵", desc: 查看剩余鱼饵与金币 }
 - group: 🎒 鱼获
   list:
     - { icon: 🎒, title: "#鱼获", desc: 查看鱼护里的鱼和可卖金币 }
