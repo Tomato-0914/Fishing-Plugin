@@ -85,8 +85,8 @@ export class Fishing extends plugin {
   async send(e, msg) {
     if (!e.isGroup || typeof segment?.at !== "function") return e.reply(msg)
     const list = [...(Array.isArray(msg) ? msg : [msg])]
-    // @ 放在第一段文字前（前面有图片时排在图片之后）
-    const idx = list.findIndex(m => typeof m === "string")
+    // @ 放在第一段文字前（前面有图片、换行时排在它们之后）
+    const idx = list.findIndex(m => typeof m === "string" && m.trim())
     if (idx < 0) list.unshift(segment.at(e.user_id))
     else list.splice(idx, 1, segment.at(e.user_id), `\n${list[idx]}`)
     return e.reply(list)
@@ -173,14 +173,15 @@ export class Fishing extends plugin {
       gearLine ? `🧰 ${gearLine}` : "",
       `🪱 ${bait.name}（剩 ${remain}）${warn}`,
     ].filter(Boolean).join("\n") + luckLine
-    // 配图放在文字上面。QQBot 的图文消息由 QQ 客户端排版，文字总在图片上方，所以单独先发图片
+    // 配图放在文字上面，和文字合成一条消息
+    // QQBot 需开启适配器的 markdownImage：图片转为 Markdown 图片才能按顺序排版；
+    // 未开启时 QQ 客户端会把文字排在图片上方，只能先单独发图片
     const img = castImage(fcfg.castImage)
-    if (img && e.bot?.adapter?.id === "QQBot") {
+    if (!img) await this.send(e, text)
+    else if (e.bot?.adapter?.id === "QQBot" && e.bot.adapter.config?.markdownImage !== true) {
       await e.reply(img)
       await this.send(e, text)
-    } else {
-      await this.send(e, img ? [img, text] : text)
-    }
+    } else await this.send(e, [img, "\n", text])
     // 新称号（例如初出茅庐）
     await this.announceTitles(e, user)
     return true
