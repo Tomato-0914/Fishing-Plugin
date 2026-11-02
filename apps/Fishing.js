@@ -103,7 +103,7 @@ export class Fishing extends plugin {
     const shop = Config.shop
     const limit = bagCapacity(user, shop, fcfg.bagLimit)
     if (user.bag.length >= limit)
-      return this.send(e, withButtons(e, `🎒 鱼护已经装满啦（${user.bag.length}/${limit}）~\n先出售鱼护里的鱼或丢弃垃圾再来吧！也可以去 #渔具商店 升级鱼护`, [B.sellAll, B.discard], [B.bag, B.shop]))
+      return this.send(e, withButtons(e, `🎒 鱼护已经装满啦（${user.bag.length}/${limit}）~\n先出售鱼护里的鱼或清理垃圾再来吧！也可以去 #渔具商店 升级鱼护`, [B.sellAll, B.discard], [B.bag, B.shop]))
 
     if (totalBait(user) < 1) {
       const items = itemMap()
@@ -270,7 +270,7 @@ export class Fishing extends plugin {
         "🎣 收杆！",
         `${item.emoji} 【垃圾】${item.name}`,
         `💬 ${item.desc || "海洋垃圾"}`,
-        "💰 价值：0 金币（已收进鱼护，可发送 #丢弃垃圾 集中清理）",
+        "💰 价值：0 金币（已收进鱼护，可发送 #清理垃圾 统一回收）",
       ].join("\n"), [B.discard, B.cast])
     }
 

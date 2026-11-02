@@ -19,7 +19,7 @@ export class FishingBag extends plugin {
   constructor() {
     super({
       name: "钓鱼-鱼护",
-      dsc: "鱼护 / 出售 / 丢弃垃圾 / 图鉴",
+      dsc: "鱼护 / 出售 / 清理垃圾 / 图鉴",
       event: "message",
       priority: 500,
       rule: [
@@ -27,7 +27,8 @@ export class FishingBag extends plugin {
         { reg: /^#?(我的(鱼护|鱼获)|钓鱼背包)$/, fnc: "bag" },
         { reg: /^#?一键出售(鱼获|鱼)?$/, fnc: "sellAll" },
         { reg: /^#?(出售)\s*(\S+?)\s*(\d+)?$/, fnc: "sell" },
-        { reg: /^#?(丢弃|清理)(全部)?垃圾$/, fnc: "discard" },
+        // #丢弃垃圾 为旧指令，保留兼容聊天记录里的旧按钮
+        { reg: /^#?(清理|丢弃)(全部)?垃圾$/, fnc: "discard" },
         { reg: /^#?(我的金币|钓鱼信息|我的钓鱼)$/, fnc: "info" },
         { reg: /^#?钓鱼图鉴\s*(.*)$/, fnc: "dex" },
       ],
@@ -81,7 +82,7 @@ export class FishingBag extends plugin {
       ...list.map(i => `${i.emoji}【${i.label}】${i.name} ×${i.count}${i.sizes ? `（${i.sizes}）` : ""}  ${i.rarity === "junk" ? "0" : i.total} 金币`),
       "━━━━━━━━━━━━",
       `💰 全部出售可得：${sellValue} 金币${bonus ? `（加成 +${bonus}%）` : ""}`,
-      junk ? `🗑️ 垃圾 ${junk} 件，可发送 #丢弃垃圾 集中清理` : "",
+      junk ? `🗑️ 垃圾 ${junk} 件，可发送 #清理垃圾 统一回收` : "",
       `👛 当前金币：${user.gold}`,
     ].filter(Boolean).join("\n"))
     if (!msg) return true
@@ -97,7 +98,7 @@ export class FishingBag extends plugin {
     const entries = user.bag.filter(x => items.get(x.id)?.rarity !== "junk")
     const junk = user.bag.length - entries.length
     if (!entries.length)
-      return e.reply(withButtons(e, junk ? `🗑️ 鱼护里只剩 ${junk} 件垃圾，卖不了钱哦~ 发送 #丢弃垃圾 集中清理吧` : "🎒 鱼护里没有可以出售的鱼~", junk ? [B.discard, B.cast] : [B.start]))
+      return e.reply(withButtons(e, junk ? `🗑️ 鱼护里只剩 ${junk} 件垃圾，卖不了钱哦~ 发送 #清理垃圾 统一回收吧` : "🎒 鱼护里没有可以出售的鱼~", junk ? [B.discard, B.cast] : [B.start]))
     return this.doSell(e, user, entries, junk)
   }
 
@@ -110,7 +111,7 @@ export class FishingBag extends plugin {
     const item = [...items.values()].find(i => i.name === name) || [...items.values()].find(i => i.name.includes(name))
     if (!item) return e.reply(`❓ 没有找到「${name}」，发送 #我的鱼护 看看里面有什么吧`)
     if (item.rarity === "junk")
-      return e.reply(withButtons(e, `🗑️ ${item.name}是海洋垃圾，卖不了钱哦~ 发送 #丢弃垃圾 集中清理吧`, [B.discard]))
+      return e.reply(withButtons(e, `🗑️ ${item.name}是海洋垃圾，卖不了钱哦~ 发送 #清理垃圾 统一回收吧`, [B.discard]))
     // 先卖便宜的，大鱼留给用户自己决定
     let entries = user.bag.filter(x => x.id === item.id).sort((a, b) => a.p - b.p)
     if (!entries.length) return e.reply(`🎒 鱼护里没有「${item.name}」哦~`)
@@ -127,7 +128,7 @@ export class FishingBag extends plugin {
       `获得 ${gold} 金币${bonus ? `（${base} + 加成 ${bonus}%）` : ""}`,
       `👛 当前金币：${user.gold}`,
     ]
-    if (junkLeft) lines.push(`🗑️ 鱼护里还有 ${junkLeft} 件垃圾，可发送 #丢弃垃圾 集中清理`)
+    if (junkLeft) lines.push(`🗑️ 鱼护里还有 ${junkLeft} 件垃圾，可发送 #清理垃圾 统一回收`)
     return e.reply(withButtons(e, lines.join("\n"), [B.cast, B.bag, ...(junkLeft ? [B.discard] : [])]))
   }
 
@@ -230,7 +231,7 @@ export class FishingBag extends plugin {
       ...s, weight: `${formatWeight(s.wMin)} ~ ${formatWeight(s.wMax)}`, price: s.pMin === s.pMax ? `${s.pMin}` : `${s.pMin} ~ ${s.pMax}`,
     }))
     const price = item.special === "police" ? `警局奖励 ${cfg.policeReward} 金币`
-      : item.rarity === "junk" ? "0 金币（可 #丢弃垃圾 集中清理）"
+      : item.rarity === "junk" ? "0 金币（可 #清理垃圾 统一回收）"
         : sizes.length ? `${sizes[0].pMin} ~ ${sizes[sizes.length - 1].pMax} 金币` : `${item.price || 0} 金币`
     const data = {
       no: dexNo(item, all), emoji: item.emoji, name: item.name, desc: item.desc || "",

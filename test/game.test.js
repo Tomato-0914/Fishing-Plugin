@@ -131,7 +131,7 @@ test("结算：人民碎片报警不入鱼护，计入排行；周期过期清�
   assert.equal(periodStat(u, "month", tomorrow).value, 10000)
 })
 
-test("出售与丢弃垃圾，海洋卫士称号", () => {
+test("出售与清理垃圾，海洋卫士称号", () => {
   const u = newUser("10002")
   const tuna = itemMap.get("tuna"), can = itemMap.get("can")
   recordResult(u, { type: "item", item: tuna, rarity: "SSR", price: 100, size: "medium", weight: 30 })
