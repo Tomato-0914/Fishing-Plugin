@@ -82,7 +82,7 @@ export function buildSizeOdds(size, effects = {}) {
   return odds
 }
 
-const SIZE_RANGE = { small: [0, 0.4], medium: [0.4, 0.75], large: [0.75, 1] }
+export const SIZE_RANGE = { small: [0, 0.4], medium: [0.4, 0.75], large: [0.75, 1] }
 
 const round2 = n => Math.round(n * 1000) / 1000
 

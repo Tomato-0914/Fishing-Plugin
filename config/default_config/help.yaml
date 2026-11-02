@@ -20,7 +20,7 @@
     - { icon: 💰, title: "#一键出售", desc: 出售全部有价值的鱼获 }
     - { icon: 🗑️, title: "#丢弃垃圾", desc: 集中清理海洋垃圾，攒够数量有称号 }
     - { icon: 👤, title: "#钓鱼信息", desc: 金币、统计与最大一条鱼 }
-    - { icon: 📚, title: "#钓鱼图鉴", desc: 已解锁的鱼类与隐藏款 }
+    - { icon: 📚, title: "#钓鱼图鉴 [名称]", desc: 全部物品一览，带名称查看详细介绍 }
 - group: 🏆 排行与称号
   list:
     - { icon: 📅, title: "#钓鱼排行榜", desc: 本群今日钓获价值排行 }

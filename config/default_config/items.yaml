@@ -4,69 +4,437 @@
 # price: 中体型基础售价（金币），小/大体型按 config.yaml 中 size 倍率换算
 # weight: [最小, 最大] 重量（kg），按体型落在不同区间
 # chance: 同稀有度内的相对权重，默认 1
+# habitat: 栖息地；intro: 图鉴中的详细介绍（#钓鱼图鉴 名称 查看）
 # 出于避免争议考虑，物品池不包含任何国家保护动物（如中华鲟、江豚等）
 
-# ---------- 海洋垃圾（售价 0）----------
-- { id: slipper,    name: 破拖鞋,     emoji: 🩴, rarity: junk, desc: 不知道是谁游泳时弄丢的 }
-- { id: tshirt,     name: 旧T恤,      emoji: 👕, rarity: junk, desc: 湿漉漉的，还印着“我爱钓鱼” }
-- { id: flashlight, name: 手电筒,     emoji: 🔦, rarity: junk, desc: 按了一下，居然还能亮 }
-- { id: bag,        name: 塑料袋,     emoji: 🛍️, rarity: junk, chance: 2, desc: 海龟最讨厌的东西 }
-- { id: can,        name: 易拉罐,     emoji: 🥫, rarity: junk, chance: 2, desc: 可乐味的海水 }
-- { id: net,        name: 破渔网,     emoji: 🕸️, rarity: junk, desc: 缠住了鱼钩 }
-- { id: tire,       name: 旧轮胎,     emoji: 🛞, rarity: junk, desc: 差点把鱼竿拉断 }
-- { id: hook,       name: 生锈的鱼钩, emoji: 🪝, rarity: junk, desc: 前辈钓友留下的遗物 }
-- { id: bottle,     name: 空漂流瓶,   emoji: 🍾, rarity: junk, desc: 里面的信已经不见了 }
-- { id: rod,        name: 断掉的鱼竿, emoji: 🥢, rarity: junk, desc: 看来有人遇到过大家伙 }
-- { id: sock,       name: 一只袜子,   emoji: 🧦, rarity: junk, desc: 另一只在哪里？ }
-- { id: earphone,   name: 坏掉的耳机, emoji: 🎧, rarity: junk, desc: 只剩左耳有声音 }
+# ---------- 海洋垃圾（售价 0） ----------
+- id: slipper
+  name: 破拖鞋
+  emoji: 🩴
+  rarity: junk
+  desc: 不知道是谁游泳时弄丢的
+  habitat: 近岸、海滩
+  intro: "每年都有大量拖鞋被冲上海滩，有些甚至随洋流漂洋过海，到了别的国家。"
+- id: tshirt
+  name: 旧T恤
+  emoji: 👕
+  rarity: junk
+  desc: 湿漉漉的，还印着“我爱钓鱼”
+  habitat: 近岸水域
+  intro: "衣物里的合成纤维会在水中脱落成微塑料，最终可能进入鱼类体内。"
+- id: flashlight
+  name: 手电筒
+  emoji: 🔦
+  rarity: junk
+  desc: 按了一下，居然还能亮
+  habitat: 近岸水域
+  intro: "里面的电池一旦泄漏，重金属会污染水体。废旧电池请投放到有害垃圾回收点。"
+- id: bag
+  name: 塑料袋
+  emoji: 🛍️
+  rarity: junk
+  chance: 2
+  desc: 海龟最讨厌的东西
+  habitat: 哪里都有
+  intro: "塑料袋在自然环境中要几十到几百年才能分解，海龟常把漂浮的塑料袋误当成水母吃下去。"
+- id: can
+  name: 易拉罐
+  emoji: 🥫
+  rarity: junk
+  chance: 2
+  desc: 可乐味的海水
+  habitat: 近岸水域
+  intro: "铝罐可以反复回收再利用，扔进水里就太可惜了。"
+- id: net
+  name: 破渔网
+  emoji: 🕸️
+  rarity: junk
+  desc: 缠住了鱼钩
+  habitat: 近海
+  intro: "被遗弃在海里的渔网被称为“幽灵渔网”，会持续缠住鱼、海龟和海豹。"
+- id: tire
+  name: 旧轮胎
+  emoji: 🛞
+  rarity: junk
+  desc: 差点把鱼竿拉断
+  habitat: 河道、港口
+  intro: "轮胎泡在水里会慢慢释放化学物质和微塑料，可不是什么人工鱼礁。"
+- id: hook
+  name: 生锈的鱼钩
+  emoji: 🪝
+  rarity: junk
+  desc: 前辈钓友留下的遗物
+  habitat: 钓点附近
+  intro: "断线后留在水里的鱼钩和鱼线会伤到水鸟和鱼。钓完鱼记得把垃圾带走。"
+- id: bottle
+  name: 空漂流瓶
+  emoji: 🍾
+  rarity: junk
+  desc: 里面的信已经不见了
+  habitat: 随洋流漂流
+  intro: "有记录的漂流瓶曾在海上漂了一百多年才被人发现。可惜这个瓶子里什么也没有。"
+- id: rod
+  name: 断掉的鱼竿
+  emoji: 🥢
+  rarity: junk
+  desc: 看来有人遇到过大家伙
+  habitat: 钓点附近
+  intro: "看来上一位钓友遇到了大家伙，连竿带线都被拖进了水里。"
+- id: sock
+  name: 一只袜子
+  emoji: 🧦
+  rarity: junk
+  desc: 另一只在哪里？
+  habitat: 近岸水域
+  intro: "洗衣机吞掉的袜子，原来都漂到这里来了？"
+- id: earphone
+  name: 坏掉的耳机
+  emoji: 🎧
+  rarity: junk
+  desc: 只剩左耳有声音
+  habitat: 近岸水域
+  intro: "电子垃圾含有多种有害物质，请交给专门的回收点处理。"
 
 # ---------- 普通 N ----------
-- { id: crucian,  name: 小鲫鱼, emoji: 🐟, rarity: N, price: 4, weight: [0.05, 0.4], desc: 河边最常见的小鱼 }
-- { id: loach,    name: 泥鳅,   emoji: 🐍, rarity: N, price: 3, weight: [0.02, 0.1], desc: 滑溜溜抓不住 }
-- { id: shrimp,   name: 小河虾, emoji: 🦐, rarity: N, price: 3, weight: [0.005, 0.03], desc: 油炸一下很香 }
-- { id: minnow,   name: 麦穗鱼, emoji: 🐟, rarity: N, price: 2, weight: [0.01, 0.05], desc: 小小一条 }
-- { id: bleak,    name: 白条鱼, emoji: 🐟, rarity: N, price: 4, weight: [0.05, 0.3], desc: 水面上的小银条 }
-- { id: clam,     name: 蛤蜊,   emoji: 🐚, rarity: N, price: 3, weight: [0.01, 0.05], desc: 怎么咬上钩的？ }
-- { id: tilapia,  name: 罗非鱼, emoji: 🐟, rarity: N, price: 6, weight: [0.2, 1.2], desc: 生命力顽强 }
-- { id: sardine,  name: 沙丁鱼, emoji: 🐟, rarity: N, price: 5, weight: [0.05, 0.2], desc: 总是成群结队 }
+- id: crucian
+  name: 小鲫鱼
+  emoji: 🐟
+  rarity: N
+  price: 4
+  weight: [0.05, 0.4]
+  desc: 河边最常见的小鱼
+  habitat: 淡水湖泊、河流
+  intro: "鲫鱼适应力极强，几乎遍布全国各地的水域，是许多钓鱼佬的“启蒙鱼”。鲫鱼汤很鲜，就是刺有点多。"
+- id: loach
+  name: 泥鳅
+  emoji: 🐍
+  rarity: N
+  price: 3
+  weight: [0.02, 0.1]
+  desc: 滑溜溜抓不住
+  habitat: 稻田、池塘淤泥
+  intro: "泥鳅能用肠道辅助呼吸，缺氧时会窜到水面“吞”空气。浑身的黏液让它滑得抓不住。"
+- id: shrimp
+  name: 小河虾
+  emoji: 🦐
+  rarity: N
+  price: 3
+  weight: [0.005, 0.03]
+  desc: 油炸一下很香
+  habitat: 河湖浅水草丛
+  intro: "常见的淡水小虾，白天躲在水草间，夜里出来觅食。油炸之后连壳都能吃。"
+- id: minnow
+  name: 麦穗鱼
+  emoji: 🐟
+  rarity: N
+  price: 2
+  weight: [0.01, 0.05]
+  desc: 小小一条
+  habitat: 池塘、小溪
+  intro: "体长通常只有几厘米，身上的斑纹像麦穗，因此得名，是最常见的“小杂鱼”之一。"
+- id: bleak
+  name: 白条鱼
+  emoji: 🐟
+  rarity: N
+  price: 4
+  weight: [0.05, 0.3]
+  desc: 水面上的小银条
+  habitat: 江河、湖泊上层
+  intro: "又叫“白鲦”，喜欢成群在水面附近游动，抢食速度极快，常把浮漂拖得上下乱跳。"
+- id: clam
+  name: 蛤蜊
+  emoji: 🐚
+  rarity: N
+  price: 3
+  weight: [0.01, 0.05]
+  desc: 怎么咬上钩的？
+  habitat: 浅海泥沙滩
+  intro: "双壳贝类，平时把自己埋在泥沙里，靠滤食水中的浮游生物为生。能被钓上来，大概是夹住了鱼钩。"
+- id: tilapia
+  name: 罗非鱼
+  emoji: 🐟
+  rarity: N
+  price: 6
+  weight: [0.2, 1.2]
+  desc: 生命力顽强
+  habitat: 温暖的淡水与咸淡水
+  intro: "原产非洲，生长快、耐低氧，被引种到世界各地，在一些地区已经成了影响本地生态的入侵物种。"
+- id: sardine
+  name: 沙丁鱼
+  emoji: 🐟
+  rarity: N
+  price: 5
+  weight: [0.05, 0.2]
+  desc: 总是成群结队
+  habitat: 近海上层
+  intro: "沙丁鱼成群洄游，鱼群能绵延数公里，是海洋食物链中重要的一环，也是罐头界的明星。"
 
 # ---------- 优良 R ----------
-- { id: carp,       name: 鲤鱼,   emoji: 🐟, rarity: R, price: 15, weight: [0.5, 6], desc: 鱼跃龙门的那位 }
-- { id: grasscarp,  name: 草鱼,   emoji: 🐟, rarity: R, price: 14, weight: [1, 8], desc: 适合做酸菜鱼 }
-- { id: bass,       name: 鲈鱼,   emoji: 🐟, rarity: R, price: 20, weight: [0.5, 3], desc: 清蒸最佳 }
-- { id: rivercrab,  name: 河蟹,   emoji: 🦀, rarity: R, price: 18, weight: [0.1, 0.3], desc: 横着走的家伙 }
-- { id: crayfish,   name: 小龙虾, emoji: 🦞, rarity: R, price: 12, weight: [0.02, 0.08], desc: 夜宵首选 }
-- { id: hairtail,   name: 带鱼,   emoji: 🐟, rarity: R, price: 18, weight: [0.3, 1.5], desc: 银光闪闪 }
-- { id: catfish,    name: 鲶鱼,   emoji: 🐟, rarity: R, price: 16, weight: [0.5, 5], desc: 长着两撇胡子 }
-- { id: pomfret,    name: 鲳鱼,   emoji: 🐟, rarity: R, price: 22, weight: [0.2, 1], desc: 扁扁的很可爱 }
+- id: carp
+  name: 鲤鱼
+  emoji: 🐟
+  rarity: R
+  price: 15
+  weight: [0.5, 6]
+  desc: 鱼跃龙门的那位
+  habitat: 江河、湖泊、水库
+  intro: "我国最古老的养殖鱼类之一，有“鲤鱼跃龙门”的传说。力气大、警惕性高，上钩后能把鱼竿拉成一张弓。"
+- id: grasscarp
+  name: 草鱼
+  emoji: 🐟
+  rarity: R
+  price: 14
+  weight: [1, 8]
+  desc: 适合做酸菜鱼
+  habitat: 江河、湖泊中下层
+  intro: "名副其实的“吃草鱼”，以水草为主食，食量惊人，常被放进水库和池塘用来控制水草。"
+- id: bass
+  name: 鲈鱼
+  emoji: 🐟
+  rarity: R
+  price: 20
+  weight: [0.5, 3]
+  desc: 清蒸最佳
+  habitat: 近海及河口
+  intro: "肉质细嫩、刺少，“清蒸鲈鱼”是经典名菜。性情凶猛，以小鱼小虾为食，钓友常用路亚假饵来钓它。"
+- id: rivercrab
+  name: 河蟹
+  emoji: 🦀
+  rarity: R
+  price: 18
+  weight: [0.1, 0.3]
+  desc: 横着走的家伙
+  habitat: 河流、湖泊岸边
+  intro: "河边常见的螃蟹，白天躲在洞穴或石缝里，晚上才出来觅食。小心它的钳子。"
+- id: crayfish
+  name: 小龙虾
+  emoji: 🦞
+  rarity: R
+  price: 12
+  weight: [0.02, 0.08]
+  desc: 夜宵首选
+  habitat: 稻田、沟渠、池塘
+  intro: "学名克氏原螯虾，原产北美，生命力极强。来到中国之后，成了夏夜大排档的灵魂。"
+- id: hairtail
+  name: 带鱼
+  emoji: 🐟
+  rarity: R
+  price: 18
+  weight: [0.3, 1.5]
+  desc: 银光闪闪
+  habitat: 近海中下层
+  intro: "身体又长又扁，像一条银色的带子。带鱼白天待在深处，夜里游到上层觅食。"
+- id: catfish
+  name: 鲶鱼
+  emoji: 🐟
+  rarity: R
+  price: 16
+  weight: [0.5, 5]
+  desc: 长着两撇胡子
+  habitat: 江河、湖泊底层
+  intro: "长着几根标志性的胡须，靠触须和灵敏的嗅觉在浑水里找吃的，夜里最活跃。"
+- id: pomfret
+  name: 鲳鱼
+  emoji: 🐟
+  rarity: R
+  price: 22
+  weight: [0.2, 1]
+  desc: 扁扁的很可爱
+  habitat: 近海中下层
+  intro: "身体扁圆、银光闪闪，游起来像一只只银盘。肉质细嫩，是东南沿海常见的海鲜。"
 
 # ---------- 稀有 SR ----------
-- { id: croaker,    name: 黄花鱼,   emoji: 🐠, rarity: SR, price: 35, weight: [0.2, 1], desc: 金灿灿的 }
-- { id: hairycrab,  name: 大闸蟹,   emoji: 🦀, rarity: SR, price: 45, weight: [0.15, 0.4], desc: 秋天的味道 }
-- { id: grouper,    name: 石斑鱼,   emoji: 🐠, rarity: SR, price: 55, weight: [1, 10], desc: 礁石里的潜伏者 }
-- { id: eel,        name: 鳗鱼,     emoji: 🐍, rarity: SR, price: 50, weight: [0.3, 2], desc: 适合做鳗鱼饭 }
-- { id: prawn,      name: 对虾,     emoji: 🦐, rarity: SR, price: 30, weight: [0.03, 0.1], desc: 成双成对 }
-- { id: squid,      name: 鱿鱼,     emoji: 🦑, rarity: SR, price: 40, weight: [0.2, 2], desc: 喷了你一脸墨 }
-- { id: mandarin,   name: 鳜鱼,     emoji: 🐠, rarity: SR, price: 48, weight: [0.3, 2], desc: 桃花流水鳜鱼肥 }
-- { id: swimcrab,   name: 梭子蟹,   emoji: 🦀, rarity: SR, price: 38, weight: [0.2, 0.6], desc: 钳子很有力 }
+- id: croaker
+  name: 黄花鱼
+  emoji: 🐠
+  rarity: SR
+  price: 35
+  weight: [0.2, 1]
+  desc: 金灿灿的
+  habitat: 近海
+  intro: "大黄鱼会用鳔发出“咕咕”的叫声，过去渔民靠听声音寻找鱼群。如今野生大黄鱼已经十分少见。"
+- id: hairycrab
+  name: 大闸蟹
+  emoji: 🦀
+  rarity: SR
+  price: 45
+  weight: [0.15, 0.4]
+  desc: 秋天的味道
+  habitat: 江湖，秋季洄游到河口
+  intro: "学名中华绒螯蟹，蟹钳上长着浓密的绒毛。每年秋天成熟后向河口洄游繁殖，正所谓“秋风起，蟹脚痒”。"
+- id: grouper
+  name: 石斑鱼
+  emoji: 🐠
+  rarity: SR
+  price: 55
+  weight: [1, 10]
+  desc: 礁石里的潜伏者
+  habitat: 热带、亚热带礁石区
+  intro: "喜欢躲在礁石洞里伏击猎物。很多石斑鱼会“变性”：先发育为雌性，长大后再变成雄性。"
+- id: eel
+  name: 鳗鱼
+  emoji: 🐍
+  rarity: SR
+  price: 50
+  weight: [0.3, 2]
+  desc: 适合做鳗鱼饭
+  habitat: 江河与深海之间洄游
+  intro: "鳗鱼的一生充满谜团：在淡水里长大，却要游到遥远的深海产卵，人类至今仍难以完全人工繁殖它。"
+- id: prawn
+  name: 对虾
+  emoji: 🦐
+  rarity: SR
+  price: 30
+  weight: [0.03, 0.1]
+  desc: 成双成对
+  habitat: 近海泥沙底
+  intro: "因为过去常按“一对”计价而得名。白天潜伏在沙里，夜间出来活动觅食。"
+- id: squid
+  name: 鱿鱼
+  emoji: 🦑
+  rarity: SR
+  price: 40
+  weight: [0.2, 2]
+  desc: 喷了你一脸墨
+  habitat: 近海到大洋
+  intro: "遇到危险会喷出墨汁迷惑敌人，再靠喷水推进快速逃走。夜里会被灯光吸引，渔民常用灯光诱捕。"
+- id: mandarin
+  name: 鳜鱼
+  emoji: 🐠
+  rarity: SR
+  price: 48
+  weight: [0.3, 2]
+  desc: 桃花流水鳜鱼肥
+  habitat: 江河、湖泊
+  intro: "古诗“桃花流水鳜鱼肥”说的就是它。鳜鱼性情凶猛，背鳍的硬刺有毒，被扎到会疼上好一阵。"
+- id: swimcrab
+  name: 梭子蟹
+  emoji: 🦀
+  rarity: SR
+  price: 38
+  weight: [0.2, 0.6]
+  desc: 钳子很有力
+  habitat: 近海泥沙底
+  intro: "甲壳两端尖尖的，像织布用的梭子。最后一对步足扁平如桨，是螃蟹里的游泳健将。"
 
 # ---------- 史诗 SSR ----------
-- { id: tuna,       name: 金枪鱼,   emoji: 🐟, rarity: SSR, price: 120, weight: [10, 80], desc: 深海里的速度之王 }
-- { id: kingcrab,   name: 帝王蟹,   emoji: 🦀, rarity: SSR, price: 150, weight: [1, 5], desc: 蟹中之王 }
-- { id: lobster,    name: 澳洲龙虾, emoji: 🦞, rarity: SSR, price: 140, weight: [0.5, 3], desc: 威风凛凛 }
-- { id: salmon,     name: 三文鱼,   emoji: 🍣, rarity: SSR, price: 90, weight: [2, 15], desc: 逆流而上的勇士 }
-- { id: flounder,   name: 比目鱼,   emoji: 🐟, rarity: SSR, price: 80, weight: [0.5, 5], desc: 两只眼睛长在一边 }
-- { id: anglerfish, name: 鮟鱇鱼,   emoji: 🐡, rarity: SSR, price: 100, weight: [2, 20], desc: 头上挂着一盏小灯 }
+- id: tuna
+  name: 金枪鱼
+  emoji: 🐟
+  rarity: SSR
+  price: 120
+  weight: [10, 80]
+  desc: 深海里的速度之王
+  habitat: 热带及温带大洋
+  intro: "金枪鱼能让体温高于周围海水，在冷水中也能保持高速巡游，冲刺时速可达七十公里左右。"
+- id: kingcrab
+  name: 帝王蟹
+  emoji: 🦀
+  rarity: SSR
+  price: 150
+  weight: [1, 5]
+  desc: 蟹中之王
+  habitat: 寒冷海域深处
+  intro: "其实它不算真正的螃蟹，和寄居蟹的亲缘更近，所以只看得到六条步足。"
+- id: lobster
+  name: 澳洲龙虾
+  emoji: 🦞
+  rarity: SSR
+  price: 140
+  weight: [0.5, 3]
+  desc: 威风凛凛
+  habitat: 南半球温带礁石区
+  intro: "澳洲龙虾没有大钳子，靠一对粗长的触角防身。白天躲在礁石缝里，夜间出来活动。"
+- id: salmon
+  name: 三文鱼
+  emoji: 🍣
+  rarity: SSR
+  price: 90
+  weight: [2, 15]
+  desc: 逆流而上的勇士
+  habitat: 冷水海域与河流
+  intro: "在河里出生、到海里长大，成熟后会逆流而上回到出生的河流产卵，据说是靠嗅觉认路。"
+- id: flounder
+  name: 比目鱼
+  emoji: 🐟
+  rarity: SSR
+  price: 80
+  weight: [0.5, 5]
+  desc: 两只眼睛长在一边
+  habitat: 近海沙质海底
+  intro: "小时候眼睛长在两边，长大后一只眼睛会慢慢“搬家”到另一侧，从此侧躺在海底伪装自己。"
+- id: anglerfish
+  name: 鮟鱇鱼
+  emoji: 🐡
+  rarity: SSR
+  price: 100
+  weight: [2, 20]
+  desc: 头上挂着一盏小灯
+  habitat: 深海与大陆架海底
+  intro: "头顶有一根像钓竿的鳍棘，末端会发光，用来引诱猎物——它自己就是个钓鱼佬。"
 
 # ---------- 传说 UR ----------
-- { id: goldkoi,    name: 黄金锦鲤,   emoji: 🎏, rarity: UR, price: 300, weight: [2, 10], desc: 转发这条锦鲤…… }
-- { id: giantsquid, name: 深海巨鱿,   emoji: 🦑, rarity: UR, price: 380, weight: [50, 300], desc: 触手比船还长 }
-- { id: grouperking,name: 石斑鱼王,   emoji: 🐠, rarity: UR, price: 350, weight: [50, 200], desc: 礁石区的霸主 }
-- { id: aurora,     name: 极光鲑鱼,   emoji: 🌈, rarity: UR, price: 420, weight: [5, 25], desc: 鳞片闪着极光 }
-- { id: dragonshrimp,name: 龙王虾,    emoji: 🐲, rarity: UR, price: 500, weight: [3, 15], desc: 传说中龙宫的守卫 }
+- id: goldkoi
+  name: 黄金锦鲤
+  emoji: 🎏
+  rarity: UR
+  price: 300
+  weight: [2, 10]
+  desc: 转发这条锦鲤……
+  habitat: 观赏池塘
+  intro: "金光闪闪的锦鲤，据说钓到它的人会好运连连。也许是从谁家的池塘里游出来的。"
+- id: giantsquid
+  name: 深海巨鱿
+  emoji: 🦑
+  rarity: UR
+  price: 380
+  weight: [50, 300]
+  desc: 触手比船还长
+  habitat: 深海
+  intro: "现实中的大王乌贼能长到十多米，拥有动物界最大的眼睛之一。人类直到 2004 年才第一次拍到它在野外活动。"
+- id: grouperking
+  name: 石斑鱼王
+  emoji: 🐠
+  rarity: UR
+  price: 350
+  weight: [50, 200]
+  desc: 礁石区的霸主
+  habitat: 礁石区深处
+  intro: "在礁石区活了很多年的巨型石斑，传说能一口吞下小鲨鱼，附近的鱼都对它敬而远之。"
+- id: aurora
+  name: 极光鲑鱼
+  emoji: 🌈
+  rarity: UR
+  price: 420
+  weight: [5, 25]
+  desc: 鳞片闪着极光
+  habitat: 极地冷水
+  intro: "传说生活在极光下的冷水中，鳞片会映出极光的颜色。目前只有钓鱼佬的目击报告。"
+- id: dragonshrimp
+  name: 龙王虾
+  emoji: 🐲
+  rarity: UR
+  price: 500
+  weight: [3, 15]
+  desc: 传说中龙宫的守卫
+  habitat: 传说中的龙宫
+  intro: "据说是龙宫的守卫。见到它的人会被问一句：“你掉的是这只金龙虾，还是这只银龙虾？”"
 
 # ---------- 隐藏 ----------
-# 人民碎片：钓到后自动报警，获得 config.yaml 中 policeReward 金币，不进入鱼护
-- { id: people_fragment, name: 人民碎片, emoji: ❓, rarity: hidden, special: police, desc: 一具浮尸……钓到后会自动报警 }
-# 海洋之心：可出售
-- { id: ocean_heart, name: 海洋之心, emoji: 💎, rarity: hidden, price: 8888, desc: 传说沉睡在海底的蓝色宝石 }
+- id: people_fragment
+  name: 人民碎片
+  emoji: ❓
+  rarity: hidden
+  special: police
+  desc: 一具浮尸……钓到后会自动报警
+  habitat: 未知水域
+  intro: "一具身份不明的遗体。遇到这种情况请立即报警并保护现场，不要自行处理——钓鱼佬也是守法好公民。"
+  # 钓到后自动报警，获得 config.yaml 中 policeReward 金币，不进入鱼护
+- id: ocean_heart
+  name: 海洋之心
+  emoji: 💎
+  rarity: hidden
+  price: 8888
+  desc: 传说沉睡在海底的蓝色宝石
+  habitat: 深海
+  intro: "传说沉睡在海底的蓝色宝石，散发着幽幽的蓝光。没人知道它是怎么挂到你的鱼钩上的。"

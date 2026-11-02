@@ -320,3 +320,40 @@ test("打卡：幸运等级轻微影响概率", async () => {
   doCheckin(u, 92)
   assert.deepEqual(mergeEffects({ emptyReduce: 5 }, luckEffects(u, tiers)), { emptyReduce: 7, rareBoost: 10 })
 })
+
+test("图鉴详情：概率、体型区间、搜索、个人记录", async () => {
+  const { itemChance, formatChance, sizeTable, findItems, dexNo } = await import("../components/Dex.js")
+  // 每件物品的概率加起来 + 空军 = 100%
+  const sum = items.reduce((s, i) => s + itemChance(i, items, cfg.probability), 0)
+  assert.ok(Math.abs(sum + cfg.probability.empty - 100) < 1e-9)
+  const tuna = itemMap.get("tuna")
+  assert.ok(Math.abs(itemChance(tuna, items, cfg.probability) - 5 / 6) < 1e-9)
+  assert.ok(Math.abs(itemChance(itemMap.get("ocean_heart"), items, cfg.probability) - 0.01) < 1e-9)
+  assert.equal(formatChance(5 / 6), "0.83%")
+  assert.equal(formatChance(12.345), "12.35%")
+
+  // 体型区间与 roll 实际结果一致
+  const table = sizeTable(tuna, cfg.size)
+  assert.deepEqual(table.map(s => s.label), ["小", "中", "大"])
+  const rng = seeded(11)
+  for (let i = 0; i < 3000; i++) {
+    const r = roll({ items: [tuna], probability: { SSR: 100 }, size: cfg.size }, {}, rng)
+    const s = table.find(t => t.key === r.size)
+    assert.ok(r.price >= s.pMin && r.price <= s.pMax, `${r.size} ${r.price}`)
+    assert.ok(r.weight >= s.wMin - 0.001 && r.weight <= s.wMax + 0.001)
+  }
+  assert.deepEqual(sizeTable(itemMap.get("can"), cfg.size), [])
+
+  assert.deepEqual(findItems("金枪鱼", items).map(i => i.id), ["tuna"])
+  assert.ok(findItems("蟹", items).length > 3)
+  assert.deepEqual(findItems("不存在", items), [])
+  assert.equal(dexNo(itemMap.get("crucian"), items), "001")
+  assert.ok(items.every(i => i.intro && i.habitat), "每件物品都有介绍和栖息地")
+
+  const u = newUser("10008")
+  const t1 = new Date(2026, 10, 2), t2 = new Date(2026, 10, 3)
+  recordResult(u, { type: "item", item: tuna, rarity: "SSR", price: 100, size: "small", weight: 12 }, { now: t1 })
+  recordResult(u, { type: "item", item: tuna, rarity: "SSR", price: 180, size: "large", weight: 70 }, { now: t2 })
+  recordResult(u, { type: "item", item: tuna, rarity: "SSR", price: 120, size: "medium", weight: 40 }, { now: t2 })
+  assert.deepEqual(u.records.tuna, { first: t1.getTime(), maxW: 70, maxS: "large", maxP: 180 })
+})

@@ -6,6 +6,8 @@ import { groupBag, sellEntries, discardJunk, todayLuck, luckTier } from "../comp
 import { checkTitles, getEffects, effectText, progressText } from "../components/Titles.js"
 import { withButtons, B } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
+import { itemChance, formatChance, sizeTable, findItems, dexNo } from "../components/Dex.js"
+import { dayKey } from "../components/Period.js"
 import { groupAllowed, itemMap, displayName, updateNickname, avatar } from "../components/common.js"
 
 /** 鱼护展示顺序：隐藏 → 传说 → … → 普通 → 垃圾 */
@@ -25,7 +27,7 @@ export class FishingBag extends plugin {
         { reg: /^#?(出售)\s*(\S+?)\s*(\d+)?$/, fnc: "sell" },
         { reg: /^#?(丢弃|清理)(全部)?垃圾$/, fnc: "discard" },
         { reg: /^#?(我的金币|钓鱼信息|我的钓鱼)$/, fnc: "info" },
-        { reg: /^#?钓鱼图鉴$/, fnc: "dex" },
+        { reg: /^#?钓鱼图鉴\s*(.*)$/, fnc: "dex" },
       ],
     })
   }
@@ -165,6 +167,8 @@ export class FishingBag extends plugin {
 
   async dex(e) {
     if (!groupAllowed(e)) return false
+    const keyword = e.msg.replace(/^#?钓鱼图鉴/, "").trim()
+    if (keyword) return this.dexDetail(e, keyword)
     const user = this.load(e)
     const all = Config.items || []
     const groups = ORDER.map(r => ({
@@ -186,6 +190,70 @@ export class FishingBag extends plugin {
       ...groups.map(g => `【${g.label}】${g.list.map(i => i.got ? `${i.emoji}${i.name}` : `❔${i.name}`).join(" ")}`),
     ].join("\n"))
     if (!msg) return true
-    return e.reply(withButtons(e, msg, [B.cast, B.titles]))
+    return e.reply(withButtons(e, msg, [B.dexSearch, B.cast, B.titles]))
+  }
+
+  /** 图鉴详情：#钓鱼图鉴 金枪鱼 */
+  async dexDetail(e, keyword) {
+    const user = this.load(e)
+    const all = Config.items || []
+    // 未解锁的隐藏款不参与模糊搜索，避免剧透
+    const visible = all.filter(i => i.rarity !== "hidden" || user.dex[i.id] || i.name === keyword)
+    const found = findItems(keyword, visible)
+    if (!found.length) return e.reply(withButtons(e, `❓ 图鉴里没有找到「${keyword}」\n发送 #钓鱼图鉴 查看全部物品`, [B.dex]))
+    if (found.length > 1) {
+      const list = found.slice(0, 20)
+      return e.reply(withButtons(e, [
+        `🔍 找到 ${found.length} 个包含「${keyword}」的物品：`,
+        list.map(i => `${user.dex[i.id] ? i.emoji : "❔"} ${i.name}`).join("  "),
+        found.length > list.length ? "……" : "",
+        "发送 #钓鱼图鉴 完整名称 查看详情",
+      ].filter(Boolean).join("\n"), list.slice(0, 5).map(i => ({ text: i.name, callback: `#钓鱼图鉴 ${i.name}` }))))
+    }
+
+    const item = found[0]
+    const count = user.dex[item.id] || 0
+    if (item.rarity === "hidden" && !count)
+      return e.reply(withButtons(e, "❓ 这是一件隐藏物品……\n钓到之后才能解锁它的图鉴哦~", [B.cast]))
+
+    const cfg = Config.config
+    const r = RARITY_INFO[item.rarity] || {}
+    const rec = user.records?.[item.id] || {}
+    const sizes = sizeTable(item, cfg.size).map(s => ({
+      ...s, weight: `${formatWeight(s.wMin)} ~ ${formatWeight(s.wMax)}`, price: s.pMin === s.pMax ? `${s.pMin}` : `${s.pMin} ~ ${s.pMax}`,
+    }))
+    const price = item.special === "police" ? `警局奖励 ${cfg.policeReward} 金币`
+      : item.rarity === "junk" ? "0 金币（可 #丢弃垃圾 集中清理）"
+        : sizes.length ? `${sizes[0].pMin} ~ ${sizes[sizes.length - 1].pMax} 金币` : `${item.price || 0} 金币`
+    const data = {
+      no: dexNo(item, all), emoji: item.emoji, name: item.name, desc: item.desc || "",
+      rarity: item.rarity, label: r.label, color: r.color,
+      habitat: item.habitat || "未知", intro: item.intro || item.desc || "",
+      chance: formatChance(itemChance(item, all, cfg.probability)), price, sizes,
+      unlocked: count > 0, count,
+      first: rec.first ? dayKey(new Date(rec.first)) : "",
+      maxW: rec.maxW != null ? `${formatWeight(rec.maxW)}${rec.maxS ? `（${cfg.size?.[rec.maxS]?.label || ""}）` : ""}` : "",
+      maxP: rec.maxP || 0,
+      user: displayName(user),
+    }
+    const msg = await renderOrText(puppeteer, "detail", data, () => [
+      `📖 No.${data.no} ${item.emoji} ${item.name}【${r.label}】`,
+      item.desc ? `💬 ${item.desc}` : "",
+      "━━━━━━━━━━━━",
+      `🏞️ 栖息地：${data.habitat}`,
+      `🎲 出现概率：约 ${data.chance}`,
+      ...(count ? [
+        `💰 售价：${price}`,
+        ...sizes.map(s => `   ${s.label}：${s.weight}，${s.price} 金币`),
+        "━━━━━━━━━━━━",
+        `📝 ${data.intro}`,
+        "━━━━━━━━━━━━",
+        `🎣 已钓到 ${count} 次${data.first ? ` · 首次 ${data.first}` : ""}`,
+        data.maxW ? `🏆 最大一条：${data.maxW}` : "",
+        data.maxP && item.rarity !== "junk" ? `💎 最高售价：${data.maxP} 金币` : "",
+      ] : ["🔒 还没有钓到过，钓到后解锁详细介绍"]),
+    ].filter(Boolean).join("\n"))
+    if (!msg) return true
+    return e.reply(withButtons(e, msg, [B.dex, B.dexSearch, B.cast]))
   }
 }

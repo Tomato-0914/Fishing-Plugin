@@ -1,0 +1,17 @@
+.hero { position: relative; display: flex; align-items: center; gap: 22px; padding: 26px 24px; border-left: 8px solid var(--rc); }
+.hero .no { position: absolute; top: 12px; right: 18px; font-size: 15px; font-weight: 700; color: var(--sub); letter-spacing: 1px; }
+.hero .big { font-size: 96px; line-height: 1; width: 110px; text-align: center; }
+.hero .big.lock { filter: grayscale(1) brightness(0.4); }
+.hero .name { font-size: 38px; font-weight: 800; letter-spacing: 2px; margin-bottom: 8px; }
+.hero .muted { font-size: 16px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.stat .k, .records .k { font-size: 14px; color: var(--sub); }
+.stat .v { font-size: 20px; font-weight: 700; margin-top: 4px; }
+.stat.wide { grid-column: span 2; }
+.sizes { width: 100%; border-collapse: collapse; font-size: 17px; }
+.sizes th { text-align: left; font-size: 14px; color: var(--sub); font-weight: 400; padding: 4px 6px; }
+.sizes td { padding: 8px 6px; border-top: 1px dashed var(--card-border); }
+.gold { color: #f2a900; font-weight: 800; }
+.intro { font-size: 18px; line-height: 1.8; }
+.records { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center; }
+.records .v { font-size: 19px; font-weight: 700; margin-top: 4px; }

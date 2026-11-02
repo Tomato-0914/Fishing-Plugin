@@ -38,6 +38,11 @@ export function recordResult(user, result, { now = new Date(), policeReward = 0 
   }
   const { item } = result
   user.dex[item.id] = (user.dex[item.id] || 0) + 1
+  // 图鉴个人记录：首次钓到时间、最重、最值钱
+  user.records ||= {}
+  const rec = (user.records[item.id] ||= { first: now.getTime() })
+  if (result.weight != null && result.weight > (rec.maxW || 0)) { rec.maxW = result.weight; rec.maxS = result.size }
+  if ((result.price || 0) > (rec.maxP || 0)) rec.maxP = result.price
 
   let value = result.price || 0
   let reward = 0

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="{{_res}}/common/common.css" />
+  <link rel="stylesheet" href="{{_res}}/detail/detail.css" />
+</head>
+<body class="{{theme}}">
+  <div class="container">
+    <div class="hero card" style="--rc: {{color}}">
+      <div class="no">No.{{no}}</div>
+      <div class="big {{unlocked ? '' : 'lock'}}">{{emoji}}</div>
+      <div class="info">
+        <div class="name">{{name}}</div>
+        <div><span class="tag" style="background: {{color}}">{{label}}</span><span class="muted">{{desc}}</span></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card stat"><div class="k">🏞️ 栖息地</div><div class="v">{{habitat}}</div></div>
+      <div class="card stat"><div class="k">🎲 出现概率</div><div class="v">约 {{chance}}</div></div>
+      <div class="card stat wide"><div class="k">💰 售价</div><div class="v">{{unlocked ? price : '🔒 钓到后解锁'}}</div></div>
+    </div>
+
+    {{if unlocked && sizes.length}}
+    <div class="card">
+      <div class="card-title">📏 体型</div>
+      <table class="sizes">
+        <tr><th>体型</th><th>出现</th><th>重量</th><th>售价</th></tr>
+        {{each sizes s}}
+        <tr><td><b>{{s.label}}</b></td><td>{{s.chance}}%</td><td>{{s.weight}}</td><td class="gold">{{s.price}}</td></tr>
+        {{/each}}
+      </table>
+    </div>
+    {{/if}}
+
+    <div class="card">
+      <div class="card-title">📝 介绍</div>
+      {{if unlocked}}<div class="intro">{{intro}}</div>{{else}}<div class="intro muted">🔒 还没有钓到过，钓到后解锁详细介绍~</div>{{/if}}
+    </div>
+
+    {{if unlocked}}
+    <div class="card">
+      <div class="card-title">🎣 {{user}} 的记录</div>
+      <div class="records" style="grid-template-columns: repeat({{2 + (sizes.length ? 1 : 0) + (rarity != 'junk' ? 1 : 0)}}, 1fr)">
+        <div><div class="k">钓到次数</div><div class="v">{{count}}</div></div>
+        <div><div class="k">首次钓到</div><div class="v">{{first || '—'}}</div></div>
+        {{if sizes.length}}<div><div class="k">最大一条</div><div class="v">{{maxW || '—'}}</div></div>{{/if}}
+        {{if rarity != 'junk'}}<div><div class="k">最高售价</div><div class="v gold">{{maxP || '—'}}</div></div>{{/if}}
+      </div>
+    </div>
+    {{/if}}
+    <div class="footer">Fishing-Plugin v{{version}} · #钓鱼图鉴 查看全部</div>
+  </div>
+  <script src="{{_res}}/common/twemoji.min.js"></script>
+  <script src="{{_res}}/common/emoji.js"></script>
+</body>
+</html>
