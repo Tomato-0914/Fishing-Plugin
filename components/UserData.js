@@ -1,13 +1,10 @@
-/** 用户存档：data/Fishing_<user_id>.yaml，所有群共享 */
-import fs from "node:fs"
-import path from "node:path"
-import YAML from "yaml"
+/** 用户存档：默认存入 data/fishing.db（SQLite），也可配置为 data/Fishing_<user_id>.yaml；所有群共享 */
 import { Data_Path } from "./Paths.js"
+import { YamlBackend, SqliteBackend, migrateYamlToDb, exportDbToYaml, readYamlDir, safeId } from "./Storage.js"
 
-const PREFIX = "Fishing_"
+export { safeId }
 
-/** 非数字 ID（如 QQBot 未绑定用户的 openid）清洗为安全文件名 */
-export const safeId = id => String(id).replace(/[^A-Za-z0-9_-]/g, "_")
+const log = (level, msg) => globalThis.logger?.[level]?.(`[Fishing-Plugin] ${msg}`)
 
 export function newUser(id) {
   return {
@@ -51,76 +48,112 @@ class UserData {
     this.dir = dir
     this.cache = new Map()
     this.queues = new Map()
+    this.backend = null
   }
 
-  file(id) {
-    return path.join(this.dir, `${PREFIX}${safeId(id)}.yaml`)
+  get isDb() {
+    return this.backend instanceof SqliteBackend
   }
 
-  /** 启动时读入全部存档，返回数量 */
-  loadAll() {
-    fs.mkdirSync(this.dir, { recursive: true })
-    let n = 0
-    for (const f of fs.readdirSync(this.dir)) {
-      if (!f.startsWith(PREFIX) || !f.endsWith(".yaml")) continue
+  /**
+   * 启动时调用：打开存储并读入全部存档
+   * @param storage "db" | "yaml"；db 不可用时自动退回 yaml
+   * @param driver  "auto" | "sqlite3" | "node:sqlite"
+   * @returns {{ count:number, backend:string, migration?:object, fallback?:string }}
+   */
+  async init({ storage = "db", driver = "auto", autoMigrate = true } = {}) {
+    const info = {}
+    if (storage === "db") {
+      const db = new SqliteBackend(this.dir, driver)
       try {
-        const data = YAML.parse(fs.readFileSync(path.join(this.dir, f), "utf8")) || {}
-        const id = String(data.user_id || f.slice(PREFIX.length, -5))
-        this.cache.set(id, normalize(data, id))
-        n++
+        await db.init()
+        this.backend = db
       } catch (err) {
-        globalThis.logger?.error?.(`[Fishing-Plugin] 存档 ${f} 读取失败：${err.message}`)
+        info.fallback = err.message
+        log("warn", `${err.message}，改用 YAML 文件存档`)
       }
     }
-    return n
+    if (!this.backend) {
+      this.backend = new YamlBackend(this.dir)
+      await this.backend.init()
+    }
+    // 从 YAML 切换到数据库：自动导入旧存档
+    if (this.isDb && autoMigrate && readYamlDir(this.dir).length) {
+      info.migration = await migrateYamlToDb(this.dir, this.backend)
+      const m = info.migration
+      log("mark", `已将 ${m.migrated.length} 份 YAML 存档导入数据库（跳过 ${m.skipped.length}，失败 ${m.failed.length}），原文件备份在 ${m.backupDir}`)
+    }
+    this.cache.clear()
+    for (const { id, data } of await this.backend.loadAll()) this.cache.set(id, normalize(data, id))
+    return { ...info, count: this.cache.size, backend: this.backend.name }
   }
 
-  /** 获取存档（不存在时返回新存档，但不写盘） */
+  /** 获取存档（不存在时返回新存档，保存后才写入） */
   get(id) {
     id = String(id)
     let user = this.cache.get(id)
-    if (user) return user
-    const file = this.file(id)
-    if (fs.existsSync(file)) {
-      try {
-        user = normalize(YAML.parse(fs.readFileSync(file, "utf8")) || {}, id)
-      } catch (err) {
-        // 存档损坏时备份原文件，避免被新存档覆盖
-        fs.copyFileSync(file, `${file}.broken-${Date.now()}`)
-        globalThis.logger?.error?.(`[Fishing-Plugin] 存档 ${file} 损坏，已备份：${err.message}`)
-      }
-    }
-    user ||= newUser(id)
-    this.cache.set(id, user)
+    if (!user) this.cache.set(id, (user = newUser(id)))
     return user
   }
 
   has(id) {
-    return this.cache.has(String(id)) || fs.existsSync(this.file(id))
+    return this.cache.has(String(id))
   }
 
   all() {
     return [...this.cache.values()]
   }
 
-  /** 保存：同一用户串行写入，先写临时文件再重命名，防止写一半损坏 */
+  /** 保存：同一用户串行写入 */
   save(id) {
     id = String(id)
     const prev = this.queues.get(id) || Promise.resolve()
     const next = prev.then(async () => {
       const user = this.cache.get(id)
-      if (!user) return
-      await fs.promises.mkdir(this.dir, { recursive: true })
-      const file = this.file(id)
-      const tmp = `${file}.${process.pid}.tmp`
-      await fs.promises.writeFile(tmp, YAML.stringify(user), "utf8")
-      await fs.promises.rename(tmp, file)
-    }).catch(err => {
-      globalThis.logger?.error?.(`[Fishing-Plugin] 存档 ${id} 保存失败：${err.message}`)
-    })
+      if (user) await this.backend.write(id, user)
+    }).catch(err => log("error", `存档 ${id} 保存失败：${err.message}`))
     this.queues.set(id, next)
     next.finally(() => { if (this.queues.get(id) === next) this.queues.delete(id) })
     return next
+  }
+
+  /** 等待所有未完成的写入 */
+  async flush() {
+    await Promise.all([...this.queues.values()])
+  }
+
+  /** 手动迁移：把 data/ 下的 YAML 存档导入数据库，并刷新内存中的对应存档 */
+  async migrate({ overwrite = false } = {}) {
+    if (!this.isDb) throw new Error("当前未使用数据库存储（config.yaml 中 storage 不是 db，或 SQLite 驱动不可用）")
+    await this.flush()
+    const result = await migrateYamlToDb(this.dir, this.backend, { overwrite })
+    if (result.migrated.length) {
+      const changed = new Set(result.migrated)
+      for (const { id, data } of await this.backend.loadAll()) {
+        if (!changed.has(id)) continue
+        const fresh = normalize(data, id)
+        const cur = this.cache.get(id)
+        // 原地更新，避免进行中的钓鱼拿着旧对象
+        if (cur) { for (const k of Object.keys(cur)) delete cur[k]; Object.assign(cur, fresh) } else this.cache.set(id, fresh)
+      }
+    }
+    return result
+  }
+
+  /** 把数据库导出为 YAML 文件（备份 / 切回 YAML 存储时使用） */
+  async export() {
+    if (!this.isDb) throw new Error("当前未使用数据库存储")
+    await this.flush()
+    return exportDbToYaml(this.dir, this.backend)
+  }
+
+  async count() {
+    return this.isDb ? this.backend.count() : this.cache.size
+  }
+
+  async close() {
+    await this.flush()
+    await this.backend?.close()
   }
 }
 

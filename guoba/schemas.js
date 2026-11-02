@@ -6,6 +6,11 @@ const num = (field, label, help, props = {}) => ({
 export default [
   { label: "基础设置", component: "SOFT_GROUP_BEGIN" },
   { field: "enable", label: "启用钓鱼", component: "Switch" },
+  {
+    field: "storage", label: "存档方式", component: "Select", required: true,
+    bottomHelpMessage: "修改后需重启。从 YAML 切到数据库时会自动导入旧存档",
+    componentProps: { options: [{ label: "SQLite 数据库（data/fishing.db）", value: "db" }, { label: "YAML 文件（每人一个）", value: "yaml" }] },
+  },
   { field: "button", label: "发送按钮", bottomHelpMessage: "仅 QQBot 协议生效，其他协议不会发送按钮", component: "Switch" },
   { field: "textFallback", label: "文字兜底", bottomHelpMessage: "图片渲染失败时改为发送文字", component: "Switch" },
   {

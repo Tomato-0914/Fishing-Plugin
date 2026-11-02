@@ -31,3 +31,5 @@
   list:
     - { icon: 🔄, title: "#钓鱼更新", desc: 拉取最新版本（主人） }
     - { icon: ⚠️, title: "#钓鱼强制更新", desc: 放弃本地修改并更新（主人） }
+    - { icon: 🗄️, title: "#钓鱼数据迁移", desc: YAML 存档导入数据库（主人） }
+    - { icon: 📤, title: "#钓鱼数据导出", desc: 数据库导出为 YAML 备份（主人） }

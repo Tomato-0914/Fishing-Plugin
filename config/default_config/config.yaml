@@ -4,6 +4,12 @@
 # 插件总开关
 enable: true
 
+# 存档方式（修改后需重启）
+#   db   = SQLite 数据库 data/fishing.db（推荐），需要 sqlite3 或 Node ≥ 22.5，都不可用时自动退回 yaml
+#   yaml = 每人一个 data/Fishing_<QQ号>.yaml
+# 从 yaml 切到 db 时会自动导入旧存档，原文件移到 data/yaml_backup_<时间>/
+storage: db
+
 # 群黑名单 / 白名单（白名单不为空时只在白名单群可用）
 blackGroups: []
 whiteGroups: []

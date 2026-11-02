@@ -149,17 +149,84 @@ test("出售与丢弃垃圾，海洋卫士称号", () => {
   assert.equal(getEffects(u, Config.titles).emptyReduce, 5)
 })
 
-test("存档 YAML 读写、openid 文件名清洗", async () => {
+test("存档：YAML 后端读写、openid 文件名清洗", async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fishing-"))
   const store = new UserData(dir)
-  const u = store.get("85273416")
-  u.gold = 123
+  await store.init({ storage: "yaml" })
+  store.get("85273416").gold = 123
   await store.save("85273416")
   assert.ok(fs.existsSync(path.join(dir, "Fishing_85273416.yaml")))
   assert.equal(safeId("102:ABC/../x"), "102_ABC____x")
   const other = new UserData(dir)
-  assert.equal(other.loadAll(), 1)
+  assert.equal((await other.init({ storage: "yaml" })).count, 1)
   assert.equal(other.get("85273416").gold, 123)
+  fs.rmSync(dir, { recursive: true, force: true })
+})
+
+for (const driver of ["node:sqlite", "sqlite3"]) {
+  test(`存档：SQLite（${driver}）读写、自动迁移、手动迁移、导出`, async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fishing-db-"))
+    // 先用 YAML 存两个人
+    const y = new UserData(dir)
+    await y.init({ storage: "yaml" })
+    y.get("10001").gold = 11
+    y.get("o_openid:AB").gold = 22
+    y.save("10001"); y.save("o_openid:AB")
+    await y.flush()
+
+    // 切到数据库：启动时自动导入并备份
+    const db = new UserData(dir)
+    const info = await db.init({ storage: "db", driver })
+    assert.match(info.backend, new RegExp(driver.replace(":", ".")))
+    assert.equal(info.count, 2)
+    assert.equal(info.migration.migrated.length, 2)
+    assert.ok(fs.existsSync(path.join(dir, "fishing.db")))
+    assert.equal(fs.readdirSync(dir).filter(f => f.endsWith(".yaml")).length, 0)
+    assert.equal(fs.readdirSync(info.migration.backupDir).length, 2)
+    assert.equal(db.get("o_openid:AB").gold, 22)
+
+    // 写入后重新打开仍在
+    db.get("10001").gold = 99
+    db.get("10002").bait = 5
+    await db.save("10001"); await db.save("10002")
+    await db.close()
+    const db2 = new UserData(dir)
+    assert.equal((await db2.init({ storage: "db", driver })).count, 3)
+    assert.equal(db2.get("10001").gold, 99)
+    assert.equal(db2.get("10002").bait, 5)
+
+    // 手动迁移：已存在的默认跳过，“覆盖”时以 YAML 为准，并原地刷新内存对象
+    const ref = db2.get("10001")
+    fs.writeFileSync(path.join(dir, "Fishing_10001.yaml"), "user_id: '10001'\ngold: 7\n")
+    fs.writeFileSync(path.join(dir, "Fishing_10003.yaml"), "user_id: '10003'\ngold: 3\n")
+    fs.writeFileSync(path.join(dir, "Fishing_bad.yaml"), "gold: [unclosed\n")
+    const r1 = await db2.migrate()
+    assert.deepEqual([r1.migrated, r1.skipped, r1.failed.length], [["10003"], ["10001"], 1])
+    assert.equal(db2.get("10001").gold, 99)
+    assert.equal(db2.get("10003").gold, 3)
+    assert.ok(fs.existsSync(path.join(dir, "Fishing_bad.yaml"))) // 失败的文件原地保留
+    fs.writeFileSync(path.join(dir, "Fishing_10001.yaml"), "user_id: '10001'\ngold: 7\n")
+    const r2 = await db2.migrate({ overwrite: true })
+    assert.deepEqual(r2.migrated, ["10001"])
+    assert.equal(ref.gold, 7)
+    assert.equal(db2.get("10001"), ref)
+    assert.equal(ref.bait, 0) // 字段补齐
+
+    // 导出
+    const ex = await db2.export()
+    assert.equal(ex.count, 4)
+    assert.equal(fs.readdirSync(ex.outDir).length, 4)
+    await db2.close()
+    fs.rmSync(dir, { recursive: true, force: true })
+  })
+}
+
+test("存档：SQLite 驱动不可用时退回 YAML", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fishing-fb-"))
+  const store = new UserData(dir)
+  const info = await store.init({ storage: "db", driver: "nope" })
+  assert.equal(info.backend, "YAML")
+  assert.ok(info.fallback)
   fs.rmSync(dir, { recursive: true, force: true })
 })
 

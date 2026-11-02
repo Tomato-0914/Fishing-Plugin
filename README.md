@@ -105,8 +105,19 @@ git clone https://github.com/Tomato-0914/Fishing-Plugin.git ./plugins/Fishing-Pl
 
 ## 数据
 
-用户存档位于 `data/Fishing_<QQ号>.yaml`，所有群共享。
+默认存入 SQLite 数据库 `data/fishing.db`（每个用户一行），所有群共享。
 QQBot 协议下已绑定 QQ 的用户使用 QQ 号，未绑定时使用 openid。
+
+- 数据库驱动：优先使用 Yunzai 自带的 `sqlite3`，其次 Node ≥ 22.5 内置的 `node:sqlite`；都不可用时自动退回 YAML 存档。
+- 也可在 `config.yaml` 中设置 `storage: yaml`，改为每人一个 `data/Fishing_<QQ号>.yaml`。
+- **从旧版本升级**：启动时会自动把 `data/` 下的 `Fishing_*.yaml` 导入数据库，原文件移到 `data/yaml_backup_<时间>/`（不会删除）。
+
+| 指令（主人） | 说明 |
+| --- | --- |
+| `#钓鱼存储状态` | 当前存储方式与存档数量 |
+| `#钓鱼数据迁移` | 把 `data/` 下的 YAML 存档导入数据库，数据库已有的用户跳过 |
+| `#钓鱼数据迁移覆盖` | 同上，但用 YAML 覆盖数据库中的同名存档 |
+| `#钓鱼数据导出` | 把数据库导出为 YAML 到 `data/yaml_export_<时间>/`（备份或切回 YAML 用） |
 
 ## 按钮
 
