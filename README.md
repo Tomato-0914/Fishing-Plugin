@@ -28,7 +28,7 @@ git clone https://github.com/Tomato-0914/Fishing-Plugin.git ./plugins/Fishing-Pl
 | `#幸运值排行榜 [非酋]` | 今日幸运值排行（群内为本群） |
 | `#历史幸运值` | 最近 30 次打卡记录 |
 | `#让我看看你的卡 @某人` | 查看别人今天的幸运值 |
-| `#鱼获` | 查看鱼护（图片），显示全部出售可得金币 |
+| `#我的鱼获` | 查看鱼护（图片），显示全部出售可得金币 |
 | `#出售 名称 [数量]` | 出售指定鱼获，不写数量卖全部 |
 | `#一键出售` | 出售全部有价值的鱼获 |
 | `#丢弃垃圾` / `#清理垃圾` | 集中清理海洋垃圾，累计 50 件获得称号【海洋卫士】 |
@@ -112,6 +112,11 @@ QQBot 协议下已绑定 QQ 的用户使用 QQ 号，未绑定时使用 openid�
 
 仅 QQBot 协议（[QQBot-Plugin](https://github.com/Tomato-0914/QQBot-Plugin)）会附带按钮，其他协议不发送。
 “收杆”按钮仅限抛竿者本人点击。
+
+## 致谢
+
+- 每日打卡玩法参考 [Gi-plugin](https://github.com/qiannqq/Gi-plugin)
+- 图片中的 emoji 使用 [Twemoji](https://github.com/jdecked/twemoji)（CC-BY 4.0）
 
 ## 开发
 

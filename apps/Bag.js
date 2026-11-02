@@ -20,7 +20,7 @@ export class FishingBag extends plugin {
       event: "message",
       priority: 500,
       rule: [
-        { reg: /^#?(我的)?(鱼获|鱼护|钓鱼背包)$/, fnc: "bag" },
+        { reg: /^#?(我的(鱼获|鱼护)|钓鱼背包)$/, fnc: "bag" },
         { reg: /^#?一键出售(鱼获)?$/, fnc: "sellAll" },
         { reg: /^#?(出售)\s*(\S+?)\s*(\d+)?$/, fnc: "sell" },
         { reg: /^#?(丢弃|清理)(全部)?垃圾$/, fnc: "discard" },
@@ -100,7 +100,7 @@ export class FishingBag extends plugin {
     const user = this.load(e)
     const items = itemMap()
     const item = [...items.values()].find(i => i.name === name) || [...items.values()].find(i => i.name.includes(name))
-    if (!item) return e.reply(`❓ 没有找到「${name}」，发送 #鱼获 看看鱼护里有什么吧`)
+    if (!item) return e.reply(`❓ 没有找到「${name}」，发送 #我的鱼获 看看鱼护里有什么吧`)
     if (item.rarity === "junk")
       return e.reply(withButtons(e, `🗑️ ${item.name}是海洋垃圾，卖不了钱哦~ 发送 #丢弃垃圾 集中清理吧`, [B.discard]))
     // 先卖便宜的，大鱼留给用户自己决定

@@ -44,10 +44,15 @@ export class Fishing extends plugin {
     return Config.config
   }
 
-  /** 统一回复：群聊里 @ 一下钓鱼的人（QQBot 不加 @，避免 openid 问题） */
+  /**
+   * 统一回复：群聊里 @ 钓鱼的人，多人同时钓鱼时分得清是谁
+   * QQBot 下延迟的咬钩提醒也是引用原 #钓鱼 消息的被动回复（5 分钟内有效），适配器会把 at 转成 openid 提及
+   */
   async send(e, msg) {
-    if (e.isGroup && e.bot?.adapter?.id !== "QQBot") return e.reply(msg, false, { at: true })
-    return e.reply(msg)
+    if (!e.isGroup || typeof segment?.at !== "function") return e.reply(msg)
+    const list = Array.isArray(msg) ? msg : [msg]
+    const [first, ...rest] = list
+    return e.reply([segment.at(e.user_id), typeof first === "string" ? `\n${first}` : first, ...rest])
   }
 
   async cast(e) {
@@ -234,7 +239,7 @@ export class Fishing extends plugin {
       `💰 价值：${result.price} 金币`,
       item.desc ? `💬 ${item.desc}` : "",
       "━━━━━━━━━━━━",
-      "已放入鱼护，发送 #鱼获 查看",
+      "已放入鱼护，发送 #我的鱼获 查看",
     ].filter(Boolean)
     return withButtons(e, lines.join("\n"), [B.cast, B.bag, B.sellAll])
   }

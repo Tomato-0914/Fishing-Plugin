@@ -55,3 +55,4 @@ body {
 }
 .muted { color: var(--sub); }
 .footer { text-align: center; font-size: 13px; color: var(--sub); margin-top: 8px; }
+img.emoji { display: inline-block; width: 1em; height: 1em; margin: 0 0.05em; vertical-align: -0.12em; }
