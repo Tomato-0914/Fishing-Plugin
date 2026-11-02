@@ -41,19 +41,32 @@ export function getEffects(user, titles = []) {
   return eff
 }
 
+/** 效果文字：[名称, 单位, 正数是否表示“减少”] */
 const EFFECT_TEXT = {
-  biteReduce: v => `咬钩等待 -${v}s`,
-  reelWindow: v => `收杆时间 +${v}s`,
-  cooldown: v => `挂鱼饵时间 -${v}s`,
-  emptyReduce: v => `空军概率 -${v}%`,
-  junkReduce: v => `垃圾概率 -${v}%`,
-  rareBoost: v => `稀有以上概率 +${v}%`,
-  largeBoost: v => `大体型概率 +${v}%`,
-  sellBonus: v => `出售金币 +${v}%`,
+  biteReduce: ["咬钩等待", "s", true],
+  reelWindow: ["收杆时间", "s", false],
+  cooldown: ["挂鱼饵时间", "s", true],
+  emptyReduce: ["空军概率", "%", true],
+  junkReduce: ["垃圾概率", "%", true],
+  rareBoost: ["稀有以上概率", "%", false],
+  largeBoost: ["大体型概率", "%", false],
+  sellBonus: ["出售金币", "%", false],
 }
 
 export function effectText(effects = {}) {
-  return Object.entries(effects).map(([k, v]) => EFFECT_TEXT[k]?.(v) ?? `${k} ${v}`).join("，")
+  const parts = Object.entries(effects).filter(([, v]) => Number(v)).map(([k, v]) => {
+    const [name, unit, inverse] = EFFECT_TEXT[k] || [k, "", false]
+    const up = inverse ? v < 0 : v > 0
+    return `${name} ${up ? "+" : "-"}${Math.abs(v)}${unit}`
+  })
+  return parts.length ? parts.join("，") : "无"
+}
+
+/** 合并多组效果（数值相加） */
+export function mergeEffects(...list) {
+  const out = {}
+  for (const eff of list) for (const [k, v] of Object.entries(eff || {})) out[k] = (out[k] || 0) + Number(v)
+  return out
 }
 
 /** 称号进度文字，例如 “32/50” */

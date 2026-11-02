@@ -2,8 +2,8 @@ import { plugin } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { roll, triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
-import { recordResult, addGroup, welcome, isNewPlayer, consumeBait, reliefBait } from "../components/Game.js"
-import { checkTitles, getEffects, effectText } from "../components/Titles.js"
+import { recordResult, addGroup, welcome, isNewPlayer, consumeBait, reliefBait, todayLuck, luckTier, luckEffects } from "../components/Game.js"
+import { checkTitles, getEffects, effectText, mergeEffects } from "../components/Titles.js"
 import { withButtons, B } from "../components/Button.js"
 import { groupAllowed, displayName, updateNickname, pick, itemMap } from "../components/common.js"
 
@@ -116,7 +116,9 @@ export class Fishing extends plugin {
     s.timer = setTimeout(() => this.bite(e, id, effects).catch(err => logger.error(err)), delay)
     sessions.set(id, s)
 
-    await this.send(e, `🎣 ${name} ${pick(CAST_TEXT)}\n🪱 剩余鱼饵：${user.bait}${user.bait === 0 ? "（已用完，记得 #购买鱼饵）" : user.bait <= 2 ? "（快用完了，记得 #购买鱼饵）" : ""}`)
+    const tier = luckTier(todayLuck(user), Config.config.checkin?.tiers)
+    const luckLine = tier ? `\n${tier.emoji} 今日运势：${tier.name}（幸运值 ${todayLuck(user)}）` : ""
+    await this.send(e, `🎣 ${name} ${pick(CAST_TEXT)}${luckLine}\n🪱 剩余鱼饵：${user.bait}${user.bait === 0 ? "（已用完，记得 #购买鱼饵）" : user.bait <= 2 ? "（快用完了，记得 #购买鱼饵）" : ""}`)
     // 新称号（例如初出茅庐）
     await this.announceTitles(e, user)
     return true
@@ -179,7 +181,8 @@ export class Fishing extends plugin {
       return this.announceTitles(e, user)
     }
 
-    const effects = getEffects(user, Config.titles)
+    // 称号效果 + 今日打卡幸运
+    const effects = mergeEffects(getEffects(user, Config.titles), luckEffects(user, Config.config.checkin?.tiers))
     const cfg = this.cfg
     const result = roll({ items: Config.items, probability: cfg.probability, size: cfg.size }, effects)
     const { reward } = recordResult(user, result, { policeReward: cfg.policeReward })

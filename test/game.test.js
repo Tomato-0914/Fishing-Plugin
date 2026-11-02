@@ -199,3 +199,57 @@ test("鱼饵：抛过竿的老用户不赠送", async () => {
   assert.equal(welcome(fresh, 10), 10)
   assert.equal(isNewPlayer(fresh), false)
 })
+
+test("打卡：每天一次、连续天数、历史记录", async () => {
+  const { doCheckin, todayLuck } = await import("../components/Game.js")
+  const u = newUser("10006")
+  const d1 = new Date(2026, 10, 2, 9), d2 = new Date(2026, 10, 3, 9), d4 = new Date(2026, 10, 5, 9)
+  assert.equal(todayLuck(u, d1), null)
+  assert.deepEqual(doCheckin(u, 88, d1), { already: false, luck: 88, streak: 1, total: 1 })
+  assert.equal(doCheckin(u, 3, d1).already, true)
+  assert.equal(todayLuck(u, d1), 88)
+  assert.equal(doCheckin(u, 50, d2).streak, 2)
+  assert.equal(doCheckin(u, 60, d4).streak, 1) // 断签
+  assert.equal(u.checkin.total, 3)
+  assert.deepEqual(u.checkin.history.map(x => x.l), [60, 50, 88])
+  assert.equal(todayLuck(u, d2), null) // 只认当天
+})
+
+test("打卡：幸运等级轻微影响概率", async () => {
+  const { luckTier, luckEffects, doCheckin } = await import("../components/Game.js")
+  const { effectText, mergeEffects } = await import("../components/Titles.js")
+  const tiers = cfg.checkin.tiers
+  assert.equal(luckTier(100, tiers).name, "大吉")
+  assert.equal(luckTier(90, tiers).name, "大吉")
+  assert.equal(luckTier(70, tiers).name, "吉")
+  assert.equal(luckTier(50, tiers).name, "平")
+  assert.equal(luckTier(10, tiers).name, "凶")
+  assert.equal(luckTier(0, tiers).name, "大凶")
+
+  const base = buildOdds(cfg.probability)
+  const bad = buildOdds(cfg.probability, luckTier(0, tiers).effects)
+  assert.equal(bad.empty, base.empty + 3)
+  assert.equal(bad.junk, base.junk + 2)
+  assert.equal(bad.N, base.N - 5)
+  const good = buildOdds(cfg.probability, luckTier(95, tiers).effects)
+  assert.ok(good.UR > base.UR && good.empty < base.empty)
+  // 影响是“轻微”的：任意结果的变化都不超过 5 个百分点
+  for (const t of tiers) {
+    const o = buildOdds(cfg.probability, t.effects)
+    for (const k of Object.keys(base)) assert.ok(Math.abs(o[k] - base[k]) <= 5, `${t.name} ${k}`)
+  }
+  // 负的稀有加成：概率转给普通鱼，总和不变
+  const neg = buildOdds(cfg.probability, { rareBoost: -10 })
+  assert.ok(Math.abs(neg.SR - base.SR * 0.9) < 1e-9)
+  const total = o => Object.values(o).reduce((a, b) => a + b, 0)
+  assert.ok(Math.abs(total(neg) - total(base)) < 1e-9)
+
+  assert.equal(effectText({ emptyReduce: -3, junkReduce: -2 }), "空军概率 +3%，垃圾概率 +2%")
+  assert.equal(effectText({ rareBoost: 10, emptyReduce: 2 }), "稀有以上概率 +10%，空军概率 -2%")
+  assert.equal(effectText({}), "无")
+
+  const u = newUser("10007")
+  assert.deepEqual(luckEffects(u, tiers), {})
+  doCheckin(u, 92)
+  assert.deepEqual(mergeEffects({ emptyReduce: 5 }, luckEffects(u, tiers)), { emptyReduce: 7, rareBoost: 10 })
+})

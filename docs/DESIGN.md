@@ -16,6 +16,7 @@
 | 存档 | YAML：`data/Fishing_<QQ号>.yaml`（QQBot 已有 openid 绑定，无需迁移） |
 | 保护动物 | 不放（中华鲟、江豚等） |
 | 鱼饵 | 首次 `#钓鱼` 先发欢迎提示并赠送 10 个鱼饵，再发抛竿提示（按抛竿次数判断，老用户不送）；每次抛竿消耗 1 个；`#购买鱼饵 [数量]` 2 金币/个；买不起且无鱼可卖时每天救济 5 个 |
+| 每日打卡 | 移植 Gi-plugin 每日打卡；幸运等级轻微影响当天钓鱼概率（单项变化 ≤5 个百分点），打卡送 3 个鱼饵 |
 | 称号 | 8 个称号，只能获得一次，效果不叠加；重复达成只给金币（详见 `config/default_config/titles.yaml`） |
 
 > 标记说明：**【建议】** = 我额外补充的设计，可删；**【待确认】** = 需要你拍板的点。
@@ -26,7 +27,7 @@
 
 | 参考 | 情况 | 借鉴内容 |
 | --- | --- | --- |
-| Gi-plugin（Gitee） | ⚠️ 当前环境访问 gitee.com 被代理拒绝（403），**未能阅读源码** | 仅按你的需求描述设计；如需对齐其玩法/数值，可把关键文件贴给我 |
+| Gi-plugin（[GitHub](https://github.com/qiannqq/Gi-plugin)） | 已阅读（Gitee 访问失败，后改用 GitHub 镜像） | 每日打卡已移植，详细对比见 [GI_COMPARE.md](GI_COMPARE.md) |
 | Cheshire-Plugin | 已阅读 | `index.js` 自动加载 apps、`CheshireUpdate.js` 更新+PM2 重启、`guoba/` 锅巴配置结构、`CheshireHelp.js` puppeteer 渲染帮助图、`e.bot?.adapter?.id === "QQBot"` 判断协议 |
 | QQBot-Plugin | 已阅读 | `segment.button()` 写法（单个/一行/多行）、`callback / input / link / permission` 字段、`send` 群聊必须为 false、用户 ID 映射规则 |
 

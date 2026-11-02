@@ -56,6 +56,24 @@ bait:
   # 救济：鱼饵用完、金币不够买、鱼护也没有可卖的鱼时，每天可领取一次的免费鱼饵（0 为关闭）
   relief: 5
 
+# 每日打卡：每天一次，随机幸运值 0~100，当天的钓鱼概率会受幸运等级轻微影响
+checkin:
+  # 打卡赠送的鱼饵（0 为不送）
+  baitReward: 3
+  # 当天首个幸运值 ≥ 此值的人成为「今日欧皇」
+  luckyKing: 95
+  # 当天首个幸运值 ≤ 此值的人成为「今日非酋」
+  unluckyKing: 5
+  # 幸运值 ≤ 此值时先“劝退”一次，需再发一遍确认（0 为关闭）
+  confirmLow: 10
+  # 幸运等级（按 min 从高到低匹配），effects 与称号效果写法相同，负数表示反向
+  tiers:
+    - { min: 90, name: 大吉, emoji: 🌟, effects: { rareBoost: 10, emptyReduce: 2 } }
+    - { min: 70, name: 吉,   emoji: 🍀, effects: { rareBoost: 5 } }
+    - { min: 30, name: 平,   emoji: 🌤️, effects: {} }
+    - { min: 10, name: 凶,   emoji: 🌧️, effects: { emptyReduce: -2 } }
+    - { min: 0,  name: 大凶, emoji: ⛈️, effects: { emptyReduce: -3, junkReduce: -2 } }
+
 # 钓到「人民碎片」后警局奖励的金币
 policeReward: 5000
 

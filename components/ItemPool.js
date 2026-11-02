@@ -40,14 +40,15 @@ export function buildOdds(prob, effects = {}) {
     SSR: Number(prob.SSR) || 0,
     UR: Number(prob.UR) || 0,
   }
-  // 海洋卫士类效果：空军 / 垃圾概率下调，转为普通鱼
+  // 海洋卫士类效果：空军 / 垃圾概率下调，转为普通鱼；负数（如打卡“凶”）则从普通鱼转为空军 / 垃圾
   for (const [key, eff] of [["empty", "emptyReduce"], ["junk", "junkReduce"]]) {
-    const cut = Math.min(odds[key], Number(effects[eff]) || 0)
+    const v = Number(effects[eff]) || 0
+    const cut = v >= 0 ? Math.min(odds[key], v) : Math.max(v, -odds.N)
     odds[key] -= cut
     odds.N += cut
   }
   // 稀有加成：SR 以上概率按倍率提高，多出来的从普通鱼扣除
-  const boost = Number(effects.rareBoost) || 0
+  const boost = Math.max(-100, Number(effects.rareBoost) || 0)
   if (boost > 0) {
     let extra = 0
     for (const r of RARE) {
@@ -57,6 +58,13 @@ export function buildOdds(prob, effects = {}) {
     }
     const fromN = Math.min(odds.N, extra)
     odds.N -= fromN
+  } else if (boost < 0) {
+    // 稀有下调：减少的部分转给普通鱼
+    for (const r of RARE) {
+      const cut = odds[r] * -boost / 100
+      odds[r] -= cut
+      odds.N += cut
+    }
   }
   for (const [id, chance] of Object.entries(prob.hidden || {}))
     odds[`hidden:${id}`] = Number(chance) || 0

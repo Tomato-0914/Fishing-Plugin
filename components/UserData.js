@@ -28,6 +28,7 @@ export function newUser(id) {
     period: {},
     dex: {},
     titles: [],
+    checkin: { day: "", luck: 0, time: 0, streak: 0, total: 0, history: [] },
     created: Date.now(),
   }
 }
@@ -39,6 +40,8 @@ function normalize(data, id) {
   user.stats = { ...base.stats, ...(data?.stats || {}) }
   for (const k of ["groups", "bag", "titles"]) if (!Array.isArray(user[k])) user[k] = []
   for (const k of ["period", "dex"]) if (!user[k] || typeof user[k] !== "object") user[k] = {}
+  user.checkin = { ...base.checkin, ...(data?.checkin || {}) }
+  if (!Array.isArray(user.checkin.history)) user.checkin.history = []
   user.user_id = String(user.user_id || id)
   return user
 }

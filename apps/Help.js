@@ -21,6 +21,6 @@ export class FishingHelp extends plugin {
     if (!msg) return true
     return e.reply(withButtons(e, msg,
       [B.start, B.bag, B.dayRank],
-      [B.titles, B.dex, B.repo]))
+      [B.checkin, B.titles, B.dex, B.repo]))
   }
 }

@@ -155,3 +155,43 @@ export function reliefBait(user, { amount = 0, price = 0, hasSellable = false, n
   user.bait = (user.bait || 0) + amount
   return amount
 }
+
+/* ==================== 每日打卡 ==================== */
+
+/** 今天的幸运值，未打卡返回 null */
+export function todayLuck(user, now = new Date()) {
+  const c = user.checkin
+  return c && c.day === periodKey("day", now) ? c.luck : null
+}
+
+/** 幸运值对应的等级（tiers 按 min 从高到低匹配） */
+export function luckTier(luck, tiers = []) {
+  if (luck == null) return null
+  return [...tiers].sort((a, b) => b.min - a.min).find(t => luck >= t.min) || null
+}
+
+/** 今日幸运带来的钓鱼效果，未打卡为空 */
+export function luckEffects(user, tiers = [], now = new Date()) {
+  return luckTier(todayLuck(user, now), tiers)?.effects || {}
+}
+
+/**
+ * 打卡
+ * @returns {{ already:boolean, luck:number, streak:number, total:number }}
+ */
+export function doCheckin(user, luck, now = new Date()) {
+  const c = user.checkin
+  const today = periodKey("day", now)
+  if (c.day === today) return { already: true, luck: c.luck, streak: c.streak, total: c.total }
+  const yesterday = periodKey("day", new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1))
+  c.streak = c.day === yesterday ? (c.streak || 0) + 1 : 1
+  c.total = (c.total || 0) + 1
+  c.day = today
+  c.luck = luck
+  c.time = now.getTime()
+  c.history = [{ d: today, l: luck }, ...(c.history || [])].slice(0, 30)
+  return { already: false, luck, streak: c.streak, total: c.total }
+}
+
+/** 0~100 的随机幸运值 */
+export const randomLuck = (rng = Math.random) => Math.floor(rng() * 101)

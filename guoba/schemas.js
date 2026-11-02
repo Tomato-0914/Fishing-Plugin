@@ -30,6 +30,13 @@ export default [
   num("bait.maxBuy", "单次最多购买", "", { min: 1, max: 99999 }),
   num("bait.relief", "每日救济鱼饵", "鱼饵用完、买不起、也没有鱼可卖时每天可领一次，0 为关闭"),
 
+  { label: "每日打卡", component: "SOFT_GROUP_BEGIN" },
+  num("checkin.baitReward", "打卡赠送鱼饵", "0 为不送"),
+  num("checkin.luckyKing", "欧皇幸运值", "当天首个幸运值 ≥ 此值的人成为今日欧皇", { max: 100 }),
+  num("checkin.unluckyKing", "非酋幸运值", "当天首个幸运值 ≤ 此值的人成为今日非酋", { max: 100 }),
+  num("checkin.confirmLow", "低幸运值二次确认", "幸运值 ≤ 此值时需再发一遍 #打卡 才揭晓，0 为关闭", { max: 100 }),
+  { component: "Divider", label: "幸运等级对钓鱼的影响请在 config.yaml 的 checkin.tiers 中修改" },
+
   { label: "概率设置(%)", component: "SOFT_GROUP_BEGIN" },
   { component: "Divider", label: "总和建议为 100，不为 100 时按比例换算" },
   num("probability.empty", "空军", "什么都没钓到", { step: 0.01 }),

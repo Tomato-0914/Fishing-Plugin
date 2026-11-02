@@ -5,6 +5,14 @@
     - { icon: 🪝, title: "#收杆", desc: 浮漂下沉后及时收杆，太早太晚都会空手 }
     - { icon: 🪱, title: "#购买鱼饵 [数量]", desc: 每次抛竿消耗 1 个鱼饵，新人赠送 10 个 }
     - { icon: 🧺, title: "#我的鱼饵", desc: 查看剩余鱼饵与金币 }
+- group: 📅 打卡
+  list:
+    - { icon: 📅, title: "#打卡 / #签到", desc: 每天一次，抽取幸运值并获赠鱼饵 }
+    - { icon: 🍀, title: 今日运势, desc: 幸运等级会轻微影响当天钓鱼概率 }
+    - { icon: 👑, title: "#今日欧皇 / #今日非酋", desc: 当天第一个超高 / 超低幸运值的人 }
+    - { icon: 📊, title: "#幸运值排行榜 [非酋]", desc: 本群今日幸运值排行 }
+    - { icon: 📜, title: "#历史幸运值", desc: 最近 30 次打卡记录 }
+    - { icon: 🔍, title: "#让我看看你的卡 @某人", desc: 偷看别人今天的幸运值 }
 - group: 🎒 鱼获
   list:
     - { icon: 🎒, title: "#鱼获", desc: 查看鱼护里的鱼和可卖金币 }

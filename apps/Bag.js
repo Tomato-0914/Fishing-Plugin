@@ -2,7 +2,7 @@ import { plugin, puppeteer } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { RARITY_INFO, isDexFish, formatWeight } from "../components/ItemPool.js"
-import { groupBag, sellEntries, discardJunk } from "../components/Game.js"
+import { groupBag, sellEntries, discardJunk, todayLuck, luckTier } from "../components/Game.js"
 import { checkTitles, getEffects, effectText, progressText } from "../components/Titles.js"
 import { withButtons, B } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
@@ -156,9 +156,11 @@ export class FishingBag extends plugin {
       `🌊 空军 ${s.empty} · 跑鱼 ${s.escaped} · 收杆过早 ${s.early}`,
       `💎 累计钓获价值 ${s.earned} · 累计出售 ${s.sold}`,
       max ? `🏆 最大一条：${max.emoji}${max.name} ${formatWeight(user.maxFish.w)}` : "",
+      (() => { const l = todayLuck(user); const t = luckTier(l, Config.config.checkin?.tiers); return t ? `${t.emoji} 今日运势：${t.name}（幸运值 ${l}）` : "📅 今天还没打卡" })(),
+      `🔥 连续打卡 ${user.checkin.streak} 天 · 累计 ${user.checkin.total} 天`,
       `🏅 称号：${titles.length ? titles.map(t => `${t.emoji}${t.name}`).join(" ") : "暂无"}`,
     ].filter(Boolean).join("\n")
-    return e.reply(withButtons(e, msg, [B.bag, B.titles, B.dex]))
+    return e.reply(withButtons(e, msg, [B.bag, B.titles, B.dex], [B.checkin]))
   }
 
   async dex(e) {
