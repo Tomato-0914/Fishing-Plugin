@@ -84,9 +84,12 @@ export class Fishing extends plugin {
    */
   async send(e, msg) {
     if (!e.isGroup || typeof segment?.at !== "function") return e.reply(msg)
-    const list = Array.isArray(msg) ? msg : [msg]
-    const [first, ...rest] = list
-    return e.reply([segment.at(e.user_id), typeof first === "string" ? `\n${first}` : first, ...rest])
+    const list = [...(Array.isArray(msg) ? msg : [msg])]
+    // @ 放在第一段文字前（前面有图片时排在图片之后）
+    const idx = list.findIndex(m => typeof m === "string")
+    if (idx < 0) list.unshift(segment.at(e.user_id))
+    else list.splice(idx, 1, segment.at(e.user_id), `\n${list[idx]}`)
+    return e.reply(list)
   }
 
   async cast(e) {
@@ -164,12 +167,20 @@ export class Fishing extends plugin {
     const total = totalBait(user)
     const warn = total === 0 ? "（鱼饵已用完，记得 #购买鱼饵）" : remain === 0 ? "（这种用完了，下一竿自动换）" : total <= 2 ? "（快用完了，记得 #购买鱼饵）" : ""
     const gearLine = ["rod", "line", "float"].map(k => gearItem(shop, k, gearLevel(user, k))?.name).filter(Boolean).join(" · ")
-    await this.send(e, [[
+    const text = [
       used.switched ? `🔄 ${used.from.name}用完了，已自动换成${bait.name}` : "",
       `🎣 ${name} ${pick(CAST_TEXT)}`,
       gearLine ? `🧰 ${gearLine}` : "",
       `🪱 ${bait.name}（剩 ${remain}）${warn}`,
-    ].filter(Boolean).join("\n") + luckLine, castImage(fcfg.castImage)].filter(Boolean))
+    ].filter(Boolean).join("\n") + luckLine
+    // 配图放在文字上面。QQBot 的图文消息由 QQ 客户端排版，文字总在图片上方，所以单独先发图片
+    const img = castImage(fcfg.castImage)
+    if (img && e.bot?.adapter?.id === "QQBot") {
+      await e.reply(img)
+      await this.send(e, text)
+    } else {
+      await this.send(e, img ? [img, text] : text)
+    }
     // 新称号（例如初出茅庐）
     await this.announceTitles(e, user)
     return true
