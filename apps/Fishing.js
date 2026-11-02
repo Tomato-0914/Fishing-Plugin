@@ -2,7 +2,7 @@ import { plugin } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { roll, triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
-import { recordResult, addGroup, welcome, consumeBait, reliefBait } from "../components/Game.js"
+import { recordResult, addGroup, welcome, isNewPlayer, consumeBait, reliefBait } from "../components/Game.js"
 import { checkTitles, getEffects, effectText } from "../components/Titles.js"
 import { withButtons, B } from "../components/Button.js"
 import { groupAllowed, displayName, updateNickname, pick, itemMap } from "../components/common.js"
@@ -61,7 +61,7 @@ export class Fishing extends plugin {
     const price = Number(bcfg.price ?? 2)
 
     // 第一次钓鱼：欢迎 + 新手鱼饵，再继续抛竿
-    const isNew = !user.welcomed
+    const isNew = isNewPlayer(user)
     const gift = welcome(user, bcfg.initial ?? 10)
     if (isNew) {
       addGroup(user, e.group_id)

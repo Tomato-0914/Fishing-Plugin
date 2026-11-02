@@ -106,10 +106,16 @@ export function groupBag(user, itemMap) {
   return [...map.values()]
 }
 
-/** 第一次钓鱼：赠送新手鱼饵，返回赠送数量（已领取过返回 0） */
+/** 是否新玩家：没领过新手礼包，且从未抛过竿（老用户按抛竿次数判断，不再赠送） */
+export function isNewPlayer(user) {
+  return !user.welcomed && !(user.stats?.casts > 0)
+}
+
+/** 第一次钓鱼：赠送新手鱼饵，返回赠送数量（已领取过或老用户返回 0） */
 export function welcome(user, initial = 10) {
   if (user.welcomed) return 0
   user.welcomed = true
+  if (user.stats?.casts > 0) return 0
   const n = Math.max(0, Number(initial) || 0)
   user.bait = (user.bait || 0) + n
   return n

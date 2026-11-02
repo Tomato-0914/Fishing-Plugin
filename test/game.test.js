@@ -185,3 +185,17 @@ test("鱼饵：新手赠送、消耗、购买、救济", async () => {
   assert.equal(u.bait, 15)
   assert.equal(cfg.bait.price, 2)
 })
+
+test("鱼饵：抛过竿的老用户不赠送", async () => {
+  const { welcome, isNewPlayer } = await import("../components/Game.js")
+  const old = newUser("10004")
+  old.stats.casts = 5
+  assert.equal(isNewPlayer(old), false)
+  assert.equal(welcome(old, 10), 0)
+  assert.equal(old.bait, 0)
+  assert.equal(old.welcomed, true)
+  const fresh = newUser("10005")
+  assert.equal(isNewPlayer(fresh), true)
+  assert.equal(welcome(fresh, 10), 10)
+  assert.equal(isNewPlayer(fresh), false)
+})
