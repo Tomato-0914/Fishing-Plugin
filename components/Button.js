@@ -22,7 +22,7 @@ export const B = {
   cast: { text: "🎣 再来一竿", callback: "#钓鱼" },
   start: { text: "🎣 开始钓鱼", callback: "#钓鱼" },
   reel: e => ({ text: "🪝 收杆！", callback: "#收杆", permission: e.user_id }),
-  bag: { text: "🎒 我的鱼获", callback: "#我的鱼获" },
+  bag: { text: "🎒 我的鱼护", callback: "#我的鱼护" },
   sellAll: { text: "💰 一键出售", callback: "#一键出售" },
   sell: { text: "🏷️ 出售…", input: "#出售 " },
   discard: { text: "🗑️ 丢弃垃圾", callback: "#丢弃垃圾" },

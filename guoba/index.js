@@ -21,7 +21,7 @@ export function supportGuoba() {
       link: "https://github.com/Tomato-0914/Fishing-Plugin",
       isV3: true,
       isV2: false,
-      description: "QQ 群钓鱼小游戏：钓鱼、鱼获、排行榜、称号",
+      description: "QQ 群钓鱼小游戏：钓鱼、鱼护、排行榜、称号、渔具商店",
       icon: "mdi:fish",
       iconColor: "#1d8fe1",
     },

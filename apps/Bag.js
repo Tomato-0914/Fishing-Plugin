@@ -18,13 +18,14 @@ const SIZE_ORDER = ["large", "medium", "small"]
 export class FishingBag extends plugin {
   constructor() {
     super({
-      name: "钓鱼-鱼获",
-      dsc: "鱼获 / 出售 / 丢弃垃圾 / 图鉴",
+      name: "钓鱼-鱼护",
+      dsc: "鱼护 / 出售 / 丢弃垃圾 / 图鉴",
       event: "message",
       priority: 500,
       rule: [
-        { reg: /^#?(我的(鱼获|鱼护)|钓鱼背包)$/, fnc: "bag" },
-        { reg: /^#?一键出售(鱼获)?$/, fnc: "sellAll" },
+        // #我的鱼获 为旧指令，保留兼容聊天记录里的旧按钮
+        { reg: /^#?(我的(鱼护|鱼获)|钓鱼背包)$/, fnc: "bag" },
+        { reg: /^#?一键出售(鱼获|鱼)?$/, fnc: "sellAll" },
         { reg: /^#?(出售)\s*(\S+?)\s*(\d+)?$/, fnc: "sell" },
         { reg: /^#?(丢弃|清理)(全部)?垃圾$/, fnc: "discard" },
         { reg: /^#?(我的金币|钓鱼信息|我的钓鱼)$/, fnc: "info" },
@@ -75,7 +76,7 @@ export class FishingBag extends plugin {
       name: displayName(user), avatar: avatar(user.user_id), gold: user.gold,
       list, value, sellValue, bonus, junk, count: user.bag.length, limit,
     }, () => [
-      `🎒 ${displayName(user)} 的鱼获（${user.bag.length}/${limit}）`,
+      `🎒 ${displayName(user)} 的鱼护（${user.bag.length}/${limit}）`,
       "━━━━━━━━━━━━",
       ...list.map(i => `${i.emoji}【${i.label}】${i.name} ×${i.count}${i.sizes ? `（${i.sizes}）` : ""}  ${i.rarity === "junk" ? "0" : i.total} 金币`),
       "━━━━━━━━━━━━",
@@ -96,18 +97,18 @@ export class FishingBag extends plugin {
     const entries = user.bag.filter(x => items.get(x.id)?.rarity !== "junk")
     const junk = user.bag.length - entries.length
     if (!entries.length)
-      return e.reply(withButtons(e, junk ? `🗑️ 鱼护里只剩 ${junk} 件垃圾，卖不了钱哦~ 发送 #丢弃垃圾 集中清理吧` : "🎒 鱼护里没有可以出售的鱼获~", junk ? [B.discard, B.cast] : [B.start]))
+      return e.reply(withButtons(e, junk ? `🗑️ 鱼护里只剩 ${junk} 件垃圾，卖不了钱哦~ 发送 #丢弃垃圾 集中清理吧` : "🎒 鱼护里没有可以出售的鱼~", junk ? [B.discard, B.cast] : [B.start]))
     return this.doSell(e, user, entries, junk)
   }
 
   async sell(e) {
     if (!groupAllowed(e)) return false
     const [, , name, num] = e.msg.match(/^#?(出售)\s*(\S+?)\s*(\d+)?$/)
-    if (/^(鱼获|全部|所有)$/.test(name)) return this.sellAll(e)
+    if (/^(鱼获|鱼护|全部|所有)$/.test(name)) return this.sellAll(e)
     const user = this.load(e)
     const items = itemMap()
     const item = [...items.values()].find(i => i.name === name) || [...items.values()].find(i => i.name.includes(name))
-    if (!item) return e.reply(`❓ 没有找到「${name}」，发送 #我的鱼获 看看鱼护里有什么吧`)
+    if (!item) return e.reply(`❓ 没有找到「${name}」，发送 #我的鱼护 看看里面有什么吧`)
     if (item.rarity === "junk")
       return e.reply(withButtons(e, `🗑️ ${item.name}是海洋垃圾，卖不了钱哦~ 发送 #丢弃垃圾 集中清理吧`, [B.discard]))
     // 先卖便宜的，大鱼留给用户自己决定
@@ -122,7 +123,7 @@ export class FishingBag extends plugin {
     const { count, base, gold } = sellEntries(user, entries, bonus)
     UserData.save(user.user_id)
     const lines = [
-      `💰 成功出售 ${count} 件鱼获`,
+      `💰 从鱼护里卖出 ${count} 件`,
       `获得 ${gold} 金币${bonus ? `（${base} + 加成 ${bonus}%）` : ""}`,
       `👛 当前金币：${user.gold}`,
     ]

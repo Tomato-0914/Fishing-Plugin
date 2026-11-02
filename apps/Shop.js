@@ -130,7 +130,7 @@ export class FishingShop extends plugin {
     const ret = buyBait(user, shop, bait.id, num, this.basicPrice)
     if (!ret.ok) {
       const lines = [`👛 金币不足：${num} 个${bait.name}需要 ${ret.cost} 金币，你只有 ${user.gold} 金币`]
-      lines.push(ret.afford > 0 ? `💡 最多可以买 ${ret.afford} 个` : "💡 先 #一键出售 卖掉鱼获换点金币吧")
+      lines.push(ret.afford > 0 ? `💡 最多可以买 ${ret.afford} 个` : "💡 先 #一键出售 卖掉鱼护里的鱼换点金币吧")
       return e.reply(withButtons(e, lines.join("\n"),
         ret.afford > 0 ? [{ text: `买 ${ret.afford} 个`, callback: `#购买鱼饵 ${bait.name} ${ret.afford}` }, B.sellAll] : [B.sellAll, B.bag]))
     }

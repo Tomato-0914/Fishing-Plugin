@@ -103,7 +103,7 @@ export class Fishing extends plugin {
     const shop = Config.shop
     const limit = bagCapacity(user, shop, fcfg.bagLimit)
     if (user.bag.length >= limit)
-      return this.send(e, withButtons(e, `🎒 鱼护已经装满啦（${user.bag.length}/${limit}）~\n先出售鱼获或丢弃垃圾再来吧！也可以去 #渔具商店 升级鱼护`, [B.sellAll, B.discard], [B.bag, B.shop]))
+      return this.send(e, withButtons(e, `🎒 鱼护已经装满啦（${user.bag.length}/${limit}）~\n先出售鱼护里的鱼或丢弃垃圾再来吧！也可以去 #渔具商店 升级鱼护`, [B.sellAll, B.discard], [B.bag, B.shop]))
 
     if (totalBait(user) < 1) {
       const items = itemMap()
@@ -114,7 +114,7 @@ export class Fishing extends plugin {
         await this.send(e, `🎁 看你两手空空，钓鱼协会送了你 ${relief} 个鱼饵，继续加油吧！（每天限领一次）`)
       } else {
         const tips = [`🪱 鱼饵用完啦~`, `普通饵 ${price} 金币/个，发送 #购买鱼饵 [种类] [数量] 补充`, `👛 当前金币：${user.gold}`]
-        if (user.gold < price && hasSellable) tips.push("💡 金币不够？先 #一键出售 卖掉鱼获吧")
+        if (user.gold < price && hasSellable) tips.push("💡 金币不够？先 #一键出售 卖掉鱼护里的鱼吧")
         return this.send(e, withButtons(e, tips.join("\n"),
           user.gold < price && hasSellable ? [B.sellAll, B.bag] : [B.buyBait, B.buyBaitInput, B.shop]))
       }
@@ -282,7 +282,7 @@ export class Fishing extends plugin {
       `💰 价值：${result.price} 金币`,
       item.desc ? `💬 ${item.desc}` : "",
       "━━━━━━━━━━━━",
-      "已放入鱼护，发送 #我的鱼获 查看",
+      "已放入鱼护，发送 #我的鱼护 查看",
     ].filter(Boolean)
     return withButtons(e, lines.join("\n"), [B.cast, B.bag, B.sellAll])
   }
