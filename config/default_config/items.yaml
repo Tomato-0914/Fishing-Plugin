@@ -1,0 +1,72 @@
+# ===== 物品池 =====
+# 修改请复制本文件到 config/config/items.yaml（整份替换默认物品池）
+# rarity: junk 垃圾 / N 普通 / R 优良 / SR 稀有 / SSR 史诗 / UR 传说 / hidden 隐藏
+# price: 中体型基础售价（金币），小/大体型按 config.yaml 中 size 倍率换算
+# weight: [最小, 最大] 重量（kg），按体型落在不同区间
+# chance: 同稀有度内的相对权重，默认 1
+# 出于避免争议考虑，物品池不包含任何国家保护动物（如中华鲟、江豚等）
+
+# ---------- 海洋垃圾（售价 0）----------
+- { id: slipper,    name: 破拖鞋,     emoji: 🩴, rarity: junk, desc: 不知道是谁游泳时弄丢的 }
+- { id: tshirt,     name: 旧T恤,      emoji: 👕, rarity: junk, desc: 湿漉漉的，还印着“我爱钓鱼” }
+- { id: flashlight, name: 手电筒,     emoji: 🔦, rarity: junk, desc: 按了一下，居然还能亮 }
+- { id: bag,        name: 塑料袋,     emoji: 🛍️, rarity: junk, chance: 2, desc: 海龟最讨厌的东西 }
+- { id: can,        name: 易拉罐,     emoji: 🥫, rarity: junk, chance: 2, desc: 可乐味的海水 }
+- { id: net,        name: 破渔网,     emoji: 🕸️, rarity: junk, desc: 缠住了鱼钩 }
+- { id: tire,       name: 旧轮胎,     emoji: 🛞, rarity: junk, desc: 差点把鱼竿拉断 }
+- { id: hook,       name: 生锈的鱼钩, emoji: 🪝, rarity: junk, desc: 前辈钓友留下的遗物 }
+- { id: bottle,     name: 空漂流瓶,   emoji: 🍾, rarity: junk, desc: 里面的信已经不见了 }
+- { id: rod,        name: 断掉的鱼竿, emoji: 🥢, rarity: junk, desc: 看来有人遇到过大家伙 }
+- { id: sock,       name: 一只袜子,   emoji: 🧦, rarity: junk, desc: 另一只在哪里？ }
+- { id: earphone,   name: 坏掉的耳机, emoji: 🎧, rarity: junk, desc: 只剩左耳有声音 }
+
+# ---------- 普通 N ----------
+- { id: crucian,  name: 小鲫鱼, emoji: 🐟, rarity: N, price: 4, weight: [0.05, 0.4], desc: 河边最常见的小鱼 }
+- { id: loach,    name: 泥鳅,   emoji: 🐍, rarity: N, price: 3, weight: [0.02, 0.1], desc: 滑溜溜抓不住 }
+- { id: shrimp,   name: 小河虾, emoji: 🦐, rarity: N, price: 3, weight: [0.005, 0.03], desc: 油炸一下很香 }
+- { id: minnow,   name: 麦穗鱼, emoji: 🐟, rarity: N, price: 2, weight: [0.01, 0.05], desc: 小小一条 }
+- { id: bleak,    name: 白条鱼, emoji: 🐟, rarity: N, price: 4, weight: [0.05, 0.3], desc: 水面上的小银条 }
+- { id: clam,     name: 蛤蜊,   emoji: 🐚, rarity: N, price: 3, weight: [0.01, 0.05], desc: 怎么咬上钩的？ }
+- { id: tilapia,  name: 罗非鱼, emoji: 🐟, rarity: N, price: 6, weight: [0.2, 1.2], desc: 生命力顽强 }
+- { id: sardine,  name: 沙丁鱼, emoji: 🐟, rarity: N, price: 5, weight: [0.05, 0.2], desc: 总是成群结队 }
+
+# ---------- 优良 R ----------
+- { id: carp,       name: 鲤鱼,   emoji: 🐟, rarity: R, price: 15, weight: [0.5, 6], desc: 鱼跃龙门的那位 }
+- { id: grasscarp,  name: 草鱼,   emoji: 🐟, rarity: R, price: 14, weight: [1, 8], desc: 适合做酸菜鱼 }
+- { id: bass,       name: 鲈鱼,   emoji: 🐟, rarity: R, price: 20, weight: [0.5, 3], desc: 清蒸最佳 }
+- { id: rivercrab,  name: 河蟹,   emoji: 🦀, rarity: R, price: 18, weight: [0.1, 0.3], desc: 横着走的家伙 }
+- { id: crayfish,   name: 小龙虾, emoji: 🦞, rarity: R, price: 12, weight: [0.02, 0.08], desc: 夜宵首选 }
+- { id: hairtail,   name: 带鱼,   emoji: 🐟, rarity: R, price: 18, weight: [0.3, 1.5], desc: 银光闪闪 }
+- { id: catfish,    name: 鲶鱼,   emoji: 🐟, rarity: R, price: 16, weight: [0.5, 5], desc: 长着两撇胡子 }
+- { id: pomfret,    name: 鲳鱼,   emoji: 🐟, rarity: R, price: 22, weight: [0.2, 1], desc: 扁扁的很可爱 }
+
+# ---------- 稀有 SR ----------
+- { id: croaker,    name: 黄花鱼,   emoji: 🐠, rarity: SR, price: 35, weight: [0.2, 1], desc: 金灿灿的 }
+- { id: hairycrab,  name: 大闸蟹,   emoji: 🦀, rarity: SR, price: 45, weight: [0.15, 0.4], desc: 秋天的味道 }
+- { id: grouper,    name: 石斑鱼,   emoji: 🐠, rarity: SR, price: 55, weight: [1, 10], desc: 礁石里的潜伏者 }
+- { id: eel,        name: 鳗鱼,     emoji: 🐍, rarity: SR, price: 50, weight: [0.3, 2], desc: 适合做鳗鱼饭 }
+- { id: prawn,      name: 对虾,     emoji: 🦐, rarity: SR, price: 30, weight: [0.03, 0.1], desc: 成双成对 }
+- { id: squid,      name: 鱿鱼,     emoji: 🦑, rarity: SR, price: 40, weight: [0.2, 2], desc: 喷了你一脸墨 }
+- { id: mandarin,   name: 鳜鱼,     emoji: 🐠, rarity: SR, price: 48, weight: [0.3, 2], desc: 桃花流水鳜鱼肥 }
+- { id: swimcrab,   name: 梭子蟹,   emoji: 🦀, rarity: SR, price: 38, weight: [0.2, 0.6], desc: 钳子很有力 }
+
+# ---------- 史诗 SSR ----------
+- { id: tuna,       name: 金枪鱼,   emoji: 🐟, rarity: SSR, price: 120, weight: [10, 80], desc: 深海里的速度之王 }
+- { id: kingcrab,   name: 帝王蟹,   emoji: 🦀, rarity: SSR, price: 150, weight: [1, 5], desc: 蟹中之王 }
+- { id: lobster,    name: 澳洲龙虾, emoji: 🦞, rarity: SSR, price: 140, weight: [0.5, 3], desc: 威风凛凛 }
+- { id: salmon,     name: 三文鱼,   emoji: 🍣, rarity: SSR, price: 90, weight: [2, 15], desc: 逆流而上的勇士 }
+- { id: flounder,   name: 比目鱼,   emoji: 🐟, rarity: SSR, price: 80, weight: [0.5, 5], desc: 两只眼睛长在一边 }
+- { id: anglerfish, name: 鮟鱇鱼,   emoji: 🐡, rarity: SSR, price: 100, weight: [2, 20], desc: 头上挂着一盏小灯 }
+
+# ---------- 传说 UR ----------
+- { id: goldkoi,    name: 黄金锦鲤,   emoji: 🎏, rarity: UR, price: 300, weight: [2, 10], desc: 转发这条锦鲤…… }
+- { id: giantsquid, name: 深海巨鱿,   emoji: 🦑, rarity: UR, price: 380, weight: [50, 300], desc: 触手比船还长 }
+- { id: grouperking,name: 石斑鱼王,   emoji: 🐠, rarity: UR, price: 350, weight: [50, 200], desc: 礁石区的霸主 }
+- { id: aurora,     name: 极光鲑鱼,   emoji: 🌈, rarity: UR, price: 420, weight: [5, 25], desc: 鳞片闪着极光 }
+- { id: dragonshrimp,name: 龙王虾,    emoji: 🐲, rarity: UR, price: 500, weight: [3, 15], desc: 传说中龙宫的守卫 }
+
+# ---------- 隐藏 ----------
+# 人民碎片：钓到后自动报警，获得 config.yaml 中 policeReward 金币，不进入鱼护
+- { id: people_fragment, name: 人民碎片, emoji: ❓, rarity: hidden, special: police, desc: 一具浮尸……钓到后会自动报警 }
+# 海洋之心：可出售
+- { id: ocean_heart, name: 海洋之心, emoji: 💎, rarity: hidden, price: 8888, desc: 传说沉睡在海底的蓝色宝石 }

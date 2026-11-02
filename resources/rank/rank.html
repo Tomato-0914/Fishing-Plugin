@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="{{_res}}/common/common.css" />
+  <link rel="stylesheet" href="{{_res}}/rank/rank.css" />
+</head>
+<body class="{{theme}}">
+  <div class="container">
+    <div class="head">
+      <div class="logo">🏆</div>
+      <div>
+        <div class="title">{{title}}</div>
+        <div class="sub">共 {{total}} 位钓友上榜 · 按钓获总价值排名</div>
+      </div>
+    </div>
+    <div class="card">
+      {{each list r}}
+      <div class="row {{r.isMe ? 'me' : ''}} top{{r.rank}}">
+        <div class="rank">{{r.medal || r.rank}}</div>
+        {{if r.avatar}}<img class="av" src="{{r.avatar}}" onerror="this.outerHTML='<div class=&quot;av ph&quot;>🐟</div>'" />{{else}}<div class="av ph">🐟</div>{{/if}}
+        <div class="name">{{r.name}} <span class="badges">{{r.badges}}</span></div>
+        <div class="val">{{r.value}}<small> 金币 · {{r.count}}次</small></div>
+      </div>
+      {{/each}}
+      {{if mine}}
+      <div class="sep">· · ·</div>
+      <div class="row me">
+        <div class="rank">{{mine.rank}}</div>
+        {{if mine.avatar}}<img class="av" src="{{mine.avatar}}" onerror="this.outerHTML='<div class=&quot;av ph&quot;>🐟</div>'" />{{else}}<div class="av ph">🐟</div>{{/if}}
+        <div class="name">{{mine.name}} <span class="badges">{{mine.badges}}</span></div>
+        <div class="val">{{mine.value}}<small> 金币 · {{mine.count}}次</small></div>
+      </div>
+      {{/if}}
+    </div>
+    <div class="footer">Fishing-Plugin v{{version}}</div>
+  </div>
+</body>
+</html>

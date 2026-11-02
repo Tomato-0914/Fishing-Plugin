@@ -1,0 +1,13 @@
+{
+  "name": "Fishing-Plugin",
+  "version": "0.1.0",
+  "description": "QQ 群钓鱼小游戏（Yunzai V3 插件）",
+  "author": "Tomato",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "yaml": "^2.2.1"
+  }
+}

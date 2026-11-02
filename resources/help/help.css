@@ -1,0 +1,5 @@
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.item { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 12px; background: var(--me); }
+.item .icon { font-size: 30px; width: 40px; text-align: center; }
+.item .cmd { font-size: 17px; font-weight: 700; }
+.item .desc { font-size: 13px; color: var(--sub); margin-top: 2px; }

@@ -1,0 +1,57 @@
+/* 海洋主题：白版（6~18 点）/ 黑版 */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+.light {
+  --bg: linear-gradient(180deg, #e8f6ff 0%, #bfe6ff 55%, #8fd0f5 100%);
+  --card: rgba(255, 255, 255, 0.78);
+  --card-border: rgba(255, 255, 255, 0.9);
+  --text: #12324a;
+  --sub: #4f6f86;
+  --accent: #1d8fe1;
+  --wave: rgba(255, 255, 255, 0.55);
+  --shadow: 0 6px 18px rgba(29, 110, 170, 0.15);
+  --me: rgba(29, 143, 225, 0.14);
+}
+.dark {
+  --bg: linear-gradient(180deg, #071526 0%, #0b2a45 55%, #0f3d5f 100%);
+  --card: rgba(16, 42, 68, 0.78);
+  --card-border: rgba(80, 170, 230, 0.25);
+  --text: #e3f3ff;
+  --sub: #8fb4cf;
+  --accent: #4fd1ff;
+  --wave: rgba(79, 209, 255, 0.12);
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  --me: rgba(79, 209, 255, 0.16);
+}
+body {
+  width: 720px;
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
+  font-variant-numeric: tabular-nums;
+  background: var(--bg);
+  color: var(--text);
+}
+.container { position: relative; padding: 36px 28px 28px; overflow: hidden; }
+.container::before, .container::after {
+  content: ""; position: absolute; left: -10%; width: 120%; height: 120px; border-radius: 50%;
+  background: var(--wave); z-index: 0;
+}
+.container::before { top: 150px; transform: rotate(-3deg); }
+.container::after { bottom: -60px; transform: rotate(2deg); }
+.container > * { position: relative; z-index: 1; }
+
+.head { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
+.head .logo { font-size: 54px; line-height: 1; }
+.head .title { font-size: 34px; font-weight: 800; letter-spacing: 2px; }
+.head .sub { font-size: 16px; color: var(--sub); margin-top: 4px; }
+.head .avatar { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--card-border); }
+
+.card {
+  background: var(--card); border: 1px solid var(--card-border); border-radius: 18px;
+  box-shadow: var(--shadow); padding: 18px 20px; margin-bottom: 16px;
+}
+.card-title { font-size: 20px; font-weight: 700; margin-bottom: 12px; color: var(--accent); }
+.tag {
+  display: inline-block; font-size: 13px; font-weight: 700; color: #fff; border-radius: 6px;
+  padding: 1px 8px; margin-right: 6px; vertical-align: middle;
+}
+.muted { color: var(--sub); }
+.footer { text-align: center; font-size: 13px; color: var(--sub); margin-top: 8px; }

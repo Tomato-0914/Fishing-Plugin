@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="{{_res}}/common/common.css" />
+  <link rel="stylesheet" href="{{_res}}/help/help.css" />
+</head>
+<body class="{{theme}}">
+  <div class="container">
+    <div class="head">
+      <div class="logo">🎣</div>
+      <div>
+        <div class="title">钓鱼帮助</div>
+        <div class="sub">{{theme == 'light' ? '☀️ 白天也要好好钓鱼' : '🌙 夜钓时间到'}} · v{{version}}</div>
+      </div>
+    </div>
+    {{each helpData group}}
+    <div class="card">
+      <div class="card-title">{{group.group}}</div>
+      <div class="grid">
+        {{each group.list item}}
+        <div class="item">
+          <div class="icon">{{item.icon}}</div>
+          <div>
+            <div class="cmd">{{item.title}}</div>
+            <div class="desc">{{item.desc}}</div>
+          </div>
+        </div>
+        {{/each}}
+      </div>
+    </div>
+    {{/each}}
+    <div class="footer">Fishing-Plugin v{{version}} · 数据所有群共享</div>
+  </div>
+</body>
+</html>

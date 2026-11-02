@@ -1,0 +1,24 @@
+# ===== 帮助图内容 =====
+- group: 🎣 钓鱼
+  list:
+    - { icon: 🎣, title: "#钓鱼 / #抛竿 / 🎣", desc: 甩出鱼竿，等待鱼儿上钩 }
+    - { icon: 🪝, title: "#收杆", desc: 浮漂下沉后及时收杆，太早太晚都会空手 }
+    - { icon: 🪱, title: 挂鱼饵, desc: 每次钓完需要挂鱼饵，稍等片刻再抛竿 }
+- group: 🎒 鱼获
+  list:
+    - { icon: 🎒, title: "#鱼获", desc: 查看鱼护里的鱼和可卖金币 }
+    - { icon: 🏷️, title: "#出售 名称 [数量]", desc: 出售指定鱼获，不写数量卖全部 }
+    - { icon: 💰, title: "#一键出售", desc: 出售全部有价值的鱼获 }
+    - { icon: 🗑️, title: "#丢弃垃圾", desc: 集中清理海洋垃圾，攒够数量有称号 }
+    - { icon: 👤, title: "#钓鱼信息", desc: 金币、统计与最大一条鱼 }
+    - { icon: 📚, title: "#钓鱼图鉴", desc: 已解锁的鱼类与隐藏款 }
+- group: 🏆 排行与称号
+  list:
+    - { icon: 📅, title: "#钓鱼排行榜", desc: 本群今日钓获价值排行 }
+    - { icon: 🗓️, title: "#钓鱼周/月排行榜", desc: 本群本周 / 本月排行 }
+    - { icon: 🌏, title: "#钓鱼总榜", desc: 所有群累计排行前 30 名 }
+    - { icon: 🏅, title: "#我的称号", desc: 称号进度，拥有即永久生效 }
+- group: ⚙️ 管理
+  list:
+    - { icon: 🔄, title: "#钓鱼更新", desc: 拉取最新版本（主人） }
+    - { icon: ⚠️, title: "#钓鱼强制更新", desc: 放弃本地修改并更新（主人） }

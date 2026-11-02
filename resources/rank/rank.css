@@ -1,0 +1,11 @@
+.row { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 12px; margin-bottom: 4px; }
+.row.me { background: var(--me); }
+.row .rank { width: 40px; text-align: center; font-size: 22px; font-weight: 800; color: var(--sub); }
+.row.top1 .rank, .row.top2 .rank, .row.top3 .rank { font-size: 30px; }
+.row .av { width: 44px; height: 44px; border-radius: 50%; }
+.row .av.ph { display: flex; align-items: center; justify-content: center; font-size: 26px; background: var(--me); }
+.row .name { flex: 1; font-size: 18px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.row .badges { font-size: 16px; }
+.row .val { font-size: 20px; font-weight: 800; color: #f2a900; }
+.row .val small { font-size: 12px; font-weight: 400; color: var(--sub); }
+.sep { text-align: center; color: var(--sub); letter-spacing: 6px; }

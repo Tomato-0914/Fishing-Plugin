@@ -1,0 +1,70 @@
+# ===== 称号 =====
+# 每个称号只能获得一次；拥有即生效，同一称号的效果不会叠加。
+# condition.stat 可用：casts 抛竿次数 / catches 钓到的鱼 / junkCleaned 清理垃圾 / fails 空军+鱼跑了+收杆过早
+#                      police 人民碎片次数 / heart 海洋之心次数 / ur 传说鱼次数 / earned 累计钓获价值
+# condition.dex: true 表示集齐图鉴中的全部鱼类（不含垃圾与隐藏款）
+# effects 可用：
+#   biteReduce     咬钩等待 -N 秒
+#   reelWindow     收杆窗口 +N 秒
+#   cooldown       挂鱼饵时间 -N 秒
+#   emptyReduce    空军概率 -N%（转为普通鱼）
+#   junkReduce     垃圾概率 -N%（转为普通鱼）
+#   rareBoost      稀有及以上概率 ×(1 + N%)
+#   largeBoost     大体型概率 +N%（从小体型中扣除）
+#   sellBonus      出售金币 +N%
+
+- id: novice
+  name: 初出茅庐
+  emoji: 🌱
+  desc: 累计抛竿 10 次
+  condition: { stat: casts, gte: 10 }
+  effects: { biteReduce: 1 }
+
+- id: skilled
+  name: 熟练钓手
+  emoji: 🎣
+  desc: 累计钓到 100 条鱼
+  condition: { stat: catches, gte: 100 }
+  effects: { reelWindow: 5 }
+
+- id: guardian
+  name: 海洋卫士
+  emoji: 🌊
+  desc: 累计集中清理 50 件海洋垃圾
+  condition: { stat: junkCleaned, gte: 50 }
+  effects: { emptyReduce: 5, junkReduce: 3 }
+
+- id: citizen
+  name: 热心市民
+  emoji: 👮
+  desc: 钓到「人民碎片」并报警
+  condition: { stat: police, gte: 1 }
+  effects: { sellBonus: 5 }
+
+- id: abyss
+  name: 深海之子
+  emoji: 💎
+  desc: 钓到「海洋之心」
+  condition: { stat: heart, gte: 1 }
+  effects: { rareBoost: 20 }
+
+- id: legend
+  name: 传说猎人
+  emoji: 🐉
+  desc: 累计钓到 5 条传说鱼
+  condition: { stat: ur, gte: 5 }
+  effects: { largeBoost: 10 }
+
+- id: airforce
+  name: 空军司令
+  emoji: ✈️
+  desc: 累计空军 / 跑鱼 / 收杆过早 100 次
+  condition: { stat: fails, gte: 100 }
+  effects: { cooldown: 3 }
+
+- id: master
+  name: 图鉴大师
+  emoji: 📖
+  desc: 集齐图鉴中的全部鱼类
+  condition: { dex: true }
+  effects: { sellBonus: 10 }

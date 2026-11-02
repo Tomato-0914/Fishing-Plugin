@@ -1,0 +1,11 @@
+.row { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px dashed var(--card-border); }
+.row:last-child { border-bottom: none; }
+.row .emoji { font-size: 32px; width: 44px; text-align: center; }
+.row .info { flex: 1; }
+.row .name { font-size: 18px; font-weight: 600; }
+.row .sizes { font-size: 13px; margin-top: 2px; }
+.row .price { font-size: 20px; font-weight: 800; color: #f2a900; }
+.row .price.zero { color: var(--sub); }
+.row .price small { font-size: 12px; font-weight: 400; color: var(--sub); }
+.summary { font-size: 18px; line-height: 1.8; }
+.summary b { color: #f2a900; font-size: 24px; }
