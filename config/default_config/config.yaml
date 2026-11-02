@@ -30,6 +30,8 @@ fishing:
   cooldown: 10
   # 鱼护（背包）容量
   bagLimit: 200
+  # 抛竿时附带的配图：插件目录下的相对路径或绝对路径，留空则不发送
+  castImage: resources/img/cast.jpg
 
 # 各结果的概率（%），总和建议为 100，不为 100 时按比例换算
 probability:

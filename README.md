@@ -126,6 +126,8 @@ git clone https://github.com/Tomato-0914/Fishing-Plugin.git ./plugins/Fishing-Pl
 
 ## 配置
 
+- 抛竿配图：默认发送 `resources/img/cast.jpg`，可在锅巴或 `config.yaml` 的 `fishing.castImage` 中换成自己的图片，留空则不发送。
+
 - 锅巴：可修改开关、钓鱼节奏、各项概率、体型、警局奖励、排行人数、群黑白名单。
 - 手动：`config/default_config/` 为默认配置，复制到 `config/config/` 后修改。
   - `config.yaml` 按字段合并，只写要改的项即可

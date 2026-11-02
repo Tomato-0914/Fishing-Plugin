@@ -27,7 +27,12 @@ export default [
   num("fishing.biteMax", "咬钩最长时间(秒)", "上限 30 秒，避免等太久", { max: 30 }),
   num("fishing.reelWindow", "收杆时间(秒)", "咬钩后多久内必须收杆，超时判定鱼跑了", { min: 3, max: 120 }),
   num("fishing.cooldown", "挂鱼饵时间(秒)", "每次钓完后的等待时间", { max: 600 }),
-  num("fishing.bagLimit", "鱼护容量", "背包最多存放多少件物品", { min: 10, max: 2000 }),
+  num("fishing.bagLimit", "Lv1 鱼护容量", "初始鱼护最多存放多少件物品，升级鱼护后按渔具工坊的容量计算", { min: 10, max: 2000 }),
+  {
+    field: "fishing.castImage", label: "抛竿配图", component: "Input",
+    bottomHelpMessage: "抛竿时附带的图片，填插件目录下的相对路径或绝对路径，留空则不发送",
+    componentProps: { placeholder: "resources/img/cast.jpg" },
+  },
 
   { label: "鱼饵", component: "SOFT_GROUP_BEGIN" },
   num("bait.initial", "新手赠送鱼饵", "第一次钓鱼时赠送的鱼饵数量"),

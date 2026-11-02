@@ -1,4 +1,7 @@
+import fs from "node:fs"
+import path from "node:path"
 import { plugin } from "../components/yunzai.js"
+import { Plugin_Path } from "../components/Paths.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { roll, triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
@@ -26,6 +29,26 @@ const WAITING_TEXT = [
 ]
 
 const sec = n => Math.max(0, Math.round(n))
+
+/** 抛竿配图：读一次缓存为 Buffer（各协议都支持），配置的路径或文件变化时重新读取 */
+const castImageCache = { key: "", buf: null }
+function castImage(file) {
+  if (!file || typeof segment?.image !== "function") return null
+  const abs = path.isAbsolute(file) ? file : path.join(Plugin_Path, file)
+  let stat
+  try { stat = fs.statSync(abs) } catch { return null }
+  const key = `${abs}|${stat.mtimeMs}`
+  if (castImageCache.key !== key) {
+    try {
+      castImageCache.buf = fs.readFileSync(abs)
+      castImageCache.key = key
+    } catch (err) {
+      logger.warn(`[Fishing-Plugin] 抛竿配图读取失败：${err.message}`)
+      return null
+    }
+  }
+  return segment.image(castImageCache.buf)
+}
 
 export class Fishing extends plugin {
   constructor() {
@@ -141,12 +164,12 @@ export class Fishing extends plugin {
     const total = totalBait(user)
     const warn = total === 0 ? "（鱼饵已用完，记得 #购买鱼饵）" : remain === 0 ? "（这种用完了，下一竿自动换）" : total <= 2 ? "（快用完了，记得 #购买鱼饵）" : ""
     const gearLine = ["rod", "line", "float"].map(k => gearItem(shop, k, gearLevel(user, k))?.name).filter(Boolean).join(" · ")
-    await this.send(e, [
+    await this.send(e, [[
       used.switched ? `🔄 ${used.from.name}用完了，已自动换成${bait.name}` : "",
       `🎣 ${name} ${pick(CAST_TEXT)}`,
       gearLine ? `🧰 ${gearLine}` : "",
       `🪱 ${bait.name}（剩 ${remain}）${warn}`,
-    ].filter(Boolean).join("\n") + luckLine)
+    ].filter(Boolean).join("\n") + luckLine, castImage(fcfg.castImage)].filter(Boolean))
     // 新称号（例如初出茅庐）
     await this.announceTitles(e, user)
     return true
