@@ -86,7 +86,7 @@ export class Fishing extends plugin {
         `🎉 欢迎 ${name} 加入钓鱼佬行列！`,
         `🎁 新手礼包：普通饵 ×${gift}`,
         `🪱 每次抛竿消耗 1 个鱼饵，用完可发送 #购买鱼饵 补充（${price} 金币/个）`,
-        "🏪 攒了金币可以去 #渔具商店 升级装备",
+        "🏪 鱼饵在 #渔具商店 购买，攒了金币可以去 #渔具工坊 升级渔具",
       ].join("\n"))
     }
 
@@ -103,7 +103,7 @@ export class Fishing extends plugin {
     const shop = Config.shop
     const limit = bagCapacity(user, shop, fcfg.bagLimit)
     if (user.bag.length >= limit)
-      return this.send(e, withButtons(e, `🎒 鱼护已经装满啦（${user.bag.length}/${limit}）~\n先出售鱼护里的鱼或清理垃圾再来吧！也可以去 #渔具商店 升级鱼护`, [B.sellAll, B.discard], [B.bag, B.shop]))
+      return this.send(e, withButtons(e, `🎒 鱼护已经装满啦（${user.bag.length}/${limit}）~\n先出售鱼护里的鱼或清理垃圾再来吧！也可以去 #渔具工坊 升级鱼护`, [B.sellAll, B.discard], [B.bag, B.workshop]))
 
     if (totalBait(user) < 1) {
       const items = itemMap()
@@ -228,8 +228,8 @@ export class Fishing extends plugin {
         "💥 啪！鱼线断了！",
         `${result.item.emoji} 一条【${r.label}】${result.item.name}${sizeLabel ? `（${sizeLabel}）` : ""}拖着鱼钩消失在水里……`,
         `🧵 当前鱼线：${line?.name || "—"}（本次断线概率 ${Number(snap.toFixed(1))}%）`,
-        "💡 去 #渔具商店 升级鱼线可以降低断线概率",
-      ].join("\n"), [B.cast, B.shop]))
+        "💡 去 #渔具工坊 升级鱼线可以降低断线概率",
+      ].join("\n"), [B.cast, B.workshop]))
       return this.announceTitles(e, user)
     }
 

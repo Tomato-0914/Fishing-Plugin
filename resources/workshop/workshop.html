@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="{{_res}}/common/common.css" />
+  <link rel="stylesheet" href="{{_res}}/common/tackle.css" />
+</head>
+<body class="{{theme}}">
+  <div class="container">
+    <div class="head">
+      <div class="logo">🔧</div>
+      <div>
+        <div class="title">渔具工坊</div>
+        <div class="sub">{{name}} · 👛 {{gold}} 金币 · 逐级升级，升级后自动装备</div>
+      </div>
+    </div>
+
+    {{each slots s}}
+    <div class="card gear">
+      <div class="slot">
+        <div class="slot-emoji">{{s.emoji}}</div>
+        <div class="slot-name">{{s.slotName}}</div>
+        <div class="pips">{{each s.pips on}}<span class="{{on ? 'on' : ''}}"></span>{{/each}}</div>
+      </div>
+      <div class="cur">
+        <div class="lv"><span class="tag" style="background: {{s.cur.color}}">Lv{{s.cur.level}}</span>{{s.cur.name}}</div>
+        <div class="muted small">{{s.cur.text}}</div>
+      </div>
+      <div class="arrow">{{s.next ? '➜' : ''}}</div>
+      {{if s.next}}
+      <div class="next">
+        <div class="lv"><span class="tag" style="background: {{s.next.color}}">Lv{{s.next.level}}</span>{{s.next.name}}</div>
+        <div class="small">{{s.next.text}}</div>
+        <div class="price {{s.next.afford ? '' : 'poor'}}">💰 {{s.next.price}}</div>
+      </div>
+      {{else}}
+      <div class="next maxed">✨ 已满级</div>
+      {{/if}}
+    </div>
+    {{/each}}
+    <div class="footer">#升级鱼竿 · #升级鱼线 · #升级浮漂 · #升级鱼护 · 鱼饵请到 #渔具商店</div>
+  </div>
+  <script src="{{_res}}/common/twemoji.min.js"></script>
+  <script src="{{_res}}/common/emoji.js"></script>
+</body>
+</html>

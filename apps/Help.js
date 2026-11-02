@@ -20,7 +20,7 @@ export class FishingHelp extends plugin {
       ["🎣 钓鱼帮助", ...helpData.map(g => `\n${g.group}\n${g.list.map(i => `${i.title}  ${i.desc}`).join("\n")}`)].join("\n"))
     if (!msg) return true
     return e.reply(withButtons(e, msg,
-      [B.start, B.bag, B.shop],
-      [B.checkin, B.titles, B.dex, B.repo]))
+      [B.start, B.bag, B.workshop],
+      [B.checkin, B.shop, B.titles, B.dex, B.repo]))
   }
 }

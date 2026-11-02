@@ -1,4 +1,4 @@
-/** 渔具商店：升级渔具、购买 / 切换鱼饵、查看装备 */
+/** 渔具工坊（升级渔具）与渔具商店（购买 / 切换鱼饵），以及装备查看 */
 import { plugin, puppeteer } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
@@ -19,12 +19,13 @@ const UPGRADE_BUTTONS = [
 export class FishingShop extends plugin {
   constructor() {
     super({
-      name: "钓鱼-渔具商店",
-      dsc: "渔具升级与鱼饵",
+      name: "钓鱼-渔具工坊与商店",
+      dsc: "渔具工坊升级渔具，渔具商店购买鱼饵",
       event: "message",
       priority: 500,
       rule: [
-        { reg: /^#?(渔具商店|渔具店|钓鱼商店)$/, fnc: "shop" },
+        { reg: /^#?(渔具工坊|钓鱼工坊|工坊)$/, fnc: "workshop" },
+        { reg: /^#?(渔具商店|渔具店|钓鱼商店|鱼饵商店)$/, fnc: "shop" },
         { reg: /^#?升级(鱼竿|鱼线|浮漂|鱼护)$/, fnc: "upgrade" },
         { reg: /^#?(购买|买)鱼饵\s*(.*)$/, fnc: "buy" },
         { reg: /^#?(使用|切换|换)鱼饵\s*(.+)$/, fnc: "use" },
@@ -58,7 +59,8 @@ export class FishingShop extends plugin {
     return parts.join("，") || "无"
   }
 
-  async shop(e) {
+  /** 渔具工坊：四类渔具的等级与升级 */
+  async workshop(e) {
     if (!groupAllowed(e)) return false
     const user = this.load(e)
     const shop = this.shopCfg
@@ -73,22 +75,40 @@ export class FishingShop extends plugin {
         next: next && { ...next, label: LEVEL_LABELS[lv], color: LEVEL_COLORS[lv], text: this.gearText(next, user), afford: user.gold >= next.price },
       }
     })
+    const msg = await renderOrText(puppeteer, "workshop", { name: displayName(user), gold: user.gold, slots }, () => [
+      `🔧 渔具工坊 · 👛 ${user.gold} 金币`,
+      "━━━━━━━━━━━━",
+      ...slots.map(s => `${s.emoji} ${s.slotName} Lv${s.cur.level} ${s.cur.name}（${s.cur.text}）\n　${s.next ? `→ Lv${s.next.level} ${s.next.name} ${s.next.price} 金币：${s.next.text}` : "已满级"}`),
+      "━━━━━━━━━━━━",
+      "#升级鱼竿 / 鱼线 / 浮漂 / 鱼护",
+    ].join("\n"))
+    if (!msg) return true
+    return e.reply(withButtons(e, msg, ...UPGRADE_BUTTONS, [B.myGear, B.shop]))
+  }
+
+  /** 渔具商店：只卖鱼饵 */
+  async shop(e) {
+    if (!groupAllowed(e)) return false
+    const user = this.load(e)
+    const shop = this.shopCfg
     const cur = currentBait(user, shop)
     const baits = baitList(shop).map(b => ({
       ...b, price: baitPrice(shop, b.id, this.basicPrice), count: baitCount(user, b.id), current: b.id === cur.id, text: effectText(b.effects),
     }))
-    const msg = await renderOrText(puppeteer, "shop", { name: displayName(user), gold: user.gold, slots, baits }, () => [
+    const msg = await renderOrText(puppeteer, "shop", { name: displayName(user), gold: user.gold, baits }, () => [
       `🏪 渔具商店 · 👛 ${user.gold} 金币`,
       "━━━━━━━━━━━━",
-      ...slots.map(s => `${s.emoji} ${s.slotName} Lv${s.cur.level} ${s.cur.name}（${s.cur.text}）\n　${s.next ? `→ Lv${s.next.level} ${s.next.name} ${s.next.price} 金币：${s.next.text}` : "已满级"}`),
+      "🪱 鱼饵（每竿消耗 1 个，同时只用一种）",
+      ...baits.map(b => `${b.current ? "▶" : "　"}${b.emoji}${b.name} ${b.price} 金币 · 库存 ${b.count} · ${b.text === "无" ? b.desc : b.text}`),
       "━━━━━━━━━━━━",
-      "🪱 鱼饵（每竿消耗 1 个）",
-      ...baits.map(b => `${b.current ? "▶" : "　"}${b.emoji}${b.name} ${b.price} 金币 · 库存 ${b.count} · ${b.text}`),
-      "━━━━━━━━━━━━",
-      "#升级鱼竿/鱼线/浮漂/鱼护 · #购买鱼饵 种类 数量 · #使用鱼饵 种类",
+      "#购买鱼饵 种类 数量 · #使用鱼饵 种类",
     ].join("\n"))
     if (!msg) return true
-    return e.reply(withButtons(e, msg, ...UPGRADE_BUTTONS, [B.buyBaitInput, B.myGear]))
+    // 每种鱼饵一个“买 10 个”按钮，QQBot 每行最多 5 个
+    const buy = baits.map(b => ({ text: `${b.name}×10`, callback: `#购买鱼饵 ${b.name} 10` }))
+    const rows = []
+    for (let i = 0; i < buy.length; i += 3) rows.push(buy.slice(i, i + 3))
+    return e.reply(withButtons(e, msg, ...rows, [B.buyBaitInput, { text: "🧺 我的鱼饵", callback: "#我的鱼饵" }, B.workshop]))
   }
 
   async upgrade(e) {
@@ -110,7 +130,7 @@ export class FishingShop extends plugin {
       `💬 ${item.desc}`,
       `✨ 效果：${this.gearText(item, user)}`,
       `👛 花费 ${ret.cost} 金币，剩余 ${user.gold} 金币`,
-    ].join("\n"), [B.cast, B.shop, B.myGear]))
+    ].join("\n"), [B.cast, B.workshop, B.myGear]))
   }
 
   async buy(e) {
@@ -173,7 +193,9 @@ export class FishingShop extends plugin {
       `🪱 ${displayName(user)} 的鱼饵（共 ${totalBait(user)} 个）`,
       ...owned.map(b => `${b.id === cur.id ? "▶ " : "　"}${b.emoji}${b.name} ×${baitCount(user, b.id)} · ${effectText(b.effects).replace(/^无$/, "无特殊效果")}`),
       `👛 金币：${user.gold}`,
-    ].join("\n"), [B.buyBait, B.buyBaitInput, B.shop]))
+    ].join("\n"),
+      owned.filter(b => b.id !== cur.id && baitCount(user, b.id) > 0).slice(0, 5).map(b => ({ text: `使用${b.name}`, callback: `#使用鱼饵 ${b.name}` })),
+      [B.buyBait, B.buyBaitInput, B.shop]))
   }
 
   async gear(e) {
@@ -191,6 +213,6 @@ export class FishingShop extends plugin {
     }
     lines.push(`🪱 鱼饵：${cur.emoji}${cur.name} ×${baitCount(user, cur.id)} · ${effectText(cur.effects).replace(/^无$/, "无特殊效果")}`)
     lines.push("━━━━━━━━━━━━", `✨ 渔具总加成：${effectText(gearEffects(user, shop))}`)
-    return e.reply(withButtons(e, lines.join("\n"), [B.shop, B.start]))
+    return e.reply(withButtons(e, lines.join("\n"), [B.workshop, B.shop, B.start]))
   }
 }

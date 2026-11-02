@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <link rel="stylesheet" href="{{_res}}/common/common.css" />
-  <link rel="stylesheet" href="{{_res}}/shop/shop.css" />
+  <link rel="stylesheet" href="{{_res}}/common/tackle.css" />
 </head>
 <body class="{{theme}}">
   <div class="container">
@@ -15,45 +15,22 @@
       </div>
     </div>
 
-    {{each slots s}}
-    <div class="card gear">
-      <div class="slot">
-        <div class="slot-emoji">{{s.emoji}}</div>
-        <div class="slot-name">{{s.slotName}}</div>
-        <div class="pips">{{each s.pips on}}<span class="{{on ? 'on' : ''}}"></span>{{/each}}</div>
-      </div>
-      <div class="cur">
-        <div class="lv"><span class="tag" style="background: {{s.cur.color}}">Lv{{s.cur.level}}</span>{{s.cur.name}}</div>
-        <div class="muted small">{{s.cur.text}}</div>
-      </div>
-      <div class="arrow">{{s.next ? '➜' : ''}}</div>
-      {{if s.next}}
-      <div class="next">
-        <div class="lv"><span class="tag" style="background: {{s.next.color}}">Lv{{s.next.level}}</span>{{s.next.name}}</div>
-        <div class="small">{{s.next.text}}</div>
-        <div class="price {{s.next.afford ? '' : 'poor'}}">💰 {{s.next.price}}</div>
-      </div>
-      {{else}}
-      <div class="next maxed">✨ 已满级</div>
-      {{/if}}
-    </div>
-    {{/each}}
-
     <div class="card">
-      <div class="card-title">🪱 鱼饵 <span class="muted small">每竿消耗 1 个，同时只用一种</span></div>
+      <div class="card-title">🪱 鱼饵 <span class="muted small">每竿消耗 1 个，同时只用一种，用完自动换成有库存的</span></div>
       {{each baits b}}
       <div class="bait {{b.current ? 'using' : ''}}">
         <div class="b-emoji">{{b.emoji}}</div>
         <div class="b-info">
           <div class="b-name">{{b.name}}{{if b.current}}<span class="using-tag">使用中</span>{{/if}}</div>
-          <div class="muted small">{{b.text == '无' ? b.desc : b.text}}</div>
+          <div class="small">{{b.text == '无' ? '无特殊效果' : b.text}}</div>
+          <div class="muted small">{{b.desc}}</div>
         </div>
         <div class="b-count muted">库存 {{b.count}}</div>
         <div class="b-price">{{b.price}} <small>金币</small></div>
       </div>
       {{/each}}
     </div>
-    <div class="footer">#升级鱼竿 / 鱼线 / 浮漂 / 鱼护 · #购买鱼饵 种类 数量 · #使用鱼饵 种类</div>
+    <div class="footer">#购买鱼饵 种类 数量 · #使用鱼饵 种类 · 升级渔具请到 #渔具工坊</div>
   </div>
   <script src="{{_res}}/common/twemoji.min.js"></script>
   <script src="{{_res}}/common/emoji.js"></script>
