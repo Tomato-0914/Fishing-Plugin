@@ -3,7 +3,8 @@ import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { RARITY_INFO, isDexFish, formatWeight } from "../components/ItemPool.js"
 import { groupBag, sellEntries, discardJunk, todayLuck, luckTier } from "../components/Game.js"
-import { checkTitles, getEffects, effectText, progressText } from "../components/Titles.js"
+import { checkTitles, getEffects, effectText, progressText, mergeEffects } from "../components/Titles.js"
+import { gearEffects, bagCapacity, totalBait, gearItem, gearLevel } from "../components/Gear.js"
 import { withButtons, B } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
 import { itemChance, formatChance, sizeTable, findItems, dexNo } from "../components/Dex.js"
@@ -32,6 +33,11 @@ export class FishingBag extends plugin {
     })
   }
 
+  /** 出售加成：称号 + 鱼护 */
+  sellBonus(user) {
+    return mergeEffects(getEffects(user, Config.titles), gearEffects(user, Config.shop)).sellBonus || 0
+  }
+
   load(e) {
     const user = UserData.get(e.user_id)
     updateNickname(user, e)
@@ -42,8 +48,7 @@ export class FishingBag extends plugin {
     if (!groupAllowed(e)) return false
     const user = this.load(e)
     const items = itemMap()
-    const effects = getEffects(user, Config.titles)
-    const bonus = effects.sellBonus || 0
+    const bonus = this.sellBonus(user)
     const groups = groupBag(user, items).sort((a, b) =>
       ORDER.indexOf(a.item.rarity) - ORDER.indexOf(b.item.rarity) || b.total - a.total)
 
@@ -61,7 +66,7 @@ export class FishingBag extends plugin {
     const value = groups.reduce((s, g) => s + g.total, 0)
     const sellValue = Math.round(value * (1 + bonus / 100))
     const junk = groups.filter(g => g.item.rarity === "junk").reduce((s, g) => s + g.count, 0)
-    const limit = Number(Config.config.fishing?.bagLimit) || 200
+    const limit = bagCapacity(user, Config.shop, Config.config.fishing?.bagLimit)
 
     if (!list.length)
       return e.reply(withButtons(e, `🎒 ${displayName(user)} 的鱼护空空如也~\n💰 金币：${user.gold}\n发送 #钓鱼 去钓几条吧！`, [B.start]))
@@ -74,7 +79,7 @@ export class FishingBag extends plugin {
       "━━━━━━━━━━━━",
       ...list.map(i => `${i.emoji}【${i.label}】${i.name} ×${i.count}${i.sizes ? `（${i.sizes}）` : ""}  ${i.rarity === "junk" ? "0" : i.total} 金币`),
       "━━━━━━━━━━━━",
-      `💰 全部出售可得：${sellValue} 金币${bonus ? `（称号加成 +${bonus}%）` : ""}`,
+      `💰 全部出售可得：${sellValue} 金币${bonus ? `（加成 +${bonus}%）` : ""}`,
       junk ? `🗑️ 垃圾 ${junk} 件，可发送 #丢弃垃圾 集中清理` : "",
       `👛 当前金币：${user.gold}`,
     ].filter(Boolean).join("\n"))
@@ -113,12 +118,12 @@ export class FishingBag extends plugin {
   }
 
   async doSell(e, user, entries, junkLeft = 0) {
-    const bonus = getEffects(user, Config.titles).sellBonus || 0
+    const bonus = this.sellBonus(user)
     const { count, base, gold } = sellEntries(user, entries, bonus)
     UserData.save(user.user_id)
     const lines = [
       `💰 成功出售 ${count} 件鱼获`,
-      `获得 ${gold} 金币${bonus ? `（${base} + 称号加成 ${bonus}%）` : ""}`,
+      `获得 ${gold} 金币${bonus ? `（${base} + 加成 ${bonus}%）` : ""}`,
       `👛 当前金币：${user.gold}`,
     ]
     if (junkLeft) lines.push(`🗑️ 鱼护里还有 ${junkLeft} 件垃圾，可发送 #丢弃垃圾 集中清理`)
@@ -152,7 +157,8 @@ export class FishingBag extends plugin {
     const msg = [
       `👤 ${displayName(user)} 的钓鱼信息`,
       "━━━━━━━━━━━━",
-      `👛 金币：${user.gold} · 🪱 鱼饵：${user.bait}`,
+      `👛 金币：${user.gold} · 🪱 鱼饵：${totalBait(user)}`,
+      `🧰 ${["rod", "line", "float", "net"].map(k => gearItem(Config.shop, k, gearLevel(user, k))?.name).filter(Boolean).join(" · ")}`,
       `🎣 抛竿 ${s.casts} 次 · 钓到鱼 ${s.catches} 条`,
       `🗑️ 钓到垃圾 ${s.junk} 件 · 已清理 ${s.junkCleaned} 件`,
       `🌊 空军 ${s.empty} · 跑鱼 ${s.escaped} · 收杆过早 ${s.early}`,

@@ -45,6 +45,12 @@ probability:
     people_fragment: 0.05   # 人民碎片
     ocean_heart: 0.01       # 海洋之心
 
+# 概率下限（%）：称号、打卡、渔具叠加后不会低于这些值
+limits:
+  empty: 3
+  junk: 5
+  N: 5
+
 # 鱼的体型：出现概率（%）与售价倍率
 size:
   small:  { label: 小, chance: 55, price: 0.8 }

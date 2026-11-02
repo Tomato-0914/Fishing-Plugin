@@ -187,13 +187,13 @@ for (const driver of ["node:sqlite", "sqlite3"]) {
 
     // 写入后重新打开仍在
     db.get("10001").gold = 99
-    db.get("10002").bait = 5
+    db.get("10002").baits.worm = 5
     await db.save("10001"); await db.save("10002")
     await db.close()
     const db2 = new UserData(dir)
     assert.equal((await db2.init({ storage: "db", driver })).count, 3)
     assert.equal(db2.get("10001").gold, 99)
-    assert.equal(db2.get("10002").bait, 5)
+    assert.equal(db2.get("10002").baits.worm, 5)
 
     // 手动迁移：已存在的默认跳过，“覆盖”时以 YAML 为准，并原地刷新内存对象
     const ref = db2.get("10001")
@@ -210,7 +210,7 @@ for (const driver of ["node:sqlite", "sqlite3"]) {
     assert.deepEqual(r2.migrated, ["10001"])
     assert.equal(ref.gold, 7)
     assert.equal(db2.get("10001"), ref)
-    assert.equal(ref.bait, 0) // 字段补齐
+    assert.deepEqual(ref.gear, { rod: 1, line: 1, float: 1, net: 1 }) // 字段补齐
 
     // 导出
     const ex = await db2.export()
@@ -231,25 +231,27 @@ test("存档：SQLite 驱动不可用时退回 YAML", async () => {
 })
 
 test("鱼饵：新手赠送、消耗、购买、救济", async () => {
-  const { welcome, consumeBait, buyBait, reliefBait } = await import("../components/Game.js")
+  const { welcome, reliefBait } = await import("../components/Game.js")
+  const { consumeBait, buyBait, totalBait, baitCount } = await import("../components/Gear.js")
+  const shop = Config.shop
   const u = newUser("10003")
-  assert.equal(u.bait, 0)
+  assert.equal(totalBait(u), 0)
   assert.equal(welcome(u, cfg.bait.initial), 10)
   assert.equal(welcome(u, cfg.bait.initial), 0) // 只送一次
-  assert.equal(u.bait, 10)
-  for (let i = 0; i < 10; i++) assert.ok(consumeBait(u))
-  assert.equal(consumeBait(u), false)
-  assert.deepEqual(buyBait(u, 5, 2), { ok: false, reason: "gold", cost: 10, afford: 0 })
+  assert.equal(baitCount(u, "basic"), 10)
+  for (let i = 0; i < 10; i++) assert.equal(consumeBait(u, shop).bait.id, "basic")
+  assert.equal(consumeBait(u, shop), null)
+  assert.equal(buyBait(u, shop, "basic", 5, 2).reason, "gold")
   const now = new Date(2026, 10, 2)
   assert.equal(reliefBait(u, { amount: 5, price: 2, hasSellable: true, now }), 0)
   assert.equal(reliefBait(u, { amount: 5, price: 2, now }), 5)
-  u.bait = 0
+  u.baits.basic = 0
   assert.equal(reliefBait(u, { amount: 5, price: 2, now }), 0) // 每天一次
   assert.equal(reliefBait(u, { amount: 5, price: 2, now: new Date(2026, 10, 3) }), 5)
   u.gold = 25
-  assert.deepEqual(buyBait(u, 10, 2), { ok: true, count: 10, cost: 20 })
+  assert.deepEqual(buyBait(u, shop, "basic", 10, 2).cost, 20)
   assert.equal(u.gold, 5)
-  assert.equal(u.bait, 15)
+  assert.equal(baitCount(u, "basic"), 15)
   assert.equal(cfg.bait.price, 2)
 })
 
@@ -259,7 +261,7 @@ test("鱼饵：抛过竿的老用户不赠送", async () => {
   old.stats.casts = 5
   assert.equal(isNewPlayer(old), false)
   assert.equal(welcome(old, 10), 0)
-  assert.equal(old.bait, 0)
+  assert.equal(Object.keys(old.baits).length, 0)
   assert.equal(old.welcomed, true)
   const fresh = newUser("10005")
   assert.equal(isNewPlayer(fresh), true)
@@ -356,4 +358,91 @@ test("图鉴详情：概率、体型区间、搜索、个人记录", async () =>
   recordResult(u, { type: "item", item: tuna, rarity: "SSR", price: 180, size: "large", weight: 70 }, { now: t2 })
   recordResult(u, { type: "item", item: tuna, rarity: "SSR", price: 120, size: "medium", weight: 40 }, { now: t2 })
   assert.deepEqual(u.records.tuna, { first: t1.getTime(), maxW: 70, maxS: "large", maxP: 180 })
+})
+
+test("渔具：逐级升级、效果、容量、出售加成", async () => {
+  const { upgradeGear, gearEffects, bagCapacity, gearLevel, gearItem } = await import("../components/Gear.js")
+  const shop = Config.shop
+  const u = newUser("10010")
+  assert.deepEqual(u.gear, { rod: 1, line: 1, float: 1, net: 1 })
+  assert.deepEqual(gearEffects(u, shop), {})
+  assert.equal(bagCapacity(u, shop, cfg.fishing.bagLimit), 200)
+  // 金币不够
+  assert.equal(upgradeGear(u, shop, "rod").reason, "gold")
+  u.gold = 100000
+  const r = upgradeGear(u, shop, "rod")
+  assert.equal(r.ok, true)
+  assert.equal(r.item.name, "玻纤竿")
+  assert.equal(u.gold, 100000 - 500)
+  for (const slot of ["rod", "line", "float", "net"]) while (upgradeGear(u, shop, slot).ok);
+  assert.equal(upgradeGear(u, shop, "rod").reason, "max")
+  assert.equal(gearLevel(u, "net"), 5)
+  assert.equal(u.gold, 100000 - 68500) // 全部满级共 68500
+  assert.deepEqual(gearEffects(u, shop), { rareBoost: 28, largeBoost: 12, lineGuard: 90, emptyReduce: 4, reelWindow: 6, sellBonus: 6 })
+  assert.equal(bagCapacity(u, shop, 200), 1200)
+  assert.equal(gearItem(shop, "float", 4).name, "芦苇漂")
+})
+
+test("鱼饵：多种鱼饵、切换、用完自动换", async () => {
+  const { buyBait, useBait, consumeBait, currentBait, findBait, baitCount } = await import("../components/Gear.js")
+  const shop = Config.shop
+  const u = newUser("10011")
+  u.gold = 1000
+  assert.equal(findBait(shop, "").id, "basic")
+  assert.equal(findBait(shop, "蚯蚓").id, "worm")
+  assert.equal(findBait(shop, "秘饵").id, "golden")
+  assert.equal(findBait(shop, "不存在"), null)
+  assert.equal(buyBait(u, shop, "worm", 2).cost, 8)
+  assert.equal(buyBait(u, shop, "basic", 1, 2).cost, 2)
+  assert.equal(useBait(u, shop, "golden").reason, "empty")
+  assert.equal(useBait(u, shop, "worm").ok, true)
+  assert.equal(currentBait(u, shop).id, "worm")
+  assert.equal(consumeBait(u, shop).switched, false)
+  assert.equal(consumeBait(u, shop).bait.id, "worm")
+  const c = consumeBait(u, shop) // 蚯蚓用完 → 自动换普通饵
+  assert.deepEqual([c.bait.id, c.switched, c.from.id], ["basic", true, "worm"])
+  assert.equal(u.baitUse, "basic")
+  assert.equal(baitCount(u, "basic"), 0)
+  assert.equal(consumeBait(u, shop), null)
+})
+
+test("断线：只影响大鱼，鱼线按比例降低", async () => {
+  const { breakChance } = await import("../components/Gear.js")
+  const lb = Config.shop.lineBreak
+  const fish = (rarity, size) => ({ type: "item", rarity, size, item: {} })
+  assert.equal(breakChance(fish("N", "small"), lb), 0)
+  assert.equal(breakChance(fish("SR", "medium"), lb), 0)
+  assert.equal(breakChance(fish("R", "large"), lb), 4)
+  assert.equal(breakChance(fish("SSR", "medium"), lb), 6)
+  assert.equal(breakChance(fish("UR", "large"), lb), 16)
+  assert.ok(Math.abs(breakChance(fish("UR", "large"), lb, { lineGuard: 90 }) - 1.6) < 1e-9)
+  assert.equal(breakChance(fish("junk"), lb), 0)
+  assert.equal(breakChance(fish("hidden"), lb), 0)
+  assert.equal(breakChance({ type: "empty" }, lb), 0)
+})
+
+test("概率下限：效果叠满也不低于下限", async () => {
+  const limits = cfg.limits
+  const huge = { emptyReduce: 50, junkReduce: 50, rareBoost: 1000 }
+  const o = buildOdds(cfg.probability, huge, limits)
+  assert.ok(Math.abs(o.empty - 3) < 1e-9)
+  assert.ok(Math.abs(o.junk - 5) < 1e-9)
+  assert.ok(Math.abs(o.N - 5) < 1e-9)
+  const total = x => Object.values(x).reduce((a, b) => a + b, 0)
+  assert.ok(Math.abs(total(o) - total(buildOdds(cfg.probability))) < 1e-9)
+  // 文档中的“全部叠满”例子：Lv5 鱼竿 + 深海之子 + 大吉 + 金丝秘饵 → 稀有 +73%
+  const full = buildOdds(cfg.probability, { rareBoost: 28 + 20 + 10 + 15, emptyReduce: 2 }, limits)
+  assert.ok(Math.abs(full.UR - 1.94 * 1.73) < 1e-9)
+})
+
+test("存档迁移：旧版 bait 数量转为普通饵", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fishing-mig-"))
+  fs.writeFileSync(path.join(dir, "Fishing_123.yaml"), "user_id: '123'\nbait: 7\ngold: 1\n")
+  const store = new UserData(dir)
+  await store.init({ storage: "yaml" })
+  const u = store.get("123")
+  assert.equal(u.baits.basic, 7)
+  assert.equal(u.bait, undefined)
+  assert.deepEqual(u.gear, { rod: 1, line: 1, float: 1, net: 1 })
+  fs.rmSync(dir, { recursive: true, force: true })
 })

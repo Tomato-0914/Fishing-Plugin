@@ -7,6 +7,7 @@ import { effectText } from "../components/Titles.js"
 import { periodKey } from "../components/Period.js"
 import { withButtons, B } from "../components/Button.js"
 import { groupAllowed, displayName, updateNickname } from "../components/common.js"
+import { addBait, baitCount } from "../components/Gear.js"
 
 /** 低幸运值待确认：user_id → { day, luck } */
 const pending = new Map()
@@ -74,14 +75,14 @@ export class FishingCheckin extends plugin {
     const ret = doCheckin(user, luck)
     addGroup(user, e.group_id)
     const reward = Math.max(0, Number(cfg.baitReward) || 0)
-    user.bait += reward
+    addBait(user, "basic", reward)
 
     const lines = [
       `📅 ${displayName(user)} 打卡成功！`,
       `🍀 今天的幸运值是…… ${luck}`,
       bar(luck),
       this.tierLine(luck),
-      reward ? `🪱 打卡奖励：鱼饵 ×${reward}（当前 ${user.bait}）` : "",
+      reward ? `🪱 打卡奖励：普通饵 ×${reward}（当前 ${baitCount(user, "basic")}）` : "",
       `🔥 连续打卡 ${ret.streak} 天 · 累计 ${ret.total} 天`,
     ]
     // 今日欧皇 / 非酋：当天第一个达到阈值的人

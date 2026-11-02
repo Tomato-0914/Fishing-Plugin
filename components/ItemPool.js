@@ -29,8 +29,11 @@ export function triangular(min, max, rng = Math.random) {
   return min + ((rng() + rng()) / 2) * (max - min)
 }
 
-/** 计算本次钓鱼的结果概率表（已叠加称号效果） */
-export function buildOdds(prob, effects = {}) {
+/**
+ * 计算本次钓鱼的结果概率表（已叠加称号 / 打卡 / 渔具效果）
+ * @param limits 概率下限 { empty, junk, N }，效果叠加后不会低于这些值
+ */
+export function buildOdds(prob, effects = {}, limits = {}) {
   const odds = {
     empty: Number(prob.empty) || 0,
     junk: Number(prob.junk) || 0,
@@ -40,24 +43,24 @@ export function buildOdds(prob, effects = {}) {
     SSR: Number(prob.SSR) || 0,
     UR: Number(prob.UR) || 0,
   }
-  // 海洋卫士类效果：空军 / 垃圾概率下调，转为普通鱼；负数（如打卡“凶”）则从普通鱼转为空军 / 垃圾
+  // 下限不能高于配置的原始概率
+  const floor = k => Math.min(odds[k], Math.max(0, Number(limits[k]) || 0))
+  const floorN = floor("N")
+  // 空军 / 垃圾概率下调，转为普通鱼；负数（如打卡“凶”）则从普通鱼转为空军 / 垃圾
   for (const [key, eff] of [["empty", "emptyReduce"], ["junk", "junkReduce"]]) {
     const v = Number(effects[eff]) || 0
-    const cut = v >= 0 ? Math.min(odds[key], v) : Math.max(v, -odds.N)
+    const cut = v >= 0 ? Math.min(odds[key] - floor(key), v) : Math.max(v, -(odds.N - floorN))
     odds[key] -= cut
     odds.N += cut
   }
-  // 稀有加成：SR 以上概率按倍率提高，多出来的从普通鱼扣除
+  // 稀有加成：SR 以上概率按倍率提高，多出来的从普通鱼扣除（普通鱼不低于下限）
   const boost = Math.max(-100, Number(effects.rareBoost) || 0)
   if (boost > 0) {
-    let extra = 0
-    for (const r of RARE) {
-      const add = odds[r] * boost / 100
-      odds[r] += add
-      extra += add
-    }
-    const fromN = Math.min(odds.N, extra)
-    odds.N -= fromN
+    const room = Math.max(0, odds.N - floorN)
+    const want = [...RARE].reduce((s, r) => s + odds[r] * boost / 100, 0)
+    const scale = want > room ? room / want : 1
+    for (const r of RARE) odds[r] += odds[r] * boost / 100 * scale
+    odds.N -= want * scale
   } else if (boost < 0) {
     // 稀有下调：减少的部分转给普通鱼
     for (const r of RARE) {
@@ -90,8 +93,8 @@ const round2 = n => Math.round(n * 1000) / 1000
  * 钓一次
  * @returns {{type:"empty"}|{type:"item", item, rarity, size?, weight?, price}}
  */
-export function roll({ items, probability, size }, effects = {}, rng = Math.random) {
-  const outcome = weightedPick(Object.entries(buildOdds(probability, effects)), rng)
+export function roll({ items, probability, size, limits }, effects = {}, rng = Math.random) {
+  const outcome = weightedPick(Object.entries(buildOdds(probability, effects, limits)), rng)
   if (outcome === "empty") return { type: "empty" }
 
   let item

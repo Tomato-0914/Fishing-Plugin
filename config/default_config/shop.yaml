@@ -1,0 +1,62 @@
+# ===== 渔具商店 =====
+# 修改请复制本文件到 config/config/shop.yaml，只写要改的部分即可（列表会整段替换）
+# 渔具为升级制：Lv1 免费，必须拥有上一级才能购买下一级，购买后自动装备
+# effects 写法与称号相同：
+#   rareBoost 稀有以上概率 +N%（相对值）  largeBoost 大体型概率 +N%
+#   emptyReduce 空军概率 -N%              junkReduce 垃圾概率 -N%
+#   reelWindow 收杆时间 +N 秒              biteReduce 咬钩等待 -N 秒
+#   lineGuard 断线概率 -N%（相对值）        sellBonus 出售金币 +N%
+# 鱼护的 capacity 为容量；Lv1 鱼护的容量取 config.yaml 中的 fishing.bagLimit
+
+gear:
+  rod:
+    name: 鱼竿
+    emoji: 🎣
+    levels:
+      - { name: 青竹竿,   price: 0,     effects: {},                               desc: 祖传的竹竿，结实就是最大的优点 }
+      - { name: 玻纤竿,   price: 500,   effects: { rareBoost: 5, largeBoost: 3 },  desc: 玻璃纤维竿身，耐摔耐造 }
+      - { name: 碳纤竿,   price: 2000,  effects: { rareBoost: 10, largeBoost: 5 }, desc: 碳素竿身，又轻又灵敏 }
+      - { name: 高模碳竿, price: 6000,  effects: { rareBoost: 18, largeBoost: 8 }, desc: 高模量碳素，硬而轻，遛大鱼不费劲 }
+      - { name: 星陨竿,   price: 18000, effects: { rareBoost: 28, largeBoost: 12 }, desc: 传说竿芯用陨铁锻造，握在手里隐隐发热 }
+  line:
+    name: 鱼线
+    emoji: 🧵
+    levels:
+      - { name: 尼龙线,     price: 0,     effects: {},                desc: 弹性大，适合入门 }
+      - { name: 碳氟线,     price: 300,   effects: { lineGuard: 30 }, desc: 更细更耐磨，水里几乎看不见 }
+      - { name: 编织线,     price: 1200,  effects: { lineGuard: 55 }, desc: 多股编织，同样粗细拉力最强 }
+      - { name: 复合编织线, price: 3500,  effects: { lineGuard: 75 }, desc: 编织主线配耐磨前导线，刚柔并济 }
+      - { name: 龙筋线,     price: 10000, effects: { lineGuard: 90 }, desc: 据说是用龙须捻成的，几乎扯不断 }
+  float:
+    name: 浮漂
+    emoji: 🎈
+    levels:
+      - { name: 泡沫漂, price: 0,    effects: {},                               desc: 最普通的泡沫浮漂 }
+      - { name: 杉木漂, price: 200,  effects: { emptyReduce: 1, reelWindow: 2 }, desc: 木质漂身，便宜耐用 }
+      - { name: 纳米漂, price: 800,  effects: { emptyReduce: 2, reelWindow: 3 }, desc: 不吸水，稳定好用 }
+      - { name: 芦苇漂, price: 2500, effects: { emptyReduce: 3, reelWindow: 5 }, desc: 极其灵敏，细微的鱼口也逃不过 }
+      - { name: 月光漂, price: 8000, effects: { emptyReduce: 4, reelWindow: 6 }, desc: 自带柔和的光，夜里也看得清清楚楚 }
+  net:
+    name: 鱼护
+    emoji: 🧺
+    levels:
+      - { name: 尼龙网兜, price: 0,     capacity: 200,  effects: {},               desc: 能装就行 }
+      - { name: 加厚鱼护, price: 300,   capacity: 300,  effects: {},               desc: 网眼更密，装得更多 }
+      - { name: 速干鱼护, price: 1200,  capacity: 500,  effects: {},               desc: 收起来不滴水，背着也轻松 }
+      - { name: 活水鱼护, price: 4000,  capacity: 800,  effects: { sellBonus: 3 }, desc: 让鱼一直活蹦乱跳，卖相更好 }
+      - { name: 潮汐鱼护, price: 10000, capacity: 1200, effects: { sellBonus: 6 }, desc: 会随潮汐换水，鱼比刚钓上来还精神 }
+
+# 鱼饵：每竿消耗 1 个，同时只能使用一种；当前鱼饵用完时自动换成还有库存的鱼饵
+# 新手礼包、打卡奖励、救济发放的都是 basic（普通饵），单价取 config.yaml 中的 bait.price
+baits:
+  - { id: basic,  name: 普通饵,   emoji: 🥣, effects: {},                              desc: 商店里最常见的饵料 }
+  - { id: worm,   name: 蚯蚓,     emoji: 🪱, price: 4,  effects: { biteReduce: 2, emptyReduce: 2 }, desc: 万能活饵，几乎什么鱼都爱吃 }
+  - { id: scent,  name: 腥香饵,   emoji: 🧆, price: 6,  effects: { junkReduce: 4 },    desc: 加了鱼粉虾粉，香味能把鱼引过来 }
+  - { id: shrimp, name: 活虾,     emoji: 🦐, price: 10, effects: { largeBoost: 8 },    desc: 掠食性的大鱼最爱吃活虾 }
+  - { id: golden, name: 金丝秘饵, emoji: ✨, price: 25, effects: { rareBoost: 15 },    desc: 老钓鱼佬的独门配方，从不外传 }
+
+# 断线：收杆时大鱼可能挣断鱼线跑掉（%），鱼线的 lineGuard 按比例降低
+lineBreak:
+  SSR: 6        # 史诗
+  UR: 12        # 传说
+  large: 4      # 大体型额外增加（垃圾、隐藏款不会断线）

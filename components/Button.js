@@ -27,6 +27,8 @@ export const B = {
   sell: { text: "🏷️ 出售…", input: "#出售 " },
   discard: { text: "🗑️ 丢弃垃圾", callback: "#丢弃垃圾" },
   help: { text: "📖 钓鱼帮助", callback: "#钓鱼帮助" },
+  shop: { text: "🏪 渔具商店", callback: "#渔具商店" },
+  myGear: { text: "🧰 我的渔具", callback: "#我的渔具" },
   checkin: { text: "📅 打卡", callback: "#打卡" },
   luckRank: { text: "🍀 幸运榜", callback: "#幸运值排行榜" },
   buyBait: { text: "🪱 买 10 个鱼饵", callback: "#购买鱼饵10" },

@@ -51,6 +51,7 @@ const EFFECT_TEXT = {
   rareBoost: ["稀有以上概率", "%", false],
   largeBoost: ["大体型概率", "%", false],
   sellBonus: ["出售金币", "%", false],
+  lineGuard: ["断线概率", "%", true],
 }
 
 export function effectText(effects = {}) {

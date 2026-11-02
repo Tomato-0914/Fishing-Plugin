@@ -11,7 +11,9 @@ export function newUser(id) {
     user_id: String(id),
     nickname: "",
     gold: 0,
-    bait: 0,
+    baits: {},
+    baitUse: "basic",
+    gear: { rod: 1, line: 1, float: 1, net: 1 },
     welcomed: false,
     reliefDay: "",
     groups: [],
@@ -38,6 +40,13 @@ function normalize(data, id) {
   user.stats = { ...base.stats, ...(data?.stats || {}) }
   for (const k of ["groups", "bag", "titles"]) if (!Array.isArray(user[k])) user[k] = []
   for (const k of ["period", "dex", "records"]) if (!user[k] || typeof user[k] !== "object") user[k] = {}
+  // 旧版单一鱼饵数量 → 普通饵
+  if (!user.baits || typeof user.baits !== "object") user.baits = {}
+  if (data?.bait != null) {
+    user.baits.basic = (Number(user.baits.basic) || 0) + (Number(data.bait) || 0)
+    delete user.bait
+  }
+  user.gear = { ...base.gear, ...(data?.gear || {}) }
   user.checkin = { ...base.checkin, ...(data?.checkin || {}) }
   if (!Array.isArray(user.checkin.history)) user.checkin.history = []
   user.user_id = String(user.user_id || id)
