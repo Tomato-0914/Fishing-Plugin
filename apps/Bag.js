@@ -71,7 +71,7 @@ export class FishingBag extends plugin {
     const limit = bagCapacity(user, Config.shop, Config.config.fishing?.bagLimit)
 
     if (!list.length)
-      return e.reply(withButtons(e, `🎒 ${displayName(user)} 的鱼护空空如也~\n💰 金币：${user.gold}\n发送 #钓鱼 去钓几条吧！`, [B.start]))
+      return e.reply(withButtons(e, `🎒 ${displayName(user)} 的鱼护空空如也~\n💰 金币：${user.gold}\n发送 #钓鱼 去钓几条吧！`, [B.start, B.multi]))
 
     const msg = await renderOrText(puppeteer, "bag", {
       name: displayName(user), avatar: avatar(user.user_id), gold: user.gold,
@@ -88,6 +88,7 @@ export class FishingBag extends plugin {
     if (!msg) return true
     return e.reply(withButtons(e, msg,
       [B.sellAll, B.sell, ...(junk ? [B.discard] : [])],
+      [B.cast, B.multi],
       [B.dayRank, B.weekRank, B.monthRank]))
   }
 
@@ -129,14 +130,14 @@ export class FishingBag extends plugin {
       `👛 当前金币：${user.gold}`,
     ]
     if (junkLeft) lines.push(`🗑️ 鱼护里还有 ${junkLeft} 件垃圾，可发送 #清理垃圾 统一回收`)
-    return e.reply(withButtons(e, lines.join("\n"), [B.cast, B.bag, ...(junkLeft ? [B.discard] : [])]))
+    return e.reply(withButtons(e, lines.join("\n"), [B.cast, B.multi], [B.bag, B.shop, ...(junkLeft ? [B.discard] : [])]))
   }
 
   async discard(e) {
     if (!groupAllowed(e)) return false
     const user = this.load(e)
     const n = discardJunk(user, itemMap())
-    if (!n) return e.reply(withButtons(e, "✨ 鱼护里没有垃圾，干干净净~", [B.cast]))
+    if (!n) return e.reply(withButtons(e, "✨ 鱼护里没有垃圾，干干净净~", [B.cast, B.multi]))
     const guardian = (Config.titles || []).find(t => t.id === "guardian")
     const lines = [
       `♻️ 已将 ${n} 件海洋垃圾送去回收站，海洋又干净了一点~`,
@@ -147,7 +148,7 @@ export class FishingBag extends plugin {
     const got = checkTitles(user, Config.titles, Config.items)
     UserData.save(user.user_id)
     for (const t of got) lines.push("", `🏅 恭喜获得称号【${t.emoji} ${t.name}】\n✨ 效果：${effectText(t.effects)}`)
-    return e.reply(withButtons(e, lines.join("\n"), [B.cast, B.bag]))
+    return e.reply(withButtons(e, lines.join("\n"), [B.cast, B.multi, B.bag]))
   }
 
   async info(e) {
@@ -170,7 +171,7 @@ export class FishingBag extends plugin {
       `🔥 连续打卡 ${user.checkin.streak} 天 · 累计 ${user.checkin.total} 天`,
       `🏅 称号：${titles.length ? titles.map(t => `${t.emoji}${t.name}`).join(" ") : "暂无"}`,
     ].filter(Boolean).join("\n")
-    return e.reply(withButtons(e, msg, [B.bag, B.titles, B.dex], [B.checkin]))
+    return e.reply(withButtons(e, msg, [B.bag, B.titles, B.dex], [B.checkin, B.myGear, B.myBait]))
   }
 
   async dex(e) {

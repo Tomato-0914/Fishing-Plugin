@@ -94,7 +94,7 @@ export class FishingCheckin extends plugin {
     else if (luck <= 10) lines.push("💪 幸运值有点低，不过不要丧失对生活的希望哦~")
 
     UserData.save(id)
-    return e.reply(withButtons(e, lines.filter(Boolean).join("\n"), [B.start, B.luckRank]))
+    return e.reply(withButtons(e, lines.filter(Boolean).join("\n"), [B.start, B.multi, B.luckRank]))
   }
 
   async king(e) {

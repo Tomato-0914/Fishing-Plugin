@@ -21,6 +21,8 @@ export function withButtons(e, msg, ...rows) {
 export const B = {
   cast: { text: "🎣 再来一竿", callback: "#钓鱼" },
   start: { text: "🎣 开始钓鱼", callback: "#钓鱼" },
+  multi: { text: "🔟 十连钓鱼", callback: "#十连钓鱼" },
+  multiAgain: { text: "🔟 再来十连", callback: "#十连钓鱼" },
   reel: e => ({ text: "🪝 收杆！", callback: "#收杆", permission: e.user_id }),
   bag: { text: "🎒 我的鱼护", callback: "#我的鱼护" },
   sellAll: { text: "💰 一键出售", callback: "#一键出售" },
@@ -32,7 +34,8 @@ export const B = {
   myGear: { text: "🧰 我的渔具", callback: "#我的渔具" },
   checkin: { text: "📅 打卡", callback: "#打卡" },
   luckRank: { text: "🍀 幸运榜", callback: "#幸运值排行榜" },
-  buyBait: { text: "🪱 买 10 个鱼饵", callback: "#购买鱼饵10" },
+  buyBait: { text: "🥣 普通饵×10", callback: "#购买鱼饵10" },
+  myBait: { text: "🧺 我的鱼饵", callback: "#我的鱼饵" },
   buyBaitInput: { text: "🪱 购买鱼饵…", input: "#购买鱼饵 " },
   dayRank: { text: "今日榜", callback: "#钓鱼排行榜" },
   weekRank: { text: "周榜", callback: "#钓鱼周排行榜" },

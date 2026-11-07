@@ -109,7 +109,7 @@ export class FishingShop extends plugin {
     const buy = baits.map(b => ({ text: `${b.name}×10`, callback: `#购买鱼饵 ${b.name} 10` }))
     const rows = []
     for (let i = 0; i < buy.length; i += 3) rows.push(buy.slice(i, i + 3))
-    return e.reply(withButtons(e, msg, ...rows, [B.buyBaitInput, { text: "🧺 我的鱼饵", callback: "#我的鱼饵" }, B.workshop]))
+    return e.reply(withButtons(e, msg, ...rows, [B.buyBaitInput, B.myBait, B.workshop]))
   }
 
   async upgrade(e) {
@@ -161,7 +161,7 @@ export class FishingShop extends plugin {
       `${bait.emoji} 成功购买${bait.name} ×${ret.count}，花费 ${ret.cost} 金币`,
       `🪱 ${bait.name}库存：${baitCount(user, bait.id)} · 👛 剩余金币：${user.gold}`,
     ]
-    const buttons = [B.start]
+    const buttons = [B.start, B.multi]
     if (cur.id !== bait.id) {
       lines.push(`💡 当前使用的是${cur.name}，发送 #使用鱼饵 ${bait.name} 切换`)
       buttons.unshift({ text: `使用${bait.name}`, callback: `#使用鱼饵 ${bait.name}` })
@@ -181,7 +181,7 @@ export class FishingShop extends plugin {
       return e.reply(withButtons(e, `🪱 你还没有${bait.name}，先买一些吧（${baitPrice(shop, bait.id, this.baitCfg)} 金币/个）`,
         [{ text: `买 10 个${bait.name}`, callback: `#购买鱼饵 ${bait.name} 10` }]))
     UserData.save(user.user_id)
-    return e.reply(withButtons(e, `${bait.emoji} 已换上${bait.name}（库存 ${baitCount(user, bait.id)}）\n✨ 效果：${effectText(bait.effects)}`, [B.start]))
+    return e.reply(withButtons(e, `${bait.emoji} 已换上${bait.name}（库存 ${baitCount(user, bait.id)}）\n✨ 效果：${effectText(bait.effects)}`, [B.start, B.multi]))
   }
 
   async bait(e) {
