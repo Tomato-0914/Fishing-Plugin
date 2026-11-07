@@ -30,7 +30,7 @@ test("默认配置与物品池完整", () => {
   for (const id of Object.keys(cfg.probability.hidden)) assert.ok(itemMap.has(id), id)
   // 不放国家重点保护野生动物（以及容易引起争议的近似名称）
   const PROTECTED = ["鲟", "江豚", "白鱀豚", "海豚", "鲥", "松江鲈", "四鳃鲈", "胭脂鱼", "海马", "鲎", "苏眉", "老鼠斑",
-    "黄唇鱼", "大鲵", "娃娃鱼", "海龟", "玳瑁", "砗磲", "鹦鹉螺", "珊瑚", "鲸", "海豹", "哲罗鲑", "细鳞鲑", "唐鱼", "金线鲃", "河蚌", "锦绣龙虾"]
+    "黄唇鱼", "大鲵", "娃娃鱼", "龟", "玳瑁", "砗磲", "鹦鹉螺", "珊瑚", "鲸", "海豹", "哲罗鲑", "细鳞鲑", "唐鱼", "金线鲃", "河蚌", "锦绣龙虾"]
   for (const banned of PROTECTED) assert.ok(!items.some(i => i.name.includes(banned)), banned)
   // 每件物品都有介绍、栖息地；名称不重复
   assert.equal(new Set(items.map(i => i.name)).size, items.length)
