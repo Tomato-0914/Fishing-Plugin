@@ -94,6 +94,41 @@
   desc: 只剩左耳有声音
   habitat: 近岸水域
   intro: "电子垃圾含有多种有害物质，请交给专门的回收点处理。"
+- id: umbrella
+  name: 破雨伞
+  emoji: ☂️
+  rarity: junk
+  desc: 伞骨已经折了好几根
+  habitat: 近岸水域
+  intro: "金属伞骨会生锈、伞面难以降解，坏掉的雨伞请拆开分类丢弃。"
+- id: takeout
+  name: 外卖盒
+  emoji: 🥡
+  rarity: junk
+  desc: 里面还剩半口米饭
+  habitat: 近岸水域
+  intro: "一次性塑料餐盒很难降解，吃完请沥干丢进垃圾桶，别随手扔进水里。"
+- id: phone
+  name: 旧手机
+  emoji: 📱
+  rarity: junk
+  desc: 已经开不了机了
+  habitat: 近岸水域
+  intro: "手机电池和电路板含有重金属，废旧手机请交给正规回收点。"
+- id: mask
+  name: 一次性口罩
+  emoji: 😷
+  rarity: junk
+  desc: 挂在鱼钩上晃来晃去
+  habitat: 近岸水域
+  intro: "口罩的熔喷布是塑料纤维，挂耳绳还会缠住水鸟，用完请剪断挂绳再丢。"
+- id: duck
+  name: 小黄鸭
+  emoji: 🦆
+  rarity: junk
+  desc: 谁家的洗澡玩具漂到这里来了
+  habitat: 随洋流漂流
+  intro: "1992 年一批浴缸玩具落入太平洋，之后多年在世界各地海岸被发现，还帮科学家研究了洋流。"
 
 # ---------- 普通 N ----------
 - id: crucian
@@ -168,6 +203,78 @@
   desc: 总是成群结队
   habitat: 近海上层
   intro: "沙丁鱼成群洄游，鱼群能绵延数公里，是海洋食物链中重要的一环，也是罐头界的明星。"
+- id: smallcroaker
+  name: 小黄鱼
+  emoji: 🐟
+  rarity: N
+  price: 5
+  weight: [0.05, 0.3]
+  desc: 大黄鱼的小表亲
+  habitat: 近海
+  intro: "和大黄鱼是亲戚，个头小一圈，也会用鳔“咕咕”叫，曾是我国的四大海产之一。"
+- id: bitterling
+  name: 鳑鲏
+  emoji: 🐟
+  rarity: N
+  price: 2
+  weight: [0.005, 0.02]
+  desc: 身上泛着彩虹光
+  habitat: 小河、池塘
+  intro: "鳑鲏会把卵产在河蚌的鳃里，让河蚌帮忙“带孩子”；雄鱼繁殖季身上会泛出彩虹般的颜色。"
+- id: gudgeon
+  name: 棒花鱼
+  emoji: 🐟
+  rarity: N
+  price: 2
+  weight: [0.01, 0.06]
+  desc: 贴着沙底慢慢游
+  habitat: 河湖沙底
+  intro: "喜欢贴着沙底游动觅食，雄鱼会在沙地上挖窝守护鱼卵，是个尽职的爸爸。"
+- id: goby
+  name: 虾虎鱼
+  emoji: 🐟
+  rarity: N
+  price: 3
+  weight: [0.01, 0.06]
+  desc: 吸在石头上不肯走
+  habitat: 浅水石缝
+  intro: "腹鳍合成了一个吸盘，能牢牢吸在石头上；有些虾虎鱼还会和虾合住一个洞，互相照应。"
+- id: snail
+  name: 螺蛳
+  emoji: 🐌
+  rarity: N
+  price: 2
+  weight: [0.005, 0.02]
+  desc: 嗦螺的那个螺
+  habitat: 河沟、稻田
+  intro: "螺蛳有一片“口盖”，遇到危险就缩进壳里把门关上。炒螺蛳是夏夜大排档的常客。"
+- id: silvercarp
+  name: 白鲢
+  emoji: 🐟
+  rarity: N
+  price: 6
+  weight: [0.5, 5]
+  desc: 一受惊就跳出水面
+  habitat: 江河、水库上层
+  intro: "鲢鱼靠滤食水中的浮游生物生活，常被放进水库帮忙净化水质，受惊时会成群跃出水面。"
+- id: dace
+  name: 鲮鱼
+  emoji: 🐟
+  rarity: N
+  price: 5
+  weight: [0.1, 0.8]
+  desc: 豆豉鲮鱼罐头的主角
+  habitat: 华南江河
+  intro: "喜欢啃食附着在石头上的藻类，是华南地区常见的食用鱼，豆豉鲮鱼罐头用的就是它。"
+- id: chubsucker
+  name: 马口鱼
+  emoji: 🐟
+  rarity: N
+  price: 3
+  weight: [0.02, 0.15]
+  desc: 溪流里的小霸王
+  habitat: 山涧溪流
+  intro: "嘴巴弯弯像马嘴，性情活泼好斗，雄鱼在繁殖季身上会出现鲜艳的婚姻色。"
 
 # ---------- 优良 R ----------
 - id: carp
@@ -242,6 +349,78 @@
   desc: 扁扁的很可爱
   habitat: 近海中下层
   intro: "身体扁圆、银光闪闪，游起来像一只只银盘。肉质细嫩，是东南沿海常见的海鲜。"
+- id: ricefieldeel
+  name: 黄鳝
+  emoji: 🐍
+  rarity: R
+  price: 18
+  weight: [0.1, 0.6]
+  desc: 滑溜溜的泥洞住户
+  habitat: 稻田、池塘泥洞
+  intro: "黄鳝白天躲在泥洞里，夜里才出来捕食。它们会“性逆转”：先是雌性，长大后变成雄性。"
+- id: yellowcatfish
+  name: 黄颡鱼
+  emoji: 🐟
+  rarity: R
+  price: 16
+  weight: [0.05, 0.4]
+  desc: 俗称黄辣丁
+  habitat: 江河湖泊底层
+  intro: "胸鳍和背鳍上有硬刺，被抓住时会发出“咯吱咯吱”的声音，煮汤非常鲜美。"
+- id: bighead
+  name: 鳙鱼
+  emoji: 🐟
+  rarity: R
+  price: 14
+  weight: [1, 10]
+  desc: 又叫胖头鱼
+  habitat: 江河湖泊中上层
+  intro: "脑袋大约占了身体的三分之一，剁椒鱼头用的就是它，和白鲢一样靠滤食浮游生物生活。"
+- id: bream
+  name: 鳊鱼
+  emoji: 🐟
+  rarity: R
+  price: 15
+  weight: [0.3, 2]
+  desc: 身子又扁又高
+  habitat: 湖泊中下层
+  intro: "团头鲂就是“才饮长沙水，又食武昌鱼”里的武昌鱼，肉质细嫩，适合清蒸。"
+- id: blackcarp
+  name: 青鱼
+  emoji: 🐟
+  rarity: R
+  price: 20
+  weight: [2, 15]
+  desc: 四大家鱼里的大个子
+  habitat: 江河湖泊底层
+  intro: "四大家鱼里个头最大的，最爱吃螺蛳，喉咙里有能压碎螺壳的咽齿。"
+- id: snakehead
+  name: 乌鳢
+  emoji: 🐟
+  rarity: R
+  price: 22
+  weight: [0.5, 4]
+  desc: 俗称黑鱼，脾气火爆
+  habitat: 池塘、水草丛
+  intro: "性情凶猛，能直接呼吸空气，离开水也能活上好一阵，是路亚钓友喜欢的对手。"
+- id: topmouth
+  name: 翘嘴
+  emoji: 🐟
+  rarity: R
+  price: 20
+  weight: [0.3, 3]
+  desc: 嘴巴向上翘着
+  habitat: 江河湖泊上层
+  intro: "喜欢在水面追捕小鱼，冲击力很强，是路亚钓友最爱的对象之一。"
+- id: saury
+  name: 秋刀鱼
+  emoji: 🐟
+  rarity: R
+  price: 12
+  weight: [0.1, 0.25]
+  desc: 细长得像一把刀
+  habitat: 北太平洋
+  intro: "每年秋天洄游时最肥美，名字里的“秋”和“刀”说的就是季节和身形，盐烤最好吃。"
 
 # ---------- 稀有 SR ----------
 - id: croaker
@@ -316,6 +495,69 @@
   desc: 钳子很有力
   habitat: 近海泥沙底
   intro: "甲壳两端尖尖的，像织布用的梭子。最后一对步足扁平如桨，是螃蟹里的游泳健将。"
+- id: puffer
+  name: 河豚
+  emoji: 🐡
+  rarity: SR
+  price: 45
+  weight: [0.2, 1.5]
+  desc: 一生气就鼓成球
+  habitat: 近海与河口
+  intro: "遇到危险会吸水把自己鼓成一个球。野生河豚的内脏和血液含有剧毒，千万不要自己处理。"
+- id: mackerel
+  name: 马鲛鱼
+  emoji: 🐟
+  rarity: SR
+  price: 40
+  weight: [1, 6]
+  desc: 游起来像一枚鱼雷
+  habitat: 近海中上层
+  intro: "游速很快，身形修长。北方叫它鲅鱼，鲅鱼馅饺子是沿海地区的特色美食。"
+- id: redbream
+  name: 真鲷
+  emoji: 🐠
+  rarity: SR
+  price: 50
+  weight: [0.5, 4]
+  desc: 通红喜庆的加吉鱼
+  habitat: 近海礁石区
+  intro: "身体通红，又叫加吉鱼，在一些地方被视为吉祥的象征，常出现在宴席上。"
+- id: abalone
+  name: 鲍鱼
+  emoji: 🐚
+  rarity: SR
+  price: 55
+  weight: [0.05, 0.3]
+  desc: 牢牢吸在礁石上
+  habitat: 近岸礁石
+  intro: "其实是一种贝类，只有一片壳，靠强壮的腹足吸附在礁石上，力气大得掰都掰不下来。"
+- id: mantis
+  name: 皮皮虾
+  emoji: 🦐
+  rarity: SR
+  price: 32
+  weight: [0.03, 0.12]
+  desc: 出拳快得看不清
+  habitat: 近海泥沙
+  intro: "学名虾蛄，前肢出拳速度极快，有些种类能一拳打碎贝壳，小心别被它“揍”了。"
+- id: giantprawn
+  name: 罗氏沼虾
+  emoji: 🦐
+  rarity: SR
+  price: 36
+  weight: [0.05, 0.2]
+  desc: 长着一对蓝色大钳
+  habitat: 淡水池塘
+  intro: "又叫大头虾，是体型最大的淡水虾之一，雄虾的一对大螯又长又蓝。"
+- id: blackbream
+  name: 黑鲷
+  emoji: 🐟
+  rarity: SR
+  price: 42
+  weight: [0.3, 3]
+  desc: 咬钩轻得像羽毛
+  habitat: 近海礁石、河口
+  intro: "俗称黑加吉，警惕性很高，咬钩很轻，矶钓高手才钓得到。"
 
 # ---------- 史诗 SSR ----------
 - id: tuna
@@ -372,6 +614,60 @@
   desc: 头上挂着一盏小灯
   habitat: 深海与大陆架海底
   intro: "头顶有一根像钓竿的鳍棘，末端会发光，用来引诱猎物——它自己就是个钓鱼佬。"
+- id: cod
+  name: 鳕鱼
+  emoji: 🐟
+  rarity: SSR
+  price: 95
+  weight: [2, 20]
+  desc: 雪白细嫩少小刺
+  habitat: 寒冷海域
+  intro: "肉质雪白细嫩、几乎没有小刺，是炸鱼薯条里的经典鱼，鱼肝还能提炼鱼肝油。"
+- id: geoduck
+  name: 象拔蚌
+  emoji: 🐚
+  rarity: SSR
+  price: 130
+  weight: [0.5, 2]
+  desc: 长着一条“象鼻子”
+  habitat: 泥沙海底
+  intro: "伸出来的长长“象鼻子”其实是它的水管，寿命可以超过一百年。"
+- id: snowcrab
+  name: 雪蟹
+  emoji: 🦀
+  rarity: SSR
+  price: 120
+  weight: [0.5, 2]
+  desc: 腿又细又长
+  habitat: 寒冷海域
+  intro: "蟹腿细长、蟹肉雪白，因此得名，生活在北方寒冷的海底。"
+- id: spotprawn
+  name: 牡丹虾
+  emoji: 🦐
+  rarity: SSR
+  price: 110
+  weight: [0.05, 0.2]
+  desc: 红艳艳的大虾
+  habitat: 北太平洋深海
+  intro: "个头大、颜色红艳，刺身口感甜美。很多牡丹虾小时候是雄性，长大后才变成雌性。"
+- id: mahimahi
+  name: 鬼头刀
+  emoji: 🐟
+  rarity: SSR
+  price: 85
+  weight: [3, 25]
+  desc: 闪着金绿色光芒
+  habitat: 热带大洋表层
+  intro: "学名鲯鳅，额头又高又方，游速极快。刚出水时身上闪着金绿色光芒，离水后颜色会慢慢变淡。"
+- id: swordfish
+  name: 剑鱼
+  emoji: 🐟
+  rarity: SSR
+  price: 150
+  weight: [30, 200]
+  desc: 上颌像一把长剑
+  habitat: 温暖大洋
+  intro: "用剑一样的上颌劈砍鱼群。为了让大脑和眼睛保持温暖，它还长着专门的“加热器官”。"
 
 # ---------- 传说 UR ----------
 - id: goldkoi
@@ -419,6 +715,42 @@
   desc: 传说中龙宫的守卫
   habitat: 传说中的龙宫
   intro: "据说是龙宫的守卫。见到它的人会被问一句：“你掉的是这只金龙虾，还是这只银龙虾？”"
+- id: oarfish
+  name: 皇带鱼
+  emoji: 🎗️
+  rarity: UR
+  price: 400
+  weight: [20, 150]
+  desc: 银色的深海飘带
+  habitat: 深海
+  intro: "世界上最长的硬骨鱼，身体像一条银色飘带，偶尔出现在海面附近，被称为“地震鱼”。"
+- id: bluelobster
+  name: 蓝龙虾
+  emoji: 🦞
+  rarity: UR
+  price: 460
+  weight: [0.5, 3]
+  desc: 两百万只里才有一只
+  habitat: 寒冷海域礁石
+  intro: "极其罕见的变色龙虾，据说大约两百万只里才有一只是蓝色的，煮熟后照样会变红。"
+- id: goldcatfish
+  name: 鎏金鲶王
+  emoji: 👑
+  rarity: UR
+  price: 380
+  weight: [20, 80]
+  desc: 皮肤泛着金光的老鲶鱼
+  habitat: 传说中的大江深潭
+  intro: "传说在大江深潭里活了上百年的鲶鱼。它没有鳞，但浑身皮肤泛着金光，胡须比钓竿还长。"
+- id: flamebream
+  name: 赤焰真鲷
+  emoji: 🔥
+  rarity: UR
+  price: 420
+  weight: [3, 15]
+  desc: 鳞片红得像在燃烧
+  habitat: 传说中的火山海域
+  intro: "据说生活在海底火山口附近，鳞片红得像燃烧的火焰，钓上来时鱼身还是烫的。"
 
 # ---------- 隐藏 ----------
 - id: people_fragment

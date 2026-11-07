@@ -1,4 +1,4 @@
-/** 渔具工坊（升级渔具）与渔具商店（购买 / 切换鱼饵），以及装备查看 */
+/** 渔具工坊（升级渔具）与鱼饵商店（购买 / 切换鱼饵），以及装备查看 */
 import { plugin, puppeteer } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
@@ -20,12 +20,13 @@ export class FishingShop extends plugin {
   constructor() {
     super({
       name: "钓鱼-渔具工坊与商店",
-      dsc: "渔具工坊升级渔具，渔具商店购买鱼饵",
+      dsc: "渔具工坊升级渔具，鱼饵商店购买鱼饵",
       event: "message",
       priority: 500,
       rule: [
         { reg: /^#?(渔具工坊|钓鱼工坊|工坊)$/, fnc: "workshop" },
-        { reg: /^#?(渔具商店|渔具店|钓鱼商店|鱼饵商店)$/, fnc: "shop" },
+        // #渔具商店 为旧指令，保留兼容聊天记录里的旧按钮
+        { reg: /^#?(鱼饵商店|渔具商店|渔具店|钓鱼商店)$/, fnc: "shop" },
         { reg: /^#?升级(鱼竿|鱼线|浮漂|鱼护)$/, fnc: "upgrade" },
         { reg: /^#?(购买|买)鱼饵\s*(.*)$/, fnc: "buy" },
         { reg: /^#?(使用|切换|换)鱼饵\s*(.+)$/, fnc: "use" },
@@ -87,7 +88,7 @@ export class FishingShop extends plugin {
     return e.reply(withButtons(e, msg, ...UPGRADE_BUTTONS, [B.myGear, B.shop]))
   }
 
-  /** 渔具商店：只卖鱼饵 */
+  /** 鱼饵商店：只卖鱼饵 */
   async shop(e) {
     if (!groupAllowed(e)) return false
     const user = this.load(e)
@@ -97,7 +98,7 @@ export class FishingShop extends plugin {
       ...b, price: baitPrice(shop, b.id, this.baitCfg), count: baitCount(user, b.id), current: b.id === cur.id, text: effectText(b.effects),
     }))
     const msg = await renderOrText(puppeteer, "shop", { name: displayName(user), gold: user.gold, baits }, () => [
-      `🏪 渔具商店 · 👛 ${user.gold} 金币`,
+      `🏪 鱼饵商店 · 👛 ${user.gold} 金币`,
       "━━━━━━━━━━━━",
       "🪱 鱼饵（每竿消耗 1 个，同时只用一种）",
       ...baits.map(b => `${b.current ? "▶" : "　"}${b.emoji}${b.name} ${b.price} 金币 · 库存 ${b.count} · ${b.text === "无" ? b.desc : b.text}`),

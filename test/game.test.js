@@ -28,7 +28,12 @@ test("默认配置与物品池完整", () => {
   }
   for (const r of ["junk", "N", "R", "SR", "SSR", "UR"]) assert.ok(items.some(i => i.rarity === r), r)
   for (const id of Object.keys(cfg.probability.hidden)) assert.ok(itemMap.has(id), id)
-  for (const banned of ["中华鲟", "江豚"]) assert.ok(!items.some(i => i.name.includes(banned)))
+  // 不放国家重点保护野生动物（以及容易引起争议的近似名称）
+  const PROTECTED = ["鲟", "江豚", "白鱀豚", "海豚", "鲥", "松江鲈", "四鳃鲈", "胭脂鱼", "海马", "鲎", "苏眉", "老鼠斑",
+    "黄唇鱼", "大鲵", "娃娃鱼", "海龟", "玳瑁", "砗磲", "鹦鹉螺", "珊瑚", "鲸", "海豹", "哲罗鲑", "细鳞鲑", "唐鱼", "金线鲃", "河蚌", "锦绣龙虾"]
+  for (const banned of PROTECTED) assert.ok(!items.some(i => i.name.includes(banned)), banned)
+  // 每件物品都有介绍、栖息地；名称不重复
+  assert.equal(new Set(items.map(i => i.name)).size, items.length)
   assert.equal(cfg.policeReward, 5000)
 })
 
@@ -329,7 +334,8 @@ test("图鉴详情：概率、体型区间、搜索、个人记录", async () =>
   const sum = items.reduce((s, i) => s + itemChance(i, items, cfg.probability), 0)
   assert.ok(Math.abs(sum + cfg.probability.empty - 100) < 1e-9)
   const tuna = itemMap.get("tuna")
-  assert.ok(Math.abs(itemChance(tuna, items, cfg.probability) - 5 / 6) < 1e-9)
+  const ssrCount = items.filter(i => i.rarity === "SSR").length
+  assert.ok(Math.abs(itemChance(tuna, items, cfg.probability) - 5 / ssrCount) < 1e-9)
   assert.ok(Math.abs(itemChance(itemMap.get("ocean_heart"), items, cfg.probability) - 0.01) < 1e-9)
   assert.equal(formatChance(5 / 6), "0.83%")
   assert.equal(formatChance(12.345), "12.35%")

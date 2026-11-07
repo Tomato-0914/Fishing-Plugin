@@ -27,9 +27,9 @@
     - { icon: 🧰, title: "#我的渔具", desc: 装备与总加成一览 }
     - { icon: 🎣, title: "#升级鱼竿 / 鱼线", desc: 鱼竿提升稀有与大鱼，鱼线防断线 }
     - { icon: 🎈, title: "#升级浮漂 / 鱼护", desc: 浮漂减少空军，鱼护扩容加价 }
-- group: 🏪 渔具商店
+- group: 🏪 鱼饵商店
   list:
-    - { icon: 🏪, title: "#渔具商店", desc: 出售各种鱼饵，效果各不相同 }
+    - { icon: 🏪, title: "#鱼饵商店", desc: 出售各种鱼饵，效果各不相同 }
     - { icon: 🪱, title: "#购买鱼饵 种类 数量", desc: 蚯蚓、腥香饵、活虾、金丝秘饵等 }
     - { icon: 🔄, title: "#使用鱼饵 种类", desc: 切换当前使用的鱼饵 }
 - group: 🏆 排行与称号
