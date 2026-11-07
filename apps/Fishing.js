@@ -7,7 +7,7 @@ import UserData from "../components/UserData.js"
 import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
 import { addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier, luckEffects } from "../components/Game.js"
 import { consumeBait, totalBait, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, allEffects } from "../components/Gear.js"
-import { resolveCast, summarize } from "../components/Catch.js"
+import { resolveCast, summarize, formatMulti } from "../components/Catch.js"
 import { checkTitles, getEffects, effectText } from "../components/Titles.js"
 import { withButtons, B } from "../components/Button.js"
 import { groupAllowed, displayName, updateNickname, pick, itemMap } from "../components/common.js"
@@ -361,40 +361,13 @@ export class Fishing extends plugin {
     UserData.save(id)
 
     const sum = summarize(rounds)
-    const lines = rounds.map((r, i) => `${String(i + 1).padStart(2, " ")}. ${this.roundText(r)}`)
-    const best = sum.best && `🏆 最佳：${this.itemText(sum.best.result)} ${sum.best.value} 金币`
-    const msg = [
-      `🎣 十连收网！（${rounds.length} 竿）`,
-      "━━━━━━━━━━━━",
-      ...lines,
-      "━━━━━━━━━━━━",
-      [`🐟 鱼 ${sum.fish}`, `🗑️ 垃圾 ${sum.junk}`, `🌊 空军 ${sum.empty}`, sum.snapped ? `💥 断线 ${sum.snapped}` : ""].filter(Boolean).join(" · "),
-      `💰 本次钓获价值 ${sum.value} 金币`,
-      best || "",
-      sum.snapped ? "💡 去 #渔具工坊 升级鱼线可以减少断线" : "",
-    ].filter(Boolean).join("\n")
+    const sizeLabels = Object.fromEntries(Object.entries(cfg.size || {}).map(([k, v]) => [k, v.label]))
+    // QQBot 的文字按 Markdown 渲染：钓获放进引用块；其他协议用纯文本
+    const msg = formatMulti(rounds, { sizeLabels, markdown: e.bot?.adapter?.id === "QQBot" })
     await this.send(e, withButtons(e, msg,
       [B.multiAgain, B.cast],
       [B.bag, B.sellAll, ...(sum.junk ? [B.discard] : [])]))
     await this.announceTitles(e, user)
-  }
-
-  /** 物品简写：🐟【史诗】金枪鱼（大） */
-  itemText(result) {
-    const r = RARITY_INFO[result.rarity] || {}
-    const size = result.size ? this.cfg.size?.[result.size]?.label : ""
-    return `${result.item.emoji}【${r.label}】${result.item.name}${size ? `（${size}）` : ""}`
-  }
-
-  /** 十连中的一竿 */
-  roundText(r) {
-    if (r.snapped) return `💥 断线！${this.itemText(r.result)}跑了`
-    if (r.result.type === "empty") return "🌊 什么都没钓到"
-    const { item } = r.result
-    if (item.special === "police") return `🚨 ${this.itemText(r.result)} → 已报警，奖励 ${r.reward} 金币`
-    if (item.rarity === "junk") return `${this.itemText(r.result)} 0`
-    const flash = ["UR", "hidden"].includes(item.rarity) ? " ✨" : ""
-    return `${this.itemText(r.result)} ${r.result.price} 金币${flash}`
   }
 
   resultMsg(e, user, result, reward) {

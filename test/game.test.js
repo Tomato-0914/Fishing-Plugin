@@ -510,3 +510,44 @@ test("锅巴：鱼饵单价读写", async () => {
   assert.deepEqual(saved.config.bait.prices, { worm: 5 })
   fs.rmSync(dir, { recursive: true, force: true })
 })
+
+test("十连结果：短格式、按价值排序、Markdown 引用块", async () => {
+  const { formatMulti, roundLine } = await import("../components/Catch.js")
+  const it = id => itemMap.get(id)
+  const fish = (id, value, size) => ({ snapped: false, value, reward: 0, result: { type: "item", item: it(id), rarity: it(id).rarity, size, price: value } })
+  const rounds = [
+    fish("swimcrab", 38, "medium"),
+    { snapped: false, value: 0, reward: 0, result: { type: "empty" } },
+    fish("grouperking", 341, "medium"),
+    { snapped: true, value: 0, reward: 0, result: { type: "item", item: it("tuna"), rarity: "SSR", size: "large", price: 180 } },
+    fish("can", 0),
+    { snapped: false, value: 5000, reward: 5000, result: { type: "item", item: it("people_fragment"), rarity: "hidden", price: 0 } },
+    fish("crucian", 4, "small"),
+  ]
+  const sizeLabels = { small: "小", medium: "中", large: "大" }
+  assert.equal(roundLine(rounds[2], sizeLabels), "🟡🐠 石斑鱼王·中 341 ✨")
+  assert.equal(roundLine(rounds[0], sizeLabels), "🔵🦀 梭子蟹·中 38")
+  const md = formatMulti(rounds, { sizeLabels, markdown: true })
+  const lines = md.split("\n")
+  assert.equal(lines[0], "🎣 十连收网 · 7 竿 · 💰 5383 金币")
+  // 报警 → 按价值 → 断线 → 垃圾 → 空军
+  assert.deepEqual(lines.slice(1, 8), [
+    "> 🚨 ❓ 人民碎片 已报警 +5000",
+    "> 🟡🐠 石斑鱼王·中 341 ✨",
+    "> 🔵🦀 梭子蟹·中 38",
+    "> ⚪🐟 小鲫鱼·小 4",
+    "> 💥 🟣🐟 金枪鱼·大 断线跑了",
+    "> 🗑️ 🥫 易拉罐",
+    "> 🌊 空军",
+  ])
+  assert.equal(lines[8], "") // 引用块后空行
+  assert.ok(lines[9].startsWith("🐟 "))
+  // 纯文本：没有 ">" 也没有空行
+  const plain = formatMulti(rounds, { sizeLabels })
+  assert.ok(!plain.includes(">") && !plain.includes("\n\n"))
+  // 每行都很短，手机上不换行（不含 emoji 的文字 ≤ 14 个字）
+  for (const l of md.split("\n").filter(l => l.startsWith(">"))) {
+    const text = l.replace(/\p{Extended_Pictographic}|️|[> ]/gu, "")
+    assert.ok(text.length <= 14, l)
+  }
+})
