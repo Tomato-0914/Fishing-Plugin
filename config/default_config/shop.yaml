@@ -1,6 +1,6 @@
 # ===== 渔具工坊（gear：渔具升级）与鱼饵商店（baits：鱼饵） =====
 # 修改请复制本文件到 config/config/shop.yaml，只写要改的部分即可（列表会整段替换）
-# 渔具为升级制：Lv1 免费，必须拥有上一级才能购买下一级，购买后自动装备
+# 渔具为升级制：每类 10 级，Lv1 免费，必须拥有上一级才能购买下一级，购买后自动装备
 # effects 写法与称号相同：
 #   rareBoost 稀有以上概率 +N%（相对值）  largeBoost 大体型概率 +N%
 #   emptyReduce 空军概率 -N%              junkReduce 垃圾概率 -N%
@@ -18,6 +18,11 @@ gear:
       - { name: 碳纤竿,   price: 2000,  effects: { rareBoost: 10, largeBoost: 5 }, desc: 碳素竿身，又轻又灵敏 }
       - { name: 高模碳竿, price: 6000,  effects: { rareBoost: 18, largeBoost: 8 }, desc: 高模量碳素，硬而轻，遛大鱼不费劲 }
       - { name: 星陨竿,   price: 18000, effects: { rareBoost: 28, largeBoost: 12 }, desc: 传说竿芯用陨铁锻造，握在手里隐隐发热 }
+      - { name: 流光竿,   price: 25000, effects: { rareBoost: 33, largeBoost: 14 }, desc: 甩竿时竿身会拖出一道淡淡的光痕 }
+      - { name: 玄冰竿,   price: 35000, effects: { rareBoost: 38, largeBoost: 15 }, desc: 极北寒冰磨成的竿身，大鱼一碰就冷静下来 }
+      - { name: 雷霆竿,   price: 48000, effects: { rareBoost: 43, largeBoost: 17 }, desc: 起竿时隐约有雷声，水底的大家伙都被震了出来 }
+      - { name: 凤翎竿,   price: 64000, effects: { rareBoost: 48, largeBoost: 18 }, desc: 竿梢缀着一根凤凰尾羽，轻得几乎感觉不到 }
+      - { name: 龙骨神竿, price: 85000, effects: { rareBoost: 55, largeBoost: 20 }, desc: 传说用龙脊骨雕成，四海的鱼都认得它 }
   line:
     name: 鱼线
     emoji: 🧵
@@ -27,6 +32,11 @@ gear:
       - { name: 编织线,     price: 1200,  effects: { lineGuard: 55 }, desc: 多股编织，同样粗细拉力最强 }
       - { name: 复合编织线, price: 3500,  effects: { lineGuard: 75 }, desc: 编织主线配耐磨前导线，刚柔并济 }
       - { name: 龙筋线,     price: 10000, effects: { lineGuard: 90 }, desc: 据说是用龙须捻成的，几乎扯不断 }
+      - { name: 冰蚕丝线,   price: 14000, effects: { lineGuard: 92 }, desc: 冰蚕吐的丝，越冷越结实 }
+      - { name: 金蛛丝线,   price: 19000, effects: { lineGuard: 94 }, desc: 金色蛛丝织成，细得几乎看不见 }
+      - { name: 星河线,     price: 26000, effects: { lineGuard: 96 }, desc: 线身闪着点点星光，像一条小小的银河 }
+      - { name: 凤羽丝线,   price: 35000, effects: { lineGuard: 98 }, desc: 凤凰羽毛抽出的丝，遇火不断，遇水不沉 }
+      - { name: 混沌神丝,   price: 46000, effects: { lineGuard: 100 }, desc: 天地初开时的一缕丝线，从来没有断过 }
   float:
     name: 浮漂
     emoji: 🎈
@@ -36,6 +46,11 @@ gear:
       - { name: 纳米漂, price: 800,  effects: { emptyReduce: 2, reelWindow: 3 }, desc: 不吸水，稳定好用 }
       - { name: 芦苇漂, price: 2500, effects: { emptyReduce: 3, reelWindow: 5 }, desc: 极其灵敏，细微的鱼口也逃不过 }
       - { name: 月光漂, price: 8000, effects: { emptyReduce: 4, reelWindow: 6 }, desc: 自带柔和的光，夜里也看得清清楚楚 }
+      - { name: 星辰漂, price: 11000, effects: { emptyReduce: 5, reelWindow: 7 }, desc: 漂尾嵌着一颗小星星，一闪一闪 }
+      - { name: 极光漂, price: 15000, effects: { emptyReduce: 5, reelWindow: 8 }, desc: 漂身变幻着极光的颜色 }
+      - { name: 鲛珠漂, price: 20000, effects: { emptyReduce: 6, reelWindow: 9 }, desc: 传说用鲛人的眼泪凝成，鱼儿一靠近就会发光 }
+      - { name: 灵犀漂, price: 27000, effects: { emptyReduce: 6, reelWindow: 10, biteReduce: 1 }, desc: 心有灵犀，鱼还没咬钩你就感觉到了 }
+      - { name: 天眼漂, price: 36000, effects: { emptyReduce: 7, reelWindow: 12, biteReduce: 2 }, desc: 能看穿整片水域，哪里有鱼一清二楚 }
   net:
     name: 鱼护
     emoji: 🧺
@@ -45,6 +60,11 @@ gear:
       - { name: 速干鱼护, price: 1200,  capacity: 500,  effects: {},               desc: 收起来不滴水，背着也轻松 }
       - { name: 活水鱼护, price: 4000,  capacity: 800,  effects: { sellBonus: 3 }, desc: 让鱼一直活蹦乱跳，卖相更好 }
       - { name: 潮汐鱼护, price: 10000, capacity: 1200, effects: { sellBonus: 6 }, desc: 会随潮汐换水，鱼比刚钓上来还精神 }
+      - { name: 深潜鱼护, price: 13000, capacity: 1500, effects: { sellBonus: 7 },  desc: 能沉到深水层，鱼待在里面跟回家一样 }
+      - { name: 碧波鱼护, price: 17000, capacity: 1800, effects: { sellBonus: 8 },  desc: 网身泛着碧波，自带一小片干净的水 }
+      - { name: 沧澜鱼护, price: 23000, capacity: 2200, effects: { sellBonus: 9 },  desc: 容得下一整片波澜，大鱼也游得开 }
+      - { name: 龙宫鱼护, price: 30000, capacity: 2600, effects: { sellBonus: 10 }, desc: 据说是龙宫的旧物，鱼进去都舍不得出来 }
+      - { name: 四海鱼护, price: 40000, capacity: 3000, effects: { sellBonus: 12 }, desc: 装得下四海之鱼，卖相好得不像话 }
 
 # 鱼饵：每竿消耗 1 个，同时只能使用一种；当前鱼饵用完时自动换成还有库存的鱼饵
 # 新手礼包、打卡奖励、救济发放的都是 basic（普通饵），单价取 config.yaml 中的 bait.price

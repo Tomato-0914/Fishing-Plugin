@@ -3,8 +3,15 @@ import { mergeEffects } from "./Titles.js"
 
 export const SLOTS = ["rod", "line", "float", "net"]
 export const UPGRADE_NAMES = { 鱼竿: "rod", 鱼线: "line", 浮漂: "float", 鱼护: "net" }
-export const LEVEL_COLORS = ["#9aa5b1", "#3bb273", "#3a8dde", "#a259ff", "#f2a900"]
-export const LEVEL_LABELS = ["普通", "优良", "稀有", "史诗", "传说"]
+/** 渔具等级颜色（Lv1 ~ Lv10），超出时沿用最后一个 */
+export const LEVEL_COLORS = [
+  "#9aa5b1", "#3bb273", "#3a8dde", "#a259ff", "#f2a900",
+  "#fa8c16", "#f5222d", "#eb2f96", "#13c2c2",
+  "linear-gradient(90deg, #ff4d4f, #faad14, #52c41a, #1890ff, #722ed1)",
+]
+export const LEVEL_LABELS = ["普通", "优良", "稀有", "史诗", "传说", "神话", "至尊", "圣品", "天品", "永恒"]
+export const levelColor = lv => LEVEL_COLORS[Math.min(lv, LEVEL_COLORS.length) - 1]
+export const levelLabel = lv => LEVEL_LABELS[Math.min(lv, LEVEL_LABELS.length) - 1]
 
 /* ---------------- 渔具 ---------------- */
 

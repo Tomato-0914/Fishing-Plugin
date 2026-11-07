@@ -4,7 +4,7 @@ import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { effectText } from "../components/Titles.js"
 import {
-  SLOTS, UPGRADE_NAMES, LEVEL_COLORS, LEVEL_LABELS, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity,
+  SLOTS, UPGRADE_NAMES, levelColor, levelLabel, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity,
   upgradeGear, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait,
 } from "../components/Gear.js"
 import { withButtons, B } from "../components/Button.js"
@@ -73,8 +73,8 @@ export class FishingShop extends plugin {
       return {
         slot, emoji: cur.emoji, slotName: cur.slotName, max: maxLevel(shop, slot),
         pips: Array.from({ length: maxLevel(shop, slot) }, (_, i) => i < lv),
-        cur: { ...cur, label: LEVEL_LABELS[lv - 1], color: LEVEL_COLORS[lv - 1], text: this.gearText(cur, user) },
-        next: next && { ...next, label: LEVEL_LABELS[lv], color: LEVEL_COLORS[lv], text: this.gearText(next, user), afford: user.gold >= next.price },
+        cur: { ...cur, label: levelLabel(lv), color: levelColor(lv), text: this.gearText(cur, user) },
+        next: next && { ...next, label: levelLabel(lv + 1), color: levelColor(lv + 1), text: this.gearText(next, user), afford: user.gold >= next.price },
       }
     })
     const msg = await renderOrText(puppeteer, "workshop", { name: displayName(user), gold: user.gold, slots }, () => [

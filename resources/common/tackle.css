@@ -3,8 +3,8 @@
 .slot { text-align: center; }
 .slot-emoji { font-size: 34px; line-height: 1; }
 .slot-name { font-size: 15px; font-weight: 700; margin-top: 4px; }
-.pips { margin-top: 6px; display: flex; gap: 3px; justify-content: center; }
-.pips span { width: 10px; height: 4px; border-radius: 2px; background: var(--sub); opacity: 0.25; }
+.pips { width: 78px; margin: 6px auto 0; display: flex; gap: 2px; justify-content: center; }
+.pips span { flex: 1; max-width: 12px; height: 4px; border-radius: 2px; background: var(--sub); opacity: 0.25; }
 .pips span.on { opacity: 1; }
 .pips span.on { background: var(--accent); }
 .lv { font-size: 18px; font-weight: 700; margin-bottom: 4px; }

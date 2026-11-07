@@ -375,17 +375,30 @@ test("渔具：逐级升级、效果、容量、出售加成", async () => {
   assert.equal(bagCapacity(u, shop, cfg.fishing.bagLimit), 200)
   // 金币不够
   assert.equal(upgradeGear(u, shop, "rod").reason, "gold")
-  u.gold = 100000
+  u.gold = 1000000
   const r = upgradeGear(u, shop, "rod")
   assert.equal(r.ok, true)
   assert.equal(r.item.name, "玻纤竿")
-  assert.equal(u.gold, 100000 - 500)
+  assert.equal(u.gold, 1000000 - 500)
   for (const slot of ["rod", "line", "float", "net"]) while (upgradeGear(u, shop, slot).ok);
   assert.equal(upgradeGear(u, shop, "rod").reason, "max")
-  assert.equal(gearLevel(u, "net"), 5)
-  assert.equal(u.gold, 100000 - 68500) // 全部满级共 68500
-  assert.deepEqual(gearEffects(u, shop), { rareBoost: 28, largeBoost: 12, lineGuard: 90, emptyReduce: 4, reelWindow: 6, sellBonus: 6 })
-  assert.equal(bagCapacity(u, shop, 200), 1200)
+  for (const slot of ["rod", "line", "float", "net"]) assert.equal(gearLevel(u, slot), 10)
+  assert.equal(u.gold, 1000000 - 697500) // 全部 10 级共 697500（其中 Lv1~5 共 68500）
+  assert.deepEqual(gearEffects(u, shop), { rareBoost: 55, largeBoost: 20, lineGuard: 100, emptyReduce: 7, reelWindow: 12, biteReduce: 2, sellBonus: 12 })
+  assert.equal(bagCapacity(u, shop, 200), 3000)
+  // 每一级都比上一级更贵、效果不倒退
+  for (const slot of ["rod", "line", "float", "net"]) {
+    const lv = shop.gear[slot].levels
+    assert.equal(lv.length, 10, slot)
+    for (let i = 1; i < lv.length; i++) {
+      assert.ok(lv[i].price > lv[i - 1].price, `${slot} Lv${i + 1} 价格`)
+      for (const [k, v] of Object.entries(lv[i - 1].effects || {})) assert.ok((lv[i].effects?.[k] || 0) >= v, `${slot} Lv${i + 1} ${k}`)
+      if (slot === "net") assert.ok(lv[i].capacity > lv[i - 1].capacity)
+    }
+  }
+  // 满级鱼线不会断线
+  const { breakChance } = await import("../components/Gear.js")
+  assert.equal(breakChance({ type: "item", rarity: "UR", size: "large" }, shop.lineBreak, gearEffects(u, shop)), 0)
   assert.equal(gearItem(shop, "float", 4).name, "芦苇漂")
 })
 

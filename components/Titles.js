@@ -58,6 +58,7 @@ export function effectText(effects = {}) {
   const parts = Object.entries(effects).filter(([, v]) => Number(v)).map(([k, v]) => {
     const [name, unit, inverse] = EFFECT_TEXT[k] || [k, "", false]
     const up = inverse ? v < 0 : v > 0
+    if (k === "lineGuard" && v >= 100) return `${name} -100%（不再断线）`
     return `${name} ${up ? "+" : "-"}${Math.abs(v)}${unit}`
   })
   return parts.length ? parts.join("，") : "无"
