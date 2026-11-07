@@ -66,9 +66,16 @@ export function findBait(shop, keyword) {
     baitList(shop).find(b => b.name.includes(keyword)) || null
 }
 
-/** 鱼饵单价：普通饵取 config 的 bait.price */
-export function baitPrice(shop, id, basicPrice = 2) {
-  if (id === "basic") return Math.max(0, Number(basicPrice) || 0)
+/**
+ * 鱼饵单价
+ * @param bait config.yaml 的 bait 配置 { price, prices }（也可直接传普通饵单价数字）
+ *   普通饵取 bait.price；其他鱼饵优先取 bait.prices[id]，没有再取 shop.yaml 中的 price
+ */
+export function baitPrice(shop, id, bait = 2) {
+  const cfg = typeof bait === "object" && bait ? bait : { price: bait }
+  if (id === "basic") return Math.max(0, Number(cfg.price ?? 2) || 0)
+  const override = cfg.prices?.[id]
+  if (override != null && override !== "" && !Number.isNaN(Number(override))) return Math.max(0, Number(override))
   return Math.max(0, Number(baitDef(shop, id)?.price) || 0)
 }
 
@@ -115,12 +122,12 @@ export function useBait(user, shop, id) {
 }
 
 /** 购买鱼饵 */
-export function buyBait(user, shop, id, count, basicPrice = 2) {
+export function buyBait(user, shop, id, count, baitCfg = 2) {
   count = Math.floor(Number(count) || 0)
   const bait = baitDef(shop, id)
   if (!bait) return { ok: false, reason: "unknown" }
   if (count < 1) return { ok: false, reason: "count" }
-  const price = baitPrice(shop, id, basicPrice)
+  const price = baitPrice(shop, id, baitCfg)
   const cost = count * price
   if (user.gold < cost) return { ok: false, reason: "gold", bait, cost, afford: price ? Math.floor(user.gold / price) : count }
   user.gold -= cost

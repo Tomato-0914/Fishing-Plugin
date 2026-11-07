@@ -3,6 +3,7 @@
   list:
     - { icon: 🎣, title: "#钓鱼 / #抛竿 / 🎣", desc: 甩出鱼竿，等待鱼儿上钩 }
     - { icon: 🪝, title: "#收杆", desc: 浮漂下沉后及时收杆，太早太晚都会空手 }
+    - { icon: 🔟, title: "#十连钓鱼", desc: 一次抛出 10 竿，自动收网统一结算 }
     - { icon: 🧺, title: "#我的鱼饵", desc: 每竿消耗 1 个鱼饵，新人赠送 10 个普通饵 }
 - group: 📅 打卡
   list:

@@ -4,14 +4,15 @@ import { plugin } from "../components/yunzai.js"
 import { Plugin_Path } from "../components/Paths.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
-import { roll, triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
-import { recordResult, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier, luckEffects } from "../components/Game.js"
-import { consumeBait, totalBait, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, breakChance, allEffects } from "../components/Gear.js"
+import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
+import { addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier, luckEffects } from "../components/Game.js"
+import { consumeBait, totalBait, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, allEffects } from "../components/Gear.js"
+import { resolveCast, summarize } from "../components/Catch.js"
 import { checkTitles, getEffects, effectText } from "../components/Titles.js"
 import { withButtons, B } from "../components/Button.js"
 import { groupAllowed, displayName, updateNickname, pick, itemMap } from "../components/common.js"
 
-/** 进行中的钓鱼：user_id → { stage: "waiting" | "bite", timer, castAt, biteAt, deadline } */
+/** 进行中的钓鱼：user_id → { stage: "waiting" | "bite" | "multi", timer, castAt, biteAt } */
 const sessions = new Map()
 /** 挂鱼饵冷却：user_id → 结束时间戳 */
 const cooldowns = new Map()
@@ -60,6 +61,7 @@ export class Fishing extends plugin {
       rule: [
         { reg: /^(#?(钓鱼|抛竿|甩竿)|🎣)$/, fnc: "cast" },
         { reg: /^#?(收杆|拉杆|起竿)$/, fnc: "reel" },
+        { reg: /^#?(十连钓鱼|钓鱼十连|十连抛竿)$/, fnc: "multi" },
       ],
     })
   }
@@ -92,8 +94,11 @@ export class Fishing extends plugin {
     return e.reply(list)
   }
 
-  async cast(e) {
-    if (!groupAllowed(e)) return false
+  /**
+   * 抛竿前的公共检查（#钓鱼 与 #十连钓鱼 共用）：新手礼包、进行中、冷却、鱼护、鱼饵
+   * @returns 可以抛竿时返回上下文；已回复用户并结束时返回 null
+   */
+  async precheck(e) {
     const id = String(e.user_id)
     const user = UserData.get(id)
     updateNickname(user, e)
@@ -118,18 +123,21 @@ export class Fishing extends plugin {
 
     const session = sessions.get(id)
     if (session) {
-      if (session.stage === "bite")
-        return this.send(e, withButtons(e, "🐟 浮漂正在剧烈抖动！快发送 #收杆！", [B.reel(e)]))
-      return this.send(e, pick(WAITING_TEXT))
+      if (session.stage === "multi") { await this.send(e, "🎣 十连的鱼竿还在水里，正在收网，稍等一下~"); return null }
+      if (session.stage === "bite") { await this.send(e, withButtons(e, "🐟 浮漂正在剧烈抖动！快发送 #收杆！", [B.reel(e)])); return null }
+      await this.send(e, pick(WAITING_TEXT))
+      return null
     }
 
     const left = (cooldowns.get(id) || 0) - Date.now()
-    if (left > 0) return this.send(e, `${pick(BAIT_TEXT)}请等待 ${Math.ceil(left / 1000)}s...`)
+    if (left > 0) { await this.send(e, `${pick(BAIT_TEXT)}请等待 ${Math.ceil(left / 1000)}s...`); return null }
 
     const shop = Config.shop
     const limit = bagCapacity(user, shop, fcfg.bagLimit)
-    if (user.bag.length >= limit)
-      return this.send(e, withButtons(e, `🎒 鱼护已经装满啦（${user.bag.length}/${limit}）~\n先出售鱼护里的鱼或清理垃圾再来吧！也可以去 #渔具工坊 升级鱼护`, [B.sellAll, B.discard], [B.bag, B.workshop]))
+    if (user.bag.length >= limit) {
+      await this.send(e, withButtons(e, `🎒 鱼护已经装满啦（${user.bag.length}/${limit}）~\n先出售鱼护里的鱼或清理垃圾再来吧！也可以去 #渔具工坊 升级鱼护`, [B.sellAll, B.discard], [B.bag, B.workshop]))
+      return null
+    }
 
     if (totalBait(user) < 1) {
       const items = itemMap()
@@ -141,10 +149,45 @@ export class Fishing extends plugin {
       } else {
         const tips = [`🪱 鱼饵用完啦~`, `普通饵 ${price} 金币/个，发送 #购买鱼饵 [种类] [数量] 补充`, `👛 当前金币：${user.gold}`]
         if (user.gold < price && hasSellable) tips.push("💡 金币不够？先 #一键出售 卖掉鱼护里的鱼吧")
-        return this.send(e, withButtons(e, tips.join("\n"),
+        await this.send(e, withButtons(e, tips.join("\n"),
           user.gold < price && hasSellable ? [B.sellAll, B.bag] : [B.buyBait, B.buyBaitInput, B.shop]))
+        return null
       }
     }
+    return { id, user, name, fcfg, shop, limit }
+  }
+
+  /** 装备、运势两行 */
+  gearLine(user, shop) {
+    const line = ["rod", "line", "float"].map(k => gearItem(shop, k, gearLevel(user, k))?.name).filter(Boolean).join(" · ")
+    return line ? `🧰 ${line}` : ""
+  }
+
+  luckLine(user) {
+    const tier = luckTier(todayLuck(user), this.cfg.checkin?.tiers)
+    return tier ? `${tier.emoji} 今日运势：${tier.name}（幸运值 ${todayLuck(user)}）` : ""
+  }
+
+  /**
+   * 发送抛竿消息：配图放在文字上面，和文字合成一条消息
+   * QQBot 需开启适配器的 markdownImage：图片转为 Markdown 图片才能按顺序排版；
+   * 未开启时 QQ 客户端会把文字排在图片上方，只能先单独发图片
+   */
+  async sendCast(e, text) {
+    const img = castImage(this.cfg.fishing?.castImage)
+    if (!img) return this.send(e, text)
+    if (e.bot?.adapter?.id === "QQBot" && e.bot.adapter.config?.markdownImage !== true) {
+      await e.reply(img)
+      return this.send(e, text)
+    }
+    return this.send(e, [img, "\n", text])
+  }
+
+  async cast(e) {
+    if (!groupAllowed(e)) return false
+    const ctx = await this.precheck(e)
+    if (!ctx) return true
+    const { id, user, name, fcfg, shop } = ctx
 
     const used = consumeBait(user, shop)
     const bait = used.bait
@@ -161,27 +204,16 @@ export class Fishing extends plugin {
     s.timer = setTimeout(() => this.bite(e, id, effects).catch(err => logger.error(err)), delay)
     sessions.set(id, s)
 
-    const tier = luckTier(todayLuck(user), Config.config.checkin?.tiers)
-    const luckLine = tier ? `\n${tier.emoji} 今日运势：${tier.name}（幸运值 ${todayLuck(user)}）` : ""
     const remain = baitCount(user, bait.id)
     const total = totalBait(user)
     const warn = total === 0 ? "（鱼饵已用完，记得 #购买鱼饵）" : remain === 0 ? "（这种用完了，下一竿自动换）" : total <= 2 ? "（快用完了，记得 #购买鱼饵）" : ""
-    const gearLine = ["rod", "line", "float"].map(k => gearItem(shop, k, gearLevel(user, k))?.name).filter(Boolean).join(" · ")
-    const text = [
+    await this.sendCast(e, [
       used.switched ? `🔄 ${used.from.name}用完了，已自动换成${bait.name}` : "",
       `🎣 ${name} ${pick(CAST_TEXT)}`,
-      gearLine ? `🧰 ${gearLine}` : "",
+      this.gearLine(user, shop),
       `🪱 ${bait.name}（剩 ${remain}）${warn}`,
-    ].filter(Boolean).join("\n") + luckLine
-    // 配图放在文字上面，和文字合成一条消息
-    // QQBot 需开启适配器的 markdownImage：图片转为 Markdown 图片才能按顺序排版；
-    // 未开启时 QQ 客户端会把文字排在图片上方，只能先单独发图片
-    const img = castImage(fcfg.castImage)
-    if (!img) await this.send(e, text)
-    else if (e.bot?.adapter?.id === "QQBot" && e.bot.adapter.config?.markdownImage !== true) {
-      await e.reply(img)
-      await this.send(e, text)
-    } else await this.send(e, [img, "\n", text])
+      this.luckLine(user),
+    ].filter(Boolean).join("\n"))
     // 新称号（例如初出茅庐）
     await this.announceTitles(e, user)
     return true
@@ -215,9 +247,11 @@ export class Fishing extends plugin {
     await this.announceTitles(e, user)
   }
 
-  startCooldown(id, user) {
+  /** 挂鱼饵冷却；seconds 不传时取 fishing.cooldown，称号的冷却缩减同样生效 */
+  startCooldown(id, user, seconds) {
     const effects = getEffects(user, Config.titles)
-    const cd = Math.max(0, Number(this.cfg.fishing?.cooldown ?? 10) - (effects.cooldown || 0))
+    const base = seconds ?? Number(this.cfg.fishing?.cooldown ?? 10)
+    const cd = Math.max(0, base - (effects.cooldown || 0))
     if (cd > 0) cooldowns.set(id, Date.now() + cd * 1000)
     else cooldowns.delete(id)
   }
@@ -227,6 +261,7 @@ export class Fishing extends plugin {
     const id = String(e.user_id)
     const s = sessions.get(id)
     if (!s) return this.send(e, withButtons(e, "🤔 你还没有抛竿哦~ 发送 #钓鱼 开始吧！", [B.start]))
+    if (s.stage === "multi") return this.send(e, "🎣 十连会自动收网，稍等一下就好~")
 
     clearTimeout(s.timer)
     sessions.delete(id)
@@ -247,13 +282,10 @@ export class Fishing extends plugin {
     const cfg = this.cfg
     const shop = Config.shop
     const effects = this.effectsFor(user, baitDef(shop, s.bait))
-    const result = roll({ items: Config.items, probability: cfg.probability, size: cfg.size, limits: cfg.limits }, effects)
+    const { result, snapped, chance: snap, reward } = resolveCast(user, { items: Config.items, cfg, shop, effects })
 
-    // 断线：大鱼可能挣断鱼线跑掉
-    const snap = breakChance(result, shop?.lineBreak, effects)
-    if (snap > 0 && Math.random() * 100 < snap) {
-      user.stats.escaped++
-      user.stats.lineBreak = (user.stats.lineBreak || 0) + 1
+    // 断线：大鱼挣断鱼线跑掉
+    if (snapped) {
       this.startCooldown(id, user)
       UserData.save(id)
       const r = RARITY_INFO[result.rarity] || {}
@@ -268,12 +300,101 @@ export class Fishing extends plugin {
       return this.announceTitles(e, user)
     }
 
-    const { reward } = recordResult(user, result, { policeReward: cfg.policeReward })
     this.startCooldown(id, user)
     UserData.save(id)
 
     await this.send(e, this.resultMsg(e, user, result, reward))
     return this.announceTitles(e, user)
+  }
+
+  /** 十连钓鱼：一次抛出多根竿，稍等片刻后自动收网统一结算 */
+  async multi(e) {
+    if (!groupAllowed(e)) return false
+    const ctx = await this.precheck(e)
+    if (!ctx) return true
+    const { id, user, name, fcfg, shop, limit } = ctx
+
+    const want = Math.max(1, Math.floor(Number(fcfg.multiCount) || 10))
+    const n = Math.min(want, totalBait(user), limit - user.bag.length)
+    const baits = []
+    for (let i = 0; i < n; i++) {
+      const used = consumeBait(user, shop)
+      if (!used) break
+      baits.push(used.bait)
+    }
+    user.stats.casts += baits.length
+    addGroup(user, e.group_id)
+    UserData.save(id)
+
+    const s = { stage: "multi", castAt: Date.now() }
+    const delay = triangular(3, 8) * 1000
+    s.timer = setTimeout(() => this.multiSettle(e, id, baits).catch(err => logger.error(err)), delay)
+    sessions.set(id, s)
+
+    // 用到的鱼饵：金丝秘饵 ×8、普通饵 ×2
+    const usedCount = new Map()
+    for (const b of baits) usedCount.set(b.name, (usedCount.get(b.name) || 0) + 1)
+    const short = baits.length < want
+      ? `⚠️ ${totalBait(user) === 0 ? "鱼饵" : "鱼护空间"}只够钓 ${baits.length} 竿`
+      : ""
+    await this.sendCast(e, [
+      `🎣 ${name} 一字排开 ${baits.length} 根鱼竿，齐刷刷抛进了水里……`,
+      short,
+      this.gearLine(user, shop),
+      `🪱 ${[...usedCount].map(([k, v]) => `${k} ×${v}`).join("、")}（剩余鱼饵 ${totalBait(user)}）`,
+      this.luckLine(user),
+      "⏳ 稍等片刻，收网后统一结算",
+    ].filter(Boolean).join("\n"))
+    await this.announceTitles(e, user)
+    return true
+  }
+
+  async multiSettle(e, id, baits) {
+    const s = sessions.get(id)
+    if (!s || s.stage !== "multi") return
+    sessions.delete(id)
+    const user = UserData.get(id)
+    const cfg = this.cfg
+    const shop = Config.shop
+    const rounds = baits.map(bait => resolveCast(user, { items: Config.items, cfg, shop, effects: this.effectsFor(user, bait) }))
+    this.startCooldown(id, user, Number(cfg.fishing?.multiCooldown ?? 100))
+    UserData.save(id)
+
+    const sum = summarize(rounds)
+    const lines = rounds.map((r, i) => `${String(i + 1).padStart(2, " ")}. ${this.roundText(r)}`)
+    const best = sum.best && `🏆 最佳：${this.itemText(sum.best.result)} ${sum.best.value} 金币`
+    const msg = [
+      `🎣 十连收网！（${rounds.length} 竿）`,
+      "━━━━━━━━━━━━",
+      ...lines,
+      "━━━━━━━━━━━━",
+      [`🐟 鱼 ${sum.fish}`, `🗑️ 垃圾 ${sum.junk}`, `🌊 空军 ${sum.empty}`, sum.snapped ? `💥 断线 ${sum.snapped}` : ""].filter(Boolean).join(" · "),
+      `💰 本次钓获价值 ${sum.value} 金币`,
+      best || "",
+      sum.snapped ? "💡 去 #渔具工坊 升级鱼线可以减少断线" : "",
+    ].filter(Boolean).join("\n")
+    await this.send(e, withButtons(e, msg,
+      [{ text: "🎣 再来十连", callback: "#十连钓鱼" }, B.bag, B.sellAll],
+      sum.junk ? [B.discard] : []))
+    await this.announceTitles(e, user)
+  }
+
+  /** 物品简写：🐟【史诗】金枪鱼（大） */
+  itemText(result) {
+    const r = RARITY_INFO[result.rarity] || {}
+    const size = result.size ? this.cfg.size?.[result.size]?.label : ""
+    return `${result.item.emoji}【${r.label}】${result.item.name}${size ? `（${size}）` : ""}`
+  }
+
+  /** 十连中的一竿 */
+  roundText(r) {
+    if (r.snapped) return `💥 断线！${this.itemText(r.result)}跑了`
+    if (r.result.type === "empty") return "🌊 什么都没钓到"
+    const { item } = r.result
+    if (item.special === "police") return `🚨 ${this.itemText(r.result)} → 已报警，奖励 ${r.reward} 金币`
+    if (item.rarity === "junk") return `${this.itemText(r.result)} 0`
+    const flash = ["UR", "hidden"].includes(item.rarity) ? " ✨" : ""
+    return `${this.itemText(r.result)} ${r.result.price} 金币${flash}`
   }
 
   resultMsg(e, user, result, reward) {

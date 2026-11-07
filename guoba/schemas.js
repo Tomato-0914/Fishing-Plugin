@@ -1,3 +1,5 @@
+import Config from "../components/Config.js"
+
 const num = (field, label, help, props = {}) => ({
   field, label, bottomHelpMessage: help, component: "InputNumber", required: true,
   componentProps: { min: 0, ...props },
@@ -27,6 +29,8 @@ export default [
   num("fishing.biteMax", "咬钩最长时间(秒)", "上限 30 秒，避免等太久", { max: 30 }),
   num("fishing.reelWindow", "收杆时间(秒)", "咬钩后多久内必须收杆，超时判定鱼跑了", { min: 3, max: 120 }),
   num("fishing.cooldown", "挂鱼饵时间(秒)", "每次钓完后的等待时间", { max: 600 }),
+  num("fishing.multiCount", "十连竿数", "#十连钓鱼 一次抛出的竿数", { min: 2, max: 20 }),
+  num("fishing.multiCooldown", "十连后挂鱼饵时间(秒)", "十连钓鱼结束后的等待时间", { max: 3600 }),
   num("fishing.bagLimit", "Lv1 鱼护容量", "初始鱼护最多存放多少件物品，升级鱼护后按渔具工坊的容量计算", { min: 10, max: 2000 }),
   {
     field: "fishing.castImage", label: "抛竿配图", component: "Input",
@@ -36,7 +40,10 @@ export default [
 
   { label: "鱼饵", component: "SOFT_GROUP_BEGIN" },
   num("bait.initial", "新手赠送鱼饵", "第一次钓鱼时赠送的鱼饵数量"),
-  num("bait.price", "鱼饵单价", "每个鱼饵的金币价格"),
+  num("bait.price", "普通饵单价", "普通饵的金币价格（新手礼包、打卡、救济发的也是普通饵）"),
+  // 其他鱼饵的单价：按 shop.yaml 中的鱼饵自动生成，自定义的鱼饵也会出现在这里
+  ...(Config.shop?.baits || []).filter(b => b.id !== "basic").map(b =>
+    num(`bait.prices.${b.id}`, `${b.emoji || ""}${b.name}单价`, b.desc || "")),
   num("bait.maxBuy", "单次最多购买", "", { min: 1, max: 99999 }),
   num("bait.relief", "每日救济鱼饵", "鱼饵用完、买不起、也没有鱼可卖时每天可领一次，0 为关闭"),
 

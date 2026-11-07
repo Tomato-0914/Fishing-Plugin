@@ -446,3 +446,67 @@ test("存档迁移：旧版 bait 数量转为普通饵", async () => {
   assert.deepEqual(u.gear, { rod: 1, line: 1, float: 1, net: 1 })
   fs.rmSync(dir, { recursive: true, force: true })
 })
+
+test("鱼饵单价：普通饵取 bait.price，其他鱼饵可用 bait.prices 覆盖", async () => {
+  const { baitPrice, buyBait } = await import("../components/Gear.js")
+  const shop = Config.shop
+  assert.equal(baitPrice(shop, "basic", 2), 2)          // 兼容直接传数字
+  assert.equal(baitPrice(shop, "worm", 2), 4)           // 没覆盖 → shop.yaml
+  const bait = { price: 3, prices: { worm: 7, golden: 0, scent: "" } }
+  assert.equal(baitPrice(shop, "basic", bait), 3)
+  assert.equal(baitPrice(shop, "worm", bait), 7)
+  assert.equal(baitPrice(shop, "golden", bait), 0)      // 0 也是有效价格
+  assert.equal(baitPrice(shop, "scent", bait), 6)       // 空值 → shop.yaml
+  const u = newUser("10020"); u.gold = 100
+  assert.equal(buyBait(u, shop, "worm", 10, bait).cost, 70)
+})
+
+test("一竿结算：断线不入鱼护，十连汇总", async () => {
+  const { resolveCast, summarize } = await import("../components/Catch.js")
+  const shop = Config.shop
+  // 只出传说大体型，断线 100%
+  const urOnly = { ...cfg, probability: { empty: 0, junk: 0, N: 0, R: 0, SR: 0, SSR: 0, UR: 100, hidden: {} } }
+  const u = newUser("10021")
+  const r = resolveCast(u, { items, cfg: urOnly, shop: { ...shop, lineBreak: { UR: 100 } }, rng: seeded(5) })
+  assert.equal(r.snapped, true)
+  assert.equal(u.bag.length, 0)
+  assert.equal(u.stats.escaped, 1)
+  assert.equal(u.stats.lineBreak, 1)
+  // 鱼线满级 → 断线概率按比例降低
+  const r2 = resolveCast(u, { items, cfg: urOnly, shop: { ...shop, lineBreak: { UR: 10 } }, effects: { lineGuard: 100 }, rng: seeded(6) })
+  assert.equal(r2.snapped, false)
+  assert.equal(u.bag.length, 1)
+  assert.equal(r2.value, r2.result.price)
+
+  // 十连：200 次模拟，汇总数字自洽
+  const v = newUser("10022")
+  const rng = seeded(9)
+  const rounds = Array.from({ length: 200 }, () => resolveCast(v, { items, cfg, shop, rng }))
+  const s = summarize(rounds)
+  assert.equal(s.fish + s.junk + s.empty + s.snapped, 200)
+  assert.equal(v.bag.length, s.fish + s.junk - rounds.filter(x => !x.snapped && x.result.item?.special === "police").length)
+  assert.equal(s.value, rounds.reduce((a, x) => a + x.value, 0))
+  assert.ok(s.best && s.best.value === Math.max(...rounds.filter(x => !x.snapped && x.result.type === "item" && x.result.rarity !== "junk").map(x => x.value)))
+})
+
+test("锅巴：鱼饵单价读写", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fishing-guoba-"))
+  const { supportGuoba } = await import("../guoba/index.js")
+  const { configInfo } = supportGuoba()
+  const fields = configInfo.schemas.map(s => s.field).filter(Boolean)
+  for (const id of ["worm", "scent", "shrimp", "golden"]) assert.ok(fields.includes(`bait.prices.${id}`), id)
+  assert.ok(fields.includes("fishing.multiCount") && fields.includes("fishing.multiCooldown"))
+  const data = configInfo.getConfigData()
+  assert.equal(data.bait.prices.worm, 4)
+  assert.equal(data.bait.prices.golden, 25)
+  // 保存：改了的写入，和 shop.yaml 相同的不写
+  const saved = {}
+  const origSet = Config.set.bind(Config)
+  Config.set = (name, value) => { saved[name] = value }
+  const Result = { ok: (_, msg) => ({ ok: true, msg }), error: (_, msg) => ({ ok: false, msg }) }
+  const ret = configInfo.setConfigData({ "bait.prices.worm": 5, "bait.prices.golden": 25 }, { Result })
+  Config.set = origSet
+  assert.equal(ret.ok, true, ret.msg)
+  assert.deepEqual(saved.config.bait.prices, { worm: 5 })
+  fs.rmSync(dir, { recursive: true, force: true })
+})

@@ -28,7 +28,14 @@ export function supportGuoba() {
     configInfo: {
       schemas,
       getConfigData() {
-        return structuredClone(Config.config)
+        const cfg = structuredClone(Config.config)
+        // 其他鱼饵单价：没在 config.yaml 里改过的，显示 shop.yaml 中的价格
+        cfg.bait ||= {}
+        cfg.bait.prices = { ...(cfg.bait.prices || {}) }
+        for (const b of Config.shop?.baits || []) {
+          if (b.id !== "basic" && cfg.bait.prices[b.id] == null) cfg.bait.prices[b.id] = b.price
+        }
+        return cfg
       },
       setConfigData(data, { Result }) {
         try {
@@ -36,6 +43,11 @@ export function supportGuoba() {
           for (const [key, value] of Object.entries(data)) setPath(cfg, key, value)
           const f = cfg.fishing
           if (Number(f.biteMin) > Number(f.biteMax)) return Result.error({}, "咬钩时间最小值不能大于最大值")
+          // 和 shop.yaml 一样的鱼饵价格不写入 config.yaml，以后改 shop.yaml 仍然生效
+          const prices = cfg.bait?.prices || {}
+          for (const b of Config.shop?.baits || []) {
+            if (prices[b.id] != null && Number(prices[b.id]) === Number(b.price)) delete prices[b.id]
+          }
           Config.set("config", cfg)
           const p = cfg.probability
           const sum = ["empty", "junk", "N", "R", "SR", "SSR", "UR"].reduce((s, k) => s + Number(p[k] || 0), 0) +

@@ -39,8 +39,9 @@ export class FishingShop extends plugin {
     return Config.shop || {}
   }
 
-  get basicPrice() {
-    return Number(Config.config.bait?.price ?? 2)
+  /** config.yaml 的鱼饵配置：普通饵单价 price，其他鱼饵单价 prices */
+  get baitCfg() {
+    return Config.config.bait || {}
   }
 
   load(e) {
@@ -93,7 +94,7 @@ export class FishingShop extends plugin {
     const shop = this.shopCfg
     const cur = currentBait(user, shop)
     const baits = baitList(shop).map(b => ({
-      ...b, price: baitPrice(shop, b.id, this.basicPrice), count: baitCount(user, b.id), current: b.id === cur.id, text: effectText(b.effects),
+      ...b, price: baitPrice(shop, b.id, this.baitCfg), count: baitCount(user, b.id), current: b.id === cur.id, text: effectText(b.effects),
     }))
     const msg = await renderOrText(puppeteer, "shop", { name: displayName(user), gold: user.gold, baits }, () => [
       `🏪 渔具商店 · 👛 ${user.gold} 金币`,
@@ -147,7 +148,7 @@ export class FishingShop extends plugin {
     if (num < 1) return e.reply("🤔 至少要买 1 个鱼饵哦~")
     if (num > maxBuy) return e.reply(`🪱 一次最多购买 ${maxBuy} 个鱼饵~`)
 
-    const ret = buyBait(user, shop, bait.id, num, this.basicPrice)
+    const ret = buyBait(user, shop, bait.id, num, this.baitCfg)
     if (!ret.ok) {
       const lines = [`👛 金币不足：${num} 个${bait.name}需要 ${ret.cost} 金币，你只有 ${user.gold} 金币`]
       lines.push(ret.afford > 0 ? `💡 最多可以买 ${ret.afford} 个` : "💡 先 #一键出售 卖掉鱼护里的鱼换点金币吧")
@@ -177,7 +178,7 @@ export class FishingShop extends plugin {
     if (!bait) return e.reply(`❓ 没有「${keyword}」这种鱼饵\n可选：${baitList(shop).map(b => b.name).join("、")}`)
     const ret = useBait(user, shop, bait.id)
     if (!ret.ok)
-      return e.reply(withButtons(e, `🪱 你还没有${bait.name}，先买一些吧（${baitPrice(shop, bait.id, this.basicPrice)} 金币/个）`,
+      return e.reply(withButtons(e, `🪱 你还没有${bait.name}，先买一些吧（${baitPrice(shop, bait.id, this.baitCfg)} 金币/个）`,
         [{ text: `买 10 个${bait.name}`, callback: `#购买鱼饵 ${bait.name} 10` }]))
     UserData.save(user.user_id)
     return e.reply(withButtons(e, `${bait.emoji} 已换上${bait.name}（库存 ${baitCount(user, bait.id)}）\n✨ 效果：${effectText(bait.effects)}`, [B.start]))

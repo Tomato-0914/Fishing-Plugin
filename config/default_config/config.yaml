@@ -32,6 +32,9 @@ fishing:
   bagLimit: 200
   # 抛竿时附带的配图：插件目录下的相对路径或绝对路径，留空则不发送
   castImage: resources/img/cast.jpg
+  # 十连钓鱼：一次抛出的竿数，以及结束后的挂鱼饵时间（秒）
+  multiCount: 10
+  multiCooldown: 100
 
 # 各结果的概率（%），总和建议为 100，不为 100 时按比例换算
 probability:
@@ -63,8 +66,11 @@ size:
 bait:
   # 第一次钓鱼赠送的鱼饵
   initial: 10
-  # 鱼饵单价（金币）
+  # 普通饵单价（金币）
   price: 2
+  # 其他鱼饵的单价（金币），按 shop.yaml 中鱼饵的 id 填写；不填则使用 shop.yaml 中的价格
+  # 例：prices: { worm: 4, scent: 6, shrimp: 10, golden: 25 }
+  prices: {}
   # 单次最多购买数量
   maxBuy: 999
   # 救济：鱼饵用完、金币不够买、鱼护也没有可卖的鱼时，每天可领取一次的免费鱼饵（0 为关闭）
