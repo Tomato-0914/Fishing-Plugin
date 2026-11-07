@@ -35,6 +35,8 @@ fishing:
   # 十连钓鱼：一次抛出的竿数，以及结束后的挂鱼饵时间（秒）
   multiCount: 10
   multiCooldown: 100
+  # 十连钓鱼的配图，留空则不发送
+  multiImage: resources/img/multi.jpg
 
 # 各结果的概率（%），总和建议为 100，不为 100 时按比例换算
 probability:

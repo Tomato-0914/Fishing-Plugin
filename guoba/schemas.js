@@ -37,6 +37,11 @@ export default [
     bottomHelpMessage: "抛竿时附带的图片，填插件目录下的相对路径或绝对路径，留空则不发送",
     componentProps: { placeholder: "resources/img/cast.jpg" },
   },
+  {
+    field: "fishing.multiImage", label: "十连配图", component: "Input",
+    bottomHelpMessage: "#十连钓鱼 时附带的图片，填插件目录下的相对路径或绝对路径，留空则不发送",
+    componentProps: { placeholder: "resources/img/multi.jpg" },
+  },
 
   { label: "鱼饵", component: "SOFT_GROUP_BEGIN" },
   num("bait.initial", "新手赠送鱼饵", "第一次钓鱼时赠送的鱼饵数量"),

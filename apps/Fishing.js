@@ -31,24 +31,23 @@ const WAITING_TEXT = [
 
 const sec = n => Math.max(0, Math.round(n))
 
-/** 抛竿配图：读一次缓存为 Buffer（各协议都支持），配置的路径或文件变化时重新读取 */
-const castImageCache = { key: "", buf: null }
+/** 抛竿配图：按路径缓存为 Buffer（各协议都支持），文件变化时重新读取 */
+const castImageCache = new Map()
 function castImage(file) {
   if (!file || typeof segment?.image !== "function") return null
   const abs = path.isAbsolute(file) ? file : path.join(Plugin_Path, file)
   let stat
   try { stat = fs.statSync(abs) } catch { return null }
-  const key = `${abs}|${stat.mtimeMs}`
-  if (castImageCache.key !== key) {
+  const hit = castImageCache.get(abs)
+  if (!hit || hit.mtime !== stat.mtimeMs) {
     try {
-      castImageCache.buf = fs.readFileSync(abs)
-      castImageCache.key = key
+      castImageCache.set(abs, { mtime: stat.mtimeMs, buf: fs.readFileSync(abs) })
     } catch (err) {
       logger.warn(`[Fishing-Plugin] 抛竿配图读取失败：${err.message}`)
       return null
     }
   }
-  return segment.image(castImageCache.buf)
+  return segment.image(castImageCache.get(abs).buf)
 }
 
 export class Fishing extends plugin {
@@ -173,8 +172,8 @@ export class Fishing extends plugin {
    * QQBot 需开启适配器的 markdownImage：图片转为 Markdown 图片才能按顺序排版；
    * 未开启时 QQ 客户端会把文字排在图片上方，只能先单独发图片
    */
-  async sendCast(e, text) {
-    const img = castImage(this.cfg.fishing?.castImage)
+  async sendCast(e, text, file = this.cfg.fishing?.castImage) {
+    const img = castImage(file)
     if (!img) return this.send(e, text)
     if (e.bot?.adapter?.id === "QQBot" && e.bot.adapter.config?.markdownImage !== true) {
       await e.reply(img)
@@ -344,7 +343,7 @@ export class Fishing extends plugin {
       `🪱 ${[...usedCount].map(([k, v]) => `${k} ×${v}`).join("、")}（剩余鱼饵 ${totalBait(user)}）`,
       this.luckLine(user),
       "⏳ 稍等片刻，收网后统一结算",
-    ].filter(Boolean).join("\n"))
+    ].filter(Boolean).join("\n"), fcfg.multiImage)
     await this.announceTitles(e, user)
     return true
   }
@@ -365,7 +364,7 @@ export class Fishing extends plugin {
     // QQBot 的文字按 Markdown 渲染：钓获放进引用块；其他协议用纯文本
     const msg = formatMulti(rounds, { sizeLabels, markdown: e.bot?.adapter?.id === "QQBot" })
     await this.send(e, withButtons(e, msg,
-      [B.multiAgain, B.cast],
+      [B.multi, B.fish],
       [B.bag, B.sellAll, ...(sum.junk ? [B.discard] : [])]))
     await this.announceTitles(e, user)
   }
