@@ -5,6 +5,7 @@
 #            police 人民碎片次数 / heart 海洋之心次数 / ur 传说鱼次数 / earned 累计钓获价值
 #            dex 图鉴中已收集的鱼类种数（need 写 all 表示集齐） / checkinDays 累计打卡天数
 # desc 中的 {n} 会替换成该级的 need
+# 垃圾、空军会随渔具变好而越来越少（下限 5% / 3%），所以海洋卫士、空军司令的门槛比钓鱼次数类的低很多
 # effects 写法与渔具相同：boostN ~ boostUR（分档加成，从低档扣除）、rareBoost、largeBoost、emptyReduce、junkReduce、
 #   biteReduce、cooldown（挂鱼饵 -N 秒）、reelWindow、sellBonus（出售金币 +N%，可以超过 100%）等
 
@@ -34,9 +35,9 @@
   stat: junkCleaned
   desc: 累计清理 {n} 件海洋垃圾
   tiers:
-    - { need: 50,    effects: { junkReduce: 3 } }
-    - { need: 1000,  effects: { junkReduce: 6, boostR: 1 } }
-    - { need: 10000, effects: { junkReduce: 10, boostSR: 2 } }
+    - { need: 50,   effects: { junkReduce: 3 } }
+    - { need: 300,  effects: { junkReduce: 6, boostR: 1 } }
+    - { need: 1500, effects: { junkReduce: 10, boostSR: 2 } }
 
 - id: airforce
   name: 空军司令
@@ -44,9 +45,9 @@
   stat: fails
   desc: 累计空军 / 跑鱼 / 收杆过早 {n} 次
   tiers:
-    - { need: 100,   effects: { emptyReduce: 3, reelWindow: 2 } }
-    - { need: 2000,  effects: { emptyReduce: 6, reelWindow: 4 } }
-    - { need: 20000, effects: { emptyReduce: 9, reelWindow: 6 } }
+    - { need: 50,   effects: { emptyReduce: 3, reelWindow: 2 } }
+    - { need: 400,  effects: { emptyReduce: 6, reelWindow: 4 } }
+    - { need: 2000, effects: { emptyReduce: 9, reelWindow: 6 } }
 
 - id: tycoon
   name: 富甲一方
