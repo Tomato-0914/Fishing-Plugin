@@ -1,8 +1,8 @@
 /** 渔具与鱼饵（纯函数，便于测试） */
 import { mergeEffects } from "./Titles.js"
 
-export const SLOTS = ["rod", "line", "float", "net"]
-export const UPGRADE_NAMES = { 鱼竿: "rod", 鱼线: "line", 浮漂: "float", 鱼护: "net" }
+export const SLOTS = ["rod", "line", "hook", "float", "net"]
+export const UPGRADE_NAMES = { 鱼竿: "rod", 鱼线: "line", 鱼钩: "hook", 浮漂: "float", 鱼护: "net" }
 /** 渔具等级颜色（Lv1 ~ Lv10），超出时沿用最后一个 */
 export const LEVEL_COLORS = [
   "#9aa5b1", "#3bb273", "#3a8dde", "#a259ff", "#f2a900",
@@ -167,6 +167,12 @@ export function buyBait(user, shop, id, count, baitCfg = 2) {
 }
 
 /* ---------------- 断线 ---------------- */
+
+/** 鱼钩防跑鱼：咬钩后没及时收杆时，按 holdChance% 的概率鱼仍被钩住 */
+export function holdsOnTimeout(effects = {}, rng = Math.random) {
+  const chance = Math.min(100, Math.max(0, Number(effects.holdChance) || 0))
+  return chance > 0 && rng() * 100 < chance
+}
 
 /** 本次收杆的断线概率（%） */
 export function breakChance(result, lineBreak = {}, effects = {}) {

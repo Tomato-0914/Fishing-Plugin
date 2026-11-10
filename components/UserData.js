@@ -13,7 +13,7 @@ export function newUser(id) {
     gold: 0,
     baits: {},
     baitUse: "basic",
-    gear: { rod: 1, line: 1, float: 1, net: 1 },
+    gear: { rod: 1, line: 1, hook: 1, float: 1, net: 1 },
     welcomed: false,
     reliefDay: "",
     groups: [],

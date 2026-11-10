@@ -215,7 +215,7 @@ for (const driver of ["node:sqlite", "sqlite3"]) {
     assert.deepEqual(r2.migrated, ["10001"])
     assert.equal(ref.gold, 7)
     assert.equal(db2.get("10001"), ref)
-    assert.deepEqual(ref.gear, { rod: 1, line: 1, float: 1, net: 1 }) // 字段补齐
+    assert.deepEqual(ref.gear, { rod: 1, line: 1, hook: 1, float: 1, net: 1 }) // 字段补齐
 
     // 导出
     const ex = await db2.export()
@@ -370,8 +370,8 @@ test("渔具：逐级升级、效果、容量、出售加成", async () => {
   const { upgradeGear, gearEffects, bagCapacity, gearLevel, gearItem } = await import("../components/Gear.js")
   const shop = Config.shop
   const u = newUser("10010")
-  assert.deepEqual(u.gear, { rod: 1, line: 1, float: 1, net: 1 })
-  assert.ok(Math.abs(gearEffects(u, shop).boostN - 3) < 1e-9) // Lv1 渔具合计 +3% 普通概率
+  assert.deepEqual(u.gear, { rod: 1, line: 1, hook: 1, float: 1, net: 1 })
+  assert.ok(Math.abs(gearEffects(u, shop).boostN - 3.4) < 1e-9) // Lv1 渔具合计 +3.4% 普通概率
   assert.equal(bagCapacity(u, shop, cfg.fishing.bagLimit), 200)
   // 金币不够
   assert.equal(upgradeGear(u, shop, "rod").reason, "gold")
@@ -380,13 +380,13 @@ test("渔具：逐级升级、效果、容量、出售加成", async () => {
   assert.equal(r.ok, true)
   assert.equal(r.item.name, "玻纤竿")
   assert.equal(u.gold, 1000000 - 500)
-  for (const slot of ["rod", "line", "float", "net"]) while (upgradeGear(u, shop, slot).ok);
+  for (const slot of ["rod", "line", "hook", "float", "net"]) while (upgradeGear(u, shop, slot).ok);
   assert.equal(upgradeGear(u, shop, "rod").reason, "max")
-  for (const slot of ["rod", "line", "float", "net"]) assert.equal(gearLevel(u, slot), 10)
-  assert.equal(u.gold, 1000000 - 697500) // 全部 10 级共 697500（其中 Lv1~5 共 68500）
+  for (const slot of ["rod", "line", "hook", "float", "net"]) assert.equal(gearLevel(u, slot), 10)
+  assert.equal(u.gold, 1000000 - 829800) // 五件全部 10 级共 829800（鱼钩 132300）
   const maxed = gearEffects(u, shop)
   const near = (a, b) => Math.abs(a - b) < 1e-9
-  for (const [k, v] of Object.entries({ boostR: 2, boostSR: 25, boostSSR: 19, boostUR: 7, largeBoost: 20, lineGuard: 100, reelWindow: 12, biteReduce: 2, sellBonus: 12 }))
+  for (const [k, v] of Object.entries({ boostR: 2.2, boostSR: 28, boostSSR: 21.3, boostUR: 7.8, largeBoost: 20, lineGuard: 100, holdChance: 90, reelWindow: 12, biteReduce: 2, sellBonus: 12 }))
     assert.ok(near(maxed[k], v), `${k}=${maxed[k]}`)
   assert.ok(!maxed.boostN, "满级渔具不再加普通概率")
   // 全部满级后的实际概率：坏结果压到下限，传说明显提升
@@ -396,7 +396,7 @@ test("渔具：逐级升级、效果、容量、出售加成", async () => {
   assert.ok(p.UR > 8 && p.SSR > 20 && p.SR > 30 && p.R < 20, JSON.stringify(p))
   assert.equal(bagCapacity(u, shop, 200), 3000)
   // 每一级都比上一级更贵、效果不倒退
-  for (const slot of ["rod", "line", "float", "net"]) {
+  for (const slot of ["rod", "line", "hook", "float", "net"]) {
     const lv = shop.gear[slot].levels
     assert.equal(lv.length, 10, slot)
     for (let i = 1; i < lv.length; i++) {
@@ -476,7 +476,7 @@ test("存档迁移：旧版 bait 数量转为普通饵", async () => {
   const u = store.get("123")
   assert.equal(u.baits.basic, 7)
   assert.equal(u.bait, undefined)
-  assert.deepEqual(u.gear, { rod: 1, line: 1, float: 1, net: 1 })
+  assert.deepEqual(u.gear, { rod: 1, line: 1, hook: 1, float: 1, net: 1 })
   fs.rmSync(dir, { recursive: true, force: true })
 })
 
@@ -617,7 +617,7 @@ test("渔具越好：普通越来越少，稀有以上越来越多", async () =>
   const { oddsPercent } = await import("../components/ItemPool.js")
   const { gearEffects } = await import("../components/Gear.js")
   const shop = Config.shop
-  const at = n => oddsPercent(cfg.probability, gearEffects({ gear: { rod: n, line: n, float: n, net: n } }, shop), cfg.limits)
+  const at = n => oddsPercent(cfg.probability, gearEffects({ gear: { rod: n, line: n, hook: n, float: n, net: n } }, shop), cfg.limits)
   const rows = Array.from({ length: 10 }, (_, i) => at(i + 1))
   for (let i = 3; i < 10; i++) {
     assert.ok(rows[i].N <= rows[i - 1].N + 1e-9, `Lv${i + 1} 普通不增加`)
@@ -670,4 +670,23 @@ test("鱼饵等级：10 档，至少一件同等级渔具才能买和用", async
   // 满级渔具能用混元仙饵
   const v = newUser("10031"); v.gear = { rod: 10, line: 1, float: 1, net: 1 }; v.gold = 1000
   assert.equal(buyBait(v, shop, "primal", 1, cfg.bait).ok, true)
+})
+
+test("鱼钩：10 级，防跑鱼概率逐级提高", async () => {
+  const { holdsOnTimeout, gearItem, upgradeGear } = await import("../components/Gear.js")
+  const shop = Config.shop
+  const holds = shop.gear.hook.levels.map(l => l.effects?.holdChance || 0)
+  assert.deepEqual(holds, [0, 10, 20, 30, 40, 50, 60, 70, 80, 90])
+  assert.equal(gearItem(shop, "hook", 10).name, "龙牙神钩")
+  // 概率与配置一致
+  const rng = seeded(21)
+  let n = 0
+  for (let i = 0; i < 20000; i++) if (holdsOnTimeout({ holdChance: 40 }, rng)) n++
+  assert.ok(Math.abs(n / 20000 - 0.4) < 0.02, String(n))
+  assert.equal(holdsOnTimeout({}, rng), false)
+  assert.equal(holdsOnTimeout({ holdChance: 100 }, rng), true)
+  // 老存档没有鱼钩字段：按 1 级处理，可以正常升级
+  const u = newUser("10040"); delete u.gear.hook; u.gold = 300
+  assert.equal(upgradeGear(u, shop, "hook").item.name, "袖钩")
+  assert.equal(u.gear.hook, 2)
 })

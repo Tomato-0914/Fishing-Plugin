@@ -14,7 +14,7 @@ const RARE = new Set(["SR", "SSR", "UR"])
 /** 分档加成的稀有度（effects 写作 boostN / boostR / boostSR / boostSSR / boostUR） */
 export const TIER_BOOST_ORDER = ["N", "R", "SR", "SSR", "UR"]
 /** 分档加成按这个顺序扣除（只扣比目标低的档位） */
-const BOOST_SOURCES = ["empty", "junk", "N", "R"]
+const BOOST_SOURCES = ["empty", "junk", "N", "R", "SR"]
 
 /** 按权重随机选取 entries: [[key, weight], ...] */
 export function weightedPick(entries, rng = Math.random) {
@@ -57,9 +57,9 @@ export function buildOdds(prob, effects = {}, limits = {}) {
     odds[key] -= cut
     odds.N += cut
   }
-  // 分档加成（渔具）：直接给某个稀有度加 N 个百分点，从比它低的档位里按 空军 → 垃圾 → 普通 → 优良 的顺序扣除，
-  // 每档不低于 limits 下限；稀有及以上不会被扣。渔具越好，先没了空军和垃圾，再越来越难钓到低级鱼
-  const floors = { empty: floor("empty"), junk: floor("junk"), N: floorN, R: floor("R") }
+  // 分档加成（渔具 / 鱼饵）：直接给某个稀有度加 N 个百分点，从比它低的档位里按 空军 → 垃圾 → 普通 → 优良 → 稀有
+  // 的顺序扣除，每档不低于 limits 下限；史诗、传说不会被扣。渔具越好，先没了空军和垃圾，再越来越难钓到低级鱼
+  const floors = { empty: floor("empty"), junk: floor("junk"), N: floorN, R: floor("R"), SR: floor("SR") }
   for (const tier of TIER_BOOST_ORDER) {
     let want = Math.max(0, Number(effects[`boost${tier}`]) || 0)
     for (const from of BOOST_SOURCES) {
@@ -73,12 +73,14 @@ export function buildOdds(prob, effects = {}, limits = {}) {
   // 稀有加成：SR 以上概率按倍率提高，多出来的部分和分档加成一样按 空军 → 垃圾 → 普通 → 优良 扣除（不低于下限）
   const boost = Math.max(-100, Number(effects.rareBoost) || 0)
   if (boost > 0) {
-    const room = BOOST_SOURCES.reduce((a, k) => a + Math.max(0, odds[k] - floors[k]), 0)
+    // 倍率加成本身也提高稀有，所以只从 优良 及以下扣
+    const rareSources = BOOST_SOURCES.filter(k => k !== "SR")
+    const room = rareSources.reduce((a, k) => a + Math.max(0, odds[k] - floors[k]), 0)
     const want = [...RARE].reduce((s, r) => s + odds[r] * boost / 100, 0)
     const scale = want > room ? room / want : 1
     for (const r of RARE) odds[r] += odds[r] * boost / 100 * scale
     let left = want * scale
-    for (const from of BOOST_SOURCES) {
+    for (const from of rareSources) {
       const take = Math.min(Math.max(0, odds[from] - floors[from]), left)
       odds[from] -= take
       left -= take

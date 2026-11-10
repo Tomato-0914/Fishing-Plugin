@@ -6,7 +6,7 @@ import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
 import { addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier, luckEffects } from "../components/Game.js"
-import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, allEffects } from "../components/Gear.js"
+import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, allEffects, holdsOnTimeout, maxLevel } from "../components/Gear.js"
 import { resolveCast, summarize, formatMulti } from "../components/Catch.js"
 import { checkTitles, getEffects, effectText } from "../components/Titles.js"
 import { withButtons, B } from "../components/Button.js"
@@ -173,7 +173,7 @@ export class Fishing extends plugin {
 
   /** 装备、运势两行 */
   gearLine(user, shop) {
-    const line = ["rod", "line", "float"].map(k => gearItem(shop, k, gearLevel(user, k))?.name).filter(Boolean).join(" · ")
+    const line = ["rod", "line", "hook", "float"].map(k => gearItem(shop, k, gearLevel(user, k))?.name).filter(Boolean).join(" · ")
     return line ? `🧰 ${line}` : ""
   }
 
@@ -250,14 +250,22 @@ export class Fishing extends plugin {
     if (!s || s.stage !== "bite") return
     sessions.delete(id)
     const user = UserData.get(id)
+    const shop = Config.shop
+    // 鱼钩防跑鱼：没及时收杆时，按 holdChance 概率鱼仍被钩住，照常结算
+    if (holdsOnTimeout(this.effectsFor(user, baitDef(shop, s.bait)))) {
+      user.stats.hookSaved = (user.stats.hookSaved || 0) + 1
+      const hook = gearItem(shop, "hook", gearLevel(user, "hook"))
+      return this.settle(e, id, user, s, `🪝 你没来得及收杆，但${hook?.name || "鱼钩"}牢牢钩住了它！`)
+    }
     user.stats.escaped++
     this.startCooldown(id, user)
     UserData.save(id)
-    await this.send(e, withButtons(e, pick([
+    const canUpgrade = gearLevel(user, "hook") < maxLevel(shop, "hook")
+    await this.send(e, withButtons(e, [pick([
       "💨 鱼儿挣脱鱼钩跑掉了~ 下次要眼疾手快哦！",
       "💨 浮漂浮了上来……鱼已经溜走了~",
       "💨 太慢啦！鱼儿叼着鱼饵扬长而去~",
-    ]), [B.cast, B.multi, B.help]))
+    ]), canUpgrade ? "💡 去 #渔具工坊 升级鱼钩，没及时收杆也不容易跑鱼" : ""].filter(Boolean).join("\n"), [B.cast, B.multi, B.help]))
     await this.announceTitles(e, user)
   }
 
@@ -293,6 +301,19 @@ export class Fishing extends plugin {
       return this.announceTitles(e, user)
     }
 
+    return this.settle(e, id, user, s)
+  }
+
+  /**
+   * 结算一竿（#收杆，或没及时收杆但鱼钩钩住了鱼）
+   * @param prefix 结果前面附加的一行提示
+   */
+  async settle(e, id, user, s, prefix = "") {
+    const withPrefix = msg => {
+      if (!prefix) return msg
+      if (Array.isArray(msg)) return [`${prefix}\n${msg[0]}`, ...msg.slice(1)]
+      return `${prefix}\n${msg}`
+    }
     const cfg = this.cfg
     const shop = Config.shop
     const effects = this.effectsFor(user, baitDef(shop, s.bait))
@@ -305,19 +326,19 @@ export class Fishing extends plugin {
       const r = RARITY_INFO[result.rarity] || {}
       const sizeLabel = result.size ? cfg.size?.[result.size]?.label : ""
       const line = gearItem(shop, "line", gearLevel(user, "line"))
-      await this.send(e, withButtons(e, [
+      await this.send(e, withPrefix(withButtons(e, [
         "💥 啪！鱼线断了！",
         `${result.item.emoji} 一条【${r.label}】${result.item.name}${sizeLabel ? `（${sizeLabel}）` : ""}拖着鱼钩消失在水里……`,
         `🧵 当前鱼线：${line?.name || "—"}（本次断线概率 ${Number(snap.toFixed(1))}%）`,
         "💡 去 #渔具工坊 升级鱼线可以降低断线概率",
-      ].join("\n"), [B.cast, B.multi], [B.workshop]))
+      ].join("\n"), [B.cast, B.multi], [B.workshop])))
       return this.announceTitles(e, user)
     }
 
     this.startCooldown(id, user)
     UserData.save(id)
 
-    await this.send(e, this.resultMsg(e, user, result, reward))
+    await this.send(e, withPrefix(this.resultMsg(e, user, result, reward)))
     return this.announceTitles(e, user)
   }
 

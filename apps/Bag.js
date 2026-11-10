@@ -161,7 +161,7 @@ export class FishingBag extends plugin {
       `👤 ${displayName(user)} 的钓鱼信息`,
       "━━━━━━━━━━━━",
       `👛 金币：${user.gold} · 🪱 鱼饵：${totalBait(user)}`,
-      `🧰 ${["rod", "line", "float", "net"].map(k => gearItem(Config.shop, k, gearLevel(user, k))?.name).filter(Boolean).join(" · ")}`,
+      `🧰 ${["rod", "line", "hook", "float", "net"].map(k => gearItem(Config.shop, k, gearLevel(user, k))?.name).filter(Boolean).join(" · ")}`,
       `🎣 抛竿 ${s.casts} 次 · 钓到鱼 ${s.catches} 条`,
       `🗑️ 钓到垃圾 ${s.junk} 件 · 已清理 ${s.junkCleaned} 件`,
       `🌊 空军 ${s.empty} · 跑鱼 ${s.escaped} · 收杆过早 ${s.early}`,

@@ -15,7 +15,7 @@ import { renderOrText } from "../components/Render.js"
 import { groupAllowed, updateNickname, displayName } from "../components/common.js"
 
 const UPGRADE_BUTTONS = [
-  [{ text: "🎣 升级鱼竿", callback: "#升级鱼竿" }, { text: "🧵 升级鱼线", callback: "#升级鱼线" }],
+  [{ text: "🎣 升级鱼竿", callback: "#升级鱼竿" }, { text: "🧵 升级鱼线", callback: "#升级鱼线" }, { text: "🪝 升级鱼钩", callback: "#升级鱼钩" }],
   [{ text: "🎈 升级浮漂", callback: "#升级浮漂" }, { text: "🧺 升级鱼护", callback: "#升级鱼护" }],
 ]
 
@@ -30,7 +30,7 @@ export class FishingShop extends plugin {
         { reg: /^#?(渔具工坊|钓鱼工坊|工坊)$/, fnc: "workshop" },
         // #渔具商店 为旧指令，保留兼容聊天记录里的旧按钮
         { reg: /^#?(鱼饵商店|渔具商店|渔具店|钓鱼商店)$/, fnc: "shop" },
-        { reg: /^#?升级(鱼竿|鱼线|浮漂|鱼护)$/, fnc: "upgrade" },
+        { reg: /^#?升级(鱼竿|鱼线|鱼钩|浮漂|鱼护)$/, fnc: "upgrade" },
         { reg: /^#?(购买|买)鱼饵\s*(.*)$/, fnc: "buy" },
         { reg: /^#?(使用|切换|换)鱼饵\s*(.+)$/, fnc: "use" },
         { reg: /^#?(我的)?鱼饵$/, fnc: "bait" },
@@ -121,7 +121,7 @@ export class FishingShop extends plugin {
   async upgrade(e) {
     if (!groupAllowed(e)) return false
     const user = this.load(e)
-    const slot = UPGRADE_NAMES[e.msg.match(/升级(鱼竿|鱼线|浮漂|鱼护)/)[1]]
+    const slot = UPGRADE_NAMES[e.msg.match(/升级(鱼竿|鱼线|鱼钩|浮漂|鱼护)/)[1]]
     const ret = upgradeGear(user, this.shopCfg, slot)
     if (!ret.ok && ret.reason === "max")
       return e.reply(withButtons(e, `✨ 你的${ret.current?.slotName}已经是最高级的【${ret.current?.name}】啦！`, [B.myGear, B.cast]))

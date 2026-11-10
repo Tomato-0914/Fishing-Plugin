@@ -26,6 +26,7 @@
     - { icon: 🔧, title: "#渔具工坊", desc: 查看渔具等级与升级价格 }
     - { icon: 🧰, title: "#我的渔具", desc: 装备与总加成一览 }
     - { icon: 🎣, title: "#升级鱼竿 / 鱼线", desc: 鱼竿提升稀有与大鱼，鱼线防断线 }
+    - { icon: 🪝, title: "#升级鱼钩", desc: 没及时收杆也不容易跑鱼 }
     - { icon: 🎈, title: "#升级浮漂 / 鱼护", desc: 浮漂减少空军，鱼护扩容加价 }
 - group: 🏪 鱼饵商店
   list:

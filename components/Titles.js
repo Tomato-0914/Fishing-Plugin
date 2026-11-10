@@ -52,6 +52,7 @@ const EFFECT_TEXT = {
   largeBoost: ["大体型概率", "%", false],
   sellBonus: ["出售金币", "%", false],
   lineGuard: ["断线概率", "%", true],
+  holdChance: ["没及时收杆时不跑鱼", "%", false],
   boostN: ["普通概率", "%", false],
   boostR: ["优良概率", "%", false],
   boostSR: ["稀有概率", "%", false],
@@ -69,6 +70,7 @@ export function effectText(effects = {}) {
     const [name, unit, inverse] = EFFECT_TEXT[k] || [k, "", false]
     const up = inverse ? v < 0 : v > 0
     if (k === "lineGuard" && v >= 100) return `${name} -100%（不再断线）`
+    if (k === "holdChance") return `${name} ${v}%`
     return `${name} ${up ? "+" : "-"}${Math.abs(v)}${unit}`
   })
   if (tiers) parts.unshift(tiers)
