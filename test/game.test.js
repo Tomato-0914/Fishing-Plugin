@@ -371,7 +371,7 @@ test("渔具：逐级升级、效果、容量、出售加成", async () => {
   const shop = Config.shop
   const u = newUser("10010")
   assert.deepEqual(u.gear, { rod: 1, line: 1, float: 1, net: 1 })
-  assert.deepEqual(gearEffects(u, shop), { boostN: 3 }) // Lv1 青竹竿 +2、泡沫漂 +1 普通概率
+  assert.ok(Math.abs(gearEffects(u, shop).boostN - 3) < 1e-9) // Lv1 渔具合计 +3% 普通概率
   assert.equal(bagCapacity(u, shop, cfg.fishing.bagLimit), 200)
   // 金币不够
   assert.equal(upgradeGear(u, shop, "rod").reason, "gold")
@@ -386,13 +386,14 @@ test("渔具：逐级升级、效果、容量、出售加成", async () => {
   assert.equal(u.gold, 1000000 - 697500) // 全部 10 级共 697500（其中 Lv1~5 共 68500）
   const maxed = gearEffects(u, shop)
   const near = (a, b) => Math.abs(a - b) < 1e-9
-  for (const [k, v] of Object.entries({ boostN: 8, boostR: 14, boostSR: 13, boostSSR: 9.1, boostUR: 3.2, largeBoost: 20, lineGuard: 100, reelWindow: 12, biteReduce: 2, sellBonus: 12 }))
+  for (const [k, v] of Object.entries({ boostR: 2, boostSR: 25, boostSSR: 19, boostUR: 7, largeBoost: 20, lineGuard: 100, reelWindow: 12, biteReduce: 2, sellBonus: 12 }))
     assert.ok(near(maxed[k], v), `${k}=${maxed[k]}`)
+  assert.ok(!maxed.boostN, "满级渔具不再加普通概率")
   // 全部满级后的实际概率：坏结果压到下限，传说明显提升
   const { oddsPercent } = await import("../components/ItemPool.js")
   const p = oddsPercent(cfg.probability, maxed, cfg.limits)
-  assert.ok(near(p.empty, 3) && near(p.junk, 5), JSON.stringify(p))
-  assert.ok(p.UR > 5 && p.SSR > 14 && p.R > 30, JSON.stringify(p))
+  assert.ok(near(p.empty, 3) && near(p.junk, 5) && near(p.N, 5), JSON.stringify(p))
+  assert.ok(p.UR > 8 && p.SSR > 20 && p.SR > 30 && p.R < 20, JSON.stringify(p))
   assert.equal(bagCapacity(u, shop, 200), 3000)
   // 每一级都比上一级更贵、效果不倒退
   for (const slot of ["rod", "line", "float", "net"]) {
@@ -400,7 +401,11 @@ test("渔具：逐级升级、效果、容量、出售加成", async () => {
     assert.equal(lv.length, 10, slot)
     for (let i = 1; i < lv.length; i++) {
       assert.ok(lv[i].price > lv[i - 1].price, `${slot} Lv${i + 1} 价格`)
-      for (const [k, v] of Object.entries(lv[i - 1].effects || {})) assert.ok((lv[i].effects?.[k] || 0) >= v, `${slot} Lv${i + 1} ${k}`)
+      // 稀有度加成整体向高档移动：按档位加权（普通 1 … 传说 5）的总分逐级上升
+      const score = e => ["boostN", "boostR", "boostSR", "boostSSR", "boostUR"].reduce((a, k, j) => a + (e?.[k] || 0) * (j + 1), 0)
+      assert.ok(score(lv[i].effects) > score(lv[i - 1].effects), `${slot} Lv${i + 1} 稀有度加成`)
+      // 各渔具自己的特色效果不倒退
+      for (const [k, v] of Object.entries(lv[i - 1].effects || {})) if (!k.startsWith("boost")) assert.ok((lv[i].effects?.[k] || 0) >= v, `${slot} Lv${i + 1} ${k}`)
       if (slot === "net") assert.ok(lv[i].capacity > lv[i - 1].capacity)
     }
   }
@@ -597,6 +602,7 @@ test("分档加成：从空军→垃圾→普通扣除，遵守下限，优良�
   // 超出可扣范围时只加能加的，普通不低于下限
   const c = buildOdds(cfg.probability, { boostUR: 1000 }, cfg.limits)
   assert.equal(c.N, cfg.limits.N)
+  assert.equal(c.R, cfg.limits.R) // 普通扣到下限后继续扣优良
   assert.ok(Math.abs(total(c) - total(base)) < 1e-9)
   // 普通档的加成不会从普通自己扣
   const d = buildOdds(cfg.probability, { boostN: 100 }, cfg.limits)
@@ -604,4 +610,21 @@ test("分档加成：从空军→垃圾→普通扣除，遵守下限，优良�
   // 百分比展示合计 100
   const pct = oddsPercent(cfg.probability, { boostSR: 3 }, cfg.limits)
   assert.ok(Math.abs(Object.values(pct).reduce((x, y) => x + y, 0) - 100) < 1e-9)
+})
+
+test("渔具越好：普通越来越少，稀有以上越来越多", async () => {
+  const { oddsPercent } = await import("../components/ItemPool.js")
+  const { gearEffects } = await import("../components/Gear.js")
+  const shop = Config.shop
+  const at = n => oddsPercent(cfg.probability, gearEffects({ gear: { rod: n, line: n, float: n, net: n } }, shop), cfg.limits)
+  const rows = Array.from({ length: 10 }, (_, i) => at(i + 1))
+  for (let i = 3; i < 10; i++) {
+    assert.ok(rows[i].N <= rows[i - 1].N + 1e-9, `Lv${i + 1} 普通不增加`)
+    const high = r => r.SR + r.SSR + r.UR
+    assert.ok(high(rows[i]) > high(rows[i - 1]), `Lv${i + 1} 稀有以上增加`)
+    assert.ok(rows[i].UR >= rows[i - 1].UR - 1e-9, `Lv${i + 1} 传说不减少`)
+  }
+  assert.ok(rows[9].N < rows[0].N / 4, "满级普通不到 1 级的四分之一")
+  assert.ok(rows[9].R < rows[4].R, "满级优良比 5 级少")
+  assert.ok(rows[9].UR > rows[0].UR * 4, "满级传说是 1 级的 4 倍以上")
 })

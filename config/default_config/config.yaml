@@ -57,6 +57,7 @@ limits:
   empty: 3
   junk: 5
   N: 5
+  R: 8
 
 # 鱼的体型：出现概率（%）与售价倍率
 size:
