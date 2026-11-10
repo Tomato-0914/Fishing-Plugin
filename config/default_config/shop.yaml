@@ -9,6 +9,7 @@
 #   reelWindow 收杆时间 +N 秒              biteReduce 咬钩等待 -N 秒
 #   lineGuard 断线概率 -N%（相对值）        sellBonus 出售金币 +N%
 #   holdChance 咬钩后没及时收杆时，N% 概率鱼钩仍把鱼钩住（不跑鱼）
+#   multiCdReduce 十连钓鱼后的挂鱼饵时间 -N%（最多 -90%）
 # 鱼护的 capacity 为容量；Lv1 鱼护的容量取 config.yaml 中的 fishing.bagLimit
 
 gear:
@@ -46,14 +47,14 @@ gear:
     levels:
       - { name: 铁钩, price: 0, effects: { boostN: 0.4 }, desc: 最普通的铁钩，钓小鱼够用了 }
       - { name: 袖钩, price: 300, effects: { boostN: 0.6, holdChance: 10 }, desc: 钩条细、入口快，小鱼一咬就中 }
-      - { name: 倒刺钩, price: 1000, effects: { boostN: 0.6, boostR: 0.4, holdChance: 20 }, desc: 钩尖带倒刺，鱼一旦咬上就不容易脱钩 }
-      - { name: 碳钢钩, price: 3000, effects: { boostN: 0.6, boostR: 0.6, boostSR: 0.2, holdChance: 30 }, desc: 高碳钢打造，又硬又锋利 }
-      - { name: 钛合金钩, price: 8000, effects: { boostN: 0.4, boostR: 0.7, boostSR: 0.6, boostSSR: 0.1, holdChance: 40 }, desc: 轻巧耐腐蚀，在海里泡多久都不生锈 }
-      - { name: 寒铁钩, price: 12000, effects: { boostN: 0.2, boostR: 0.7, boostSR: 1.1, boostSSR: 0.3, holdChance: 50 }, desc: 极北寒铁锻成，冰冷刺骨，鱼一碰就僵住 }
-      - { name: 玄晶钩, price: 16000, effects: { boostR: 0.6, boostSR: 1.6, boostSSR: 0.6, boostUR: 0.1, holdChance: 60 }, desc: 通体透明的玄晶，在水里几乎看不见 }
-      - { name: 星芒钩, price: 22000, effects: { boostR: 0.5, boostSR: 2, boostSSR: 1.1, boostUR: 0.2, holdChance: 70 }, desc: 钩尖闪着星光，一刺就牢牢扣住 }
-      - { name: 凤喙钩, price: 30000, effects: { boostR: 0.4, boostSR: 2.5, boostSSR: 1.7, boostUR: 0.5, holdChance: 80 }, desc: 凤凰喙磨成的钩，再大的鱼也挣不脱 }
-      - { name: 龙牙神钩, price: 40000, effects: { boostR: 0.2, boostSR: 3, boostSSR: 2.3, boostUR: 0.8, holdChance: 90 }, desc: 传说用龙王的一颗牙磨成，钩上的鱼没有一条跑掉过 }
+      - { name: 倒刺钩, price: 1000, effects: { boostN: 0.6, boostR: 0.4, holdChance: 20, multiCdReduce: 5 }, desc: 钩尖带倒刺，鱼一旦咬上就不容易脱钩 }
+      - { name: 碳钢钩, price: 3000, effects: { boostN: 0.6, boostR: 0.6, boostSR: 0.2, holdChance: 30, multiCdReduce: 10 }, desc: 高碳钢打造，又硬又锋利 }
+      - { name: 钛合金钩, price: 8000, effects: { boostN: 0.4, boostR: 0.7, boostSR: 0.6, boostSSR: 0.1, holdChance: 40, multiCdReduce: 15 }, desc: 轻巧耐腐蚀，在海里泡多久都不生锈 }
+      - { name: 寒铁钩, price: 12000, effects: { boostN: 0.2, boostR: 0.7, boostSR: 1.1, boostSSR: 0.3, holdChance: 50, multiCdReduce: 20 }, desc: 极北寒铁锻成，冰冷刺骨，鱼一碰就僵住 }
+      - { name: 玄晶钩, price: 16000, effects: { boostR: 0.6, boostSR: 1.6, boostSSR: 0.6, boostUR: 0.1, holdChance: 60, multiCdReduce: 25 }, desc: 通体透明的玄晶，在水里几乎看不见 }
+      - { name: 星芒钩, price: 22000, effects: { boostR: 0.5, boostSR: 2, boostSSR: 1.1, boostUR: 0.2, holdChance: 70, multiCdReduce: 30 }, desc: 钩尖闪着星光，一刺就牢牢扣住 }
+      - { name: 凤喙钩, price: 30000, effects: { boostR: 0.4, boostSR: 2.5, boostSSR: 1.7, boostUR: 0.5, holdChance: 80, multiCdReduce: 40 }, desc: 凤凰喙磨成的钩，再大的鱼也挣不脱 }
+      - { name: 龙牙神钩, price: 40000, effects: { boostR: 0.2, boostSR: 3, boostSSR: 2.3, boostUR: 0.8, holdChance: 90, multiCdReduce: 50 }, desc: 传说用龙王的一颗牙磨成，钩上的鱼没有一条跑掉过 }
   float:
     name: 浮漂
     emoji: 🎈

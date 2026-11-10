@@ -53,6 +53,7 @@ const EFFECT_TEXT = {
   sellBonus: ["出售金币", "%", false],
   lineGuard: ["断线概率", "%", true],
   holdChance: ["没及时收杆时不跑鱼", "%", false],
+  multiCdReduce: ["十连间隔", "%", true],
   boostN: ["普通概率", "%", false],
   boostR: ["优良概率", "%", false],
   boostSR: ["稀有概率", "%", false],

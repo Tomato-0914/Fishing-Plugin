@@ -6,7 +6,7 @@ import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
 import { addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier, luckEffects } from "../components/Game.js"
-import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, allEffects, holdsOnTimeout, maxLevel } from "../components/Gear.js"
+import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, allEffects, holdsOnTimeout, maxLevel, multiCooldown } from "../components/Gear.js"
 import { resolveCast, summarize, formatMulti } from "../components/Catch.js"
 import { checkTitles, getEffects, effectText } from "../components/Titles.js"
 import { withButtons, B } from "../components/Button.js"
@@ -276,6 +276,7 @@ export class Fishing extends plugin {
     const cd = Math.max(0, base - (effects.cooldown || 0))
     if (cd > 0) cooldowns.set(id, Date.now() + cd * 1000)
     else cooldowns.delete(id)
+    return cd
   }
 
   async reel(e) {
@@ -395,13 +396,17 @@ export class Fishing extends plugin {
     const cfg = this.cfg
     const shop = Config.shop
     const rounds = baits.map(bait => resolveCast(user, { items: Config.items, cfg, shop, effects: this.effectsFor(user, bait) }))
-    this.startCooldown(id, user, Number(cfg.fishing?.multiCooldown ?? 100))
+    // 十连后的挂鱼饵时间：鱼钩 3 级起按比例缩短
+    const gearEff = gearEffects(user, shop)
+    const cd = this.startCooldown(id, user, multiCooldown(Number(cfg.fishing?.multiCooldown ?? 100), gearEff))
     UserData.save(id)
 
     const sum = summarize(rounds)
     const sizeLabels = Object.fromEntries(Object.entries(cfg.size || {}).map(([k, v]) => [k, v.label]))
     // QQBot 的文字按 Markdown 渲染：钓获放进引用块；其他协议用纯文本
-    const msg = formatMulti(rounds, { sizeLabels, markdown: e.bot?.adapter?.id === "QQBot" })
+    const cut = Number(gearEff.multiCdReduce) || 0
+    const msg = formatMulti(rounds, { sizeLabels, markdown: e.bot?.adapter?.id === "QQBot" }) +
+      `\n⏳ ${cd} 秒后可以再次十连${cut ? `（鱼钩 -${cut}%）` : ""}`
     await this.send(e, withButtons(e, msg,
       [B.multi, B.fish],
       [B.bag, B.sellAll, ...(sum.junk ? [B.discard] : [])]))

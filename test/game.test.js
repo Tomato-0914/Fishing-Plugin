@@ -677,6 +677,14 @@ test("鱼钩：10 级，防跑鱼概率逐级提高", async () => {
   const shop = Config.shop
   const holds = shop.gear.hook.levels.map(l => l.effects?.holdChance || 0)
   assert.deepEqual(holds, [0, 10, 20, 30, 40, 50, 60, 70, 80, 90])
+  // 十连间隔：3 级起缩短，满级 -50%
+  const { multiCooldown, gearEffects } = await import("../components/Gear.js")
+  const cuts = shop.gear.hook.levels.map(l => l.effects?.multiCdReduce || 0)
+  assert.deepEqual(cuts, [0, 0, 5, 10, 15, 20, 25, 30, 40, 50])
+  assert.equal(multiCooldown(100, {}), 100)
+  assert.equal(multiCooldown(100, gearEffects({ gear: { hook: 3 } }, shop)), 95)
+  assert.equal(multiCooldown(100, gearEffects({ gear: { hook: 10 } }, shop)), 50)
+  assert.equal(multiCooldown(100, { multiCdReduce: 500 }), 10) // 最多 -90%
   assert.equal(gearItem(shop, "hook", 10).name, "龙牙神钩")
   // 概率与配置一致
   const rng = seeded(21)

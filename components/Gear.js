@@ -168,6 +168,12 @@ export function buyBait(user, shop, id, count, baitCfg = 2) {
 
 /* ---------------- 断线 ---------------- */
 
+/** 十连钓鱼后的挂鱼饵时间（秒）：按 multiCdReduce% 缩短，最多 -90% */
+export function multiCooldown(base, effects = {}) {
+  const cut = Math.min(90, Math.max(0, Number(effects.multiCdReduce) || 0))
+  return Math.max(0, Math.round(Number(base) * (1 - cut / 100)))
+}
+
 /** 鱼钩防跑鱼：咬钩后没及时收杆时，按 holdChance% 的概率鱼仍被钩住 */
 export function holdsOnTimeout(effects = {}, rng = Math.random) {
   const chance = Math.min(100, Math.max(0, Number(effects.holdChance) || 0))
