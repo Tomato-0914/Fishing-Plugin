@@ -1,70 +1,109 @@
 # ===== 称号 =====
-# 每个称号只能获得一次；拥有即生效，同一称号的效果不会叠加。
-# condition.stat 可用：casts 抛竿次数 / catches 钓到的鱼 / junkCleaned 清理垃圾 / fails 空军+鱼跑了+收杆过早
-#                      police 人民碎片次数 / heart 海洋之心次数 / ur 传说鱼次数 / earned 累计钓获价值
-# condition.dex: true 表示集齐图鉴中的全部鱼类（不含垃圾与隐藏款）
-# effects 可用：
-#   biteReduce     咬钩等待 -N 秒
-#   reelWindow     收杆窗口 +N 秒
-#   cooldown       挂鱼饵时间 -N 秒
-#   emptyReduce    空军概率 -N%（转为普通鱼）
-#   junkReduce     垃圾概率 -N%（转为普通鱼）
-#   rareBoost      稀有及以上概率 ×(1 + N%)
-#   largeBoost     大体型概率 +N%（从小体型中扣除）
-#   sellBonus      出售金币 +N%
+# 每个称号分 Ⅰ / Ⅱ / Ⅲ 三级，达到 need 即获得对应等级；同一称号只按最高一级生效（不与低级叠加），不同称号之间效果叠加
+# 称号按累计统计计算，统计只增不减，所以获得后不会失去
+# stat 可用：casts 抛竿次数 / catches 钓到的鱼 / junkCleaned 清理垃圾 / fails 空军+跑鱼+收杆过早
+#            police 人民碎片次数 / heart 海洋之心次数 / ur 传说鱼次数 / earned 累计钓获价值
+#            dex 图鉴中已收集的鱼类种数（need 写 all 表示集齐） / checkinDays 累计打卡天数
+# desc 中的 {n} 会替换成该级的 need
+# effects 写法与渔具相同：boostN ~ boostUR（分档加成，从低档扣除）、rareBoost、largeBoost、emptyReduce、junkReduce、
+#   biteReduce、cooldown（挂鱼饵 -N 秒）、reelWindow、sellBonus（出售金币 +N%，可以超过 100%）等
 
-- id: novice
-  name: 初出茅庐
+- id: veteran
+  name: 钓鱼佬
   emoji: 🌱
-  desc: 累计抛竿 10 次
-  condition: { stat: casts, gte: 10 }
-  effects: { biteReduce: 1 }
+  stat: casts
+  desc: 累计抛竿 {n} 次
+  tiers:
+    - { need: 100,   effects: { biteReduce: 1, cooldown: 1 } }
+    - { need: 3000,  effects: { biteReduce: 2, cooldown: 2 } }
+    - { need: 50000, effects: { biteReduce: 3, cooldown: 3 } }
 
 - id: skilled
   name: 熟练钓手
   emoji: 🎣
-  desc: 累计钓到 100 条鱼
-  condition: { stat: catches, gte: 100 }
-  effects: { reelWindow: 5 }
+  stat: catches
+  desc: 累计钓到 {n} 条鱼
+  tiers:
+    - { need: 100,   effects: { boostR: 2, boostSR: 1 } }
+    - { need: 3000,  effects: { boostSR: 3, boostSSR: 1 } }
+    - { need: 50000, effects: { boostSSR: 3, boostUR: 1 } }
 
 - id: guardian
   name: 海洋卫士
   emoji: 🌊
-  desc: 累计集中清理 50 件海洋垃圾
-  condition: { stat: junkCleaned, gte: 50 }
-  effects: { emptyReduce: 5, junkReduce: 3 }
-
-- id: citizen
-  name: 热心市民
-  emoji: 👮
-  desc: 钓到「人民碎片」并报警
-  condition: { stat: police, gte: 1 }
-  effects: { sellBonus: 5 }
-
-- id: abyss
-  name: 深海之子
-  emoji: 💎
-  desc: 钓到「海洋之心」
-  condition: { stat: heart, gte: 1 }
-  effects: { rareBoost: 20 }
-
-- id: legend
-  name: 传说猎人
-  emoji: 🐉
-  desc: 累计钓到 5 条传说鱼
-  condition: { stat: ur, gte: 5 }
-  effects: { largeBoost: 10 }
+  stat: junkCleaned
+  desc: 累计清理 {n} 件海洋垃圾
+  tiers:
+    - { need: 50,    effects: { junkReduce: 3 } }
+    - { need: 1000,  effects: { junkReduce: 6, boostR: 1 } }
+    - { need: 10000, effects: { junkReduce: 10, boostSR: 2 } }
 
 - id: airforce
   name: 空军司令
   emoji: ✈️
-  desc: 累计空军 / 跑鱼 / 收杆过早 100 次
-  condition: { stat: fails, gte: 100 }
-  effects: { cooldown: 3 }
+  stat: fails
+  desc: 累计空军 / 跑鱼 / 收杆过早 {n} 次
+  tiers:
+    - { need: 100,   effects: { emptyReduce: 3, reelWindow: 2 } }
+    - { need: 2000,  effects: { emptyReduce: 6, reelWindow: 4 } }
+    - { need: 20000, effects: { emptyReduce: 9, reelWindow: 6 } }
+
+- id: tycoon
+  name: 富甲一方
+  emoji: 💰
+  stat: earned
+  desc: 累计钓获价值 {n} 金币
+  tiers:
+    - { need: 100000,   effects: { sellBonus: 20 } }
+    - { need: 1000000,  effects: { sellBonus: 50 } }
+    - { need: 10000000, effects: { sellBonus: 120 } }
+
+- id: diligent
+  name: 打卡达人
+  emoji: 📅
+  stat: checkinDays
+  desc: 累计打卡 {n} 天
+  tiers:
+    - { need: 7,   effects: { boostR: 1, boostSR: 1 } }
+    - { need: 30,  effects: { boostSR: 2, boostSSR: 1 } }
+    - { need: 365, effects: { boostSSR: 2, boostUR: 1 } }
 
 - id: master
   name: 图鉴大师
   emoji: 📖
-  desc: 集齐图鉴中的全部鱼类
-  condition: { dex: true }
-  effects: { sellBonus: 10 }
+  stat: dex
+  desc: 图鉴收集 {n} 种鱼类
+  tiers:
+    - { need: 20,  effects: { rareBoost: 5 } }
+    - { need: 45,  effects: { rareBoost: 10, largeBoost: 5 } }
+    - { need: all, effects: { rareBoost: 20, largeBoost: 10 } }
+
+- id: legend
+  name: 传说猎人
+  emoji: 🐉
+  stat: ur
+  desc: 累计钓到 {n} 条传说鱼
+  tiers:
+    - { need: 5,    effects: { largeBoost: 5 } }
+    - { need: 100,  effects: { largeBoost: 10, boostUR: 0.5 } }
+    - { need: 1000, effects: { largeBoost: 20, boostUR: 1 } }
+
+- id: citizen
+  name: 热心市民
+  emoji: 👮
+  stat: police
+  desc: 钓到人民碎片并报警 {n} 次
+  tiers:
+    - { need: 1,  effects: { sellBonus: 10 } }
+    - { need: 3,  effects: { sellBonus: 30 } }
+    - { need: 10, effects: { sellBonus: 60 } }
+
+- id: abyss
+  name: 深海之子
+  emoji: 💎
+  stat: heart
+  desc: 钓到海洋之心 {n} 次
+  tiers:
+    - { need: 1, effects: { boostUR: 0.5 } }
+    - { need: 3, effects: { boostSSR: 1, boostUR: 1 } }
+    - { need: 8, effects: { boostSSR: 2, boostUR: 2 } }

@@ -8,7 +8,7 @@ import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js
 import { addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier, luckEffects } from "../components/Game.js"
 import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, allEffects, holdsOnTimeout, maxLevel, multiCooldown } from "../components/Gear.js"
 import { resolveCast, summarize, formatMulti } from "../components/Catch.js"
-import { checkTitles, getEffects, effectText } from "../components/Titles.js"
+import { checkTitles, getEffects, effectText, titleUpText } from "../components/Titles.js"
 import { withButtons, B } from "../components/Button.js"
 import { groupAllowed, displayName, updateNickname, pick, itemMap } from "../components/common.js"
 
@@ -72,7 +72,7 @@ export class Fishing extends plugin {
   /** 本竿的全部效果：称号 + 今日幸运 + 渔具 + 本竿鱼饵 */
   effectsFor(user, bait) {
     return allEffects({
-      titles: getEffects(user, Config.titles),
+      titles: getEffects(user, Config.titles, Config.items),
       luck: luckEffects(user, this.cfg.checkin?.tiers),
       gear: gearEffects(user, Config.shop),
       bait: bait?.effects,
@@ -228,7 +228,7 @@ export class Fishing extends plugin {
       `🪱 ${bait.name}（剩 ${remain}）${warn}`,
       this.luckLine(user),
     ].filter(Boolean).join("\n"))
-    // 新称号（例如初出茅庐）
+    // 新称号 / 称号升级（例如钓鱼佬Ⅰ）
     await this.announceTitles(e, user)
     return true
   }
@@ -271,7 +271,7 @@ export class Fishing extends plugin {
 
   /** 挂鱼饵冷却；seconds 不传时取 fishing.cooldown，称号的冷却缩减同样生效 */
   startCooldown(id, user, seconds) {
-    const effects = getEffects(user, Config.titles)
+    const effects = getEffects(user, Config.titles, Config.items)
     const base = seconds ?? Number(this.cfg.fishing?.cooldown ?? 10)
     const cd = Math.max(0, base - (effects.cooldown || 0))
     if (cd > 0) cooldowns.set(id, Date.now() + cd * 1000)
@@ -463,8 +463,7 @@ export class Fishing extends plugin {
     const got = checkTitles(user, Config.titles, Config.items)
     if (!got.length) return true
     UserData.save(user.user_id)
-    const text = got.map(t => `🏅 恭喜 ${displayName(user)} 获得称号【${t.emoji} ${t.name}】\n✨ 效果：${effectText(t.effects)}`).join("\n\n")
-    await e.reply(withButtons(e, text, [B.titles]))
+    await e.reply(withButtons(e, titleUpText(got, displayName(user)), [B.titles]))
     return true
   }
 }

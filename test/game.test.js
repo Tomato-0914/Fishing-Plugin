@@ -129,7 +129,8 @@ test("结算：人民碎片报警不入鱼护，计入排行；周期过期清�
   checkTitles(u, Config.titles, items)
   assert.equal(u.gold, 10000)
   assert.equal(u.titles.filter(t => t === "citizen").length, 1)
-  assert.equal(getEffects(u, Config.titles).sellBonus, 5)
+  assert.equal(u.titleLv.citizen, 1) // 报警 2 次 → 热心市民Ⅰ
+  assert.equal(getEffects(u, Config.titles, items).sellBonus, 10)
   // 第二天日榜清零，月榜保留
   const tomorrow = new Date(2026, 10, 3, 12)
   assert.equal(periodStat(u, "day", tomorrow).value, 0)
@@ -149,9 +150,9 @@ test("出售与清理垃圾，海洋卫士称号", () => {
   assert.equal(u.gold, 110)
   assert.equal(discardJunk(u, itemMap), 50)
   assert.equal(u.bag.length, 0)
-  const got = checkTitles(u, Config.titles, items).map(t => t.id)
+  const got = checkTitles(u, Config.titles, items).map(x => x.title.id)
   assert.ok(got.includes("guardian"))
-  assert.equal(getEffects(u, Config.titles).emptyReduce, 5)
+  assert.equal(getEffects(u, Config.titles, items).junkReduce, 3) // 海洋卫士Ⅰ
 })
 
 test("存档：YAML 后端读写、openid 文件名清洗", async () => {
@@ -733,4 +734,48 @@ test("打卡奖励：按幸运值每 10 点一档送鱼饵", async () => {
   configInfo.setConfigData({ "checkin.luckyKing": 95 }, { Result })
   Config.set = origSet; Config.get = origCfg
   assert.equal(saved.config.checkin.baitReward, undefined)
+})
+
+test("分级称号：Ⅰ/Ⅱ/Ⅲ，只取最高一级，不同称号叠加，获得后不失去", async () => {
+  const { checkTitles, getEffects, ownedTier, progressText, titleName, titleDesc, statValue } = await import("../components/Titles.js")
+  const titles = Config.titles
+  const T = id => titles.find(t => t.id === id)
+  // 每个称号 3 级，门槛逐级提高；钓鱼相关的跨度大（100 / 3000 / 50000）
+  for (const t of titles) {
+    assert.equal(t.tiers.length, 3, t.id)
+    const needs = t.tiers.map(x => x.need === "all" ? Infinity : x.need)
+    assert.ok(needs[0] < needs[1] && needs[1] < needs[2], t.id)
+  }
+  assert.deepEqual(T("skilled").tiers.map(x => x.need), [100, 3000, 50000])
+  const u = newUser("10050")
+  u.stats.catches = 3500 // 熟练钓手Ⅱ
+  u.stats.police = 3     // 热心市民Ⅱ
+  u.stats.earned = 12_000_000 // 富甲一方Ⅲ
+  const got = checkTitles(u, titles, items)
+  assert.deepEqual(got.map(x => [x.title.id, x.tier]).sort(), [["citizen", 2], ["skilled", 2], ["tycoon", 3]].sort())
+  assert.equal(titleName(T("skilled"), 2), "熟练钓手Ⅱ")
+  // 只取最高一级：熟练钓手Ⅱ 不含Ⅰ的优良加成；金币加成可以超过 100%
+  const eff = getEffects(u, titles, items)
+  assert.equal(eff.boostR, undefined)
+  assert.equal(eff.boostSR, 3)
+  assert.equal(eff.sellBonus, 30 + 120)
+  // 进度：距离Ⅲ
+  assert.equal(progressText(u, T("skilled"), items), "3,500/50,000")
+  assert.equal(progressText(u, T("tycoon"), items), "已满级")
+  assert.equal(titleDesc(T("skilled"), 3, items), "累计钓到 50,000 条鱼")
+  // 获得后不失去：存档记录的等级优先
+  u.stats.catches = 0
+  assert.equal(ownedTier(u, T("skilled"), items), 2)
+  // 图鉴大师Ⅲ要集齐全部鱼类
+  const fish = items.filter(i => i.rarity !== "junk" && i.rarity !== "hidden")
+  for (const f of fish.slice(0, 45)) u.dex[f.id] = 1
+  assert.equal(statValue(u, "dex", items), 45)
+  checkTitles(u, titles, items)
+  assert.equal(u.titleLv.master, 2)
+  for (const f of fish) u.dex[f.id] = 1
+  checkTitles(u, titles, items)
+  assert.equal(u.titleLv.master, 3)
+  // 打卡达人按累计打卡天数
+  u.checkin.total = 30
+  assert.equal(checkTitles(u, titles, items).find(x => x.title.id === "diligent").tier, 2)
 })

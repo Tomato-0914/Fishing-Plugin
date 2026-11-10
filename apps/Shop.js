@@ -232,7 +232,7 @@ export class FishingShop extends plugin {
     lines.push("━━━━━━━━━━━━", `✨ 渔具总加成：${effectText(gearEffects(user, shop))}`)
     // 当前实际概率：称号 + 今日运势 + 渔具 + 当前鱼饵，和钓鱼时的计算完全一致
     const cfg = Config.config
-    const effects = mergeEffects(getEffects(user, Config.titles), luckEffects(user, cfg.checkin?.tiers), gearEffects(user, shop), cur.effects)
+    const effects = mergeEffects(getEffects(user, Config.titles, Config.items), luckEffects(user, cfg.checkin?.tiers), gearEffects(user, shop), cur.effects)
     const p = oddsPercent(cfg.probability, effects, cfg.limits)
     const f = v => `${Number(v.toFixed(1))}%`
     lines.push(

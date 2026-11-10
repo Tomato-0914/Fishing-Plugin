@@ -3,7 +3,7 @@ import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { RARITY_INFO, isDexFish, formatWeight } from "../components/ItemPool.js"
 import { groupBag, sellEntries, discardJunk, todayLuck, luckTier } from "../components/Game.js"
-import { checkTitles, getEffects, effectText, progressText, mergeEffects } from "../components/Titles.js"
+import { checkTitles, getEffects, effectText, progressText, mergeEffects, ownedTier, ownedTitles, titleName, titleUpText } from "../components/Titles.js"
 import { gearEffects, bagCapacity, totalBait, gearItem, gearLevel } from "../components/Gear.js"
 import { withButtons, B } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
@@ -37,7 +37,7 @@ export class FishingBag extends plugin {
 
   /** 出售加成：称号 + 鱼护 */
   sellBonus(user) {
-    return mergeEffects(getEffects(user, Config.titles), gearEffects(user, Config.shop)).sellBonus || 0
+    return mergeEffects(getEffects(user, Config.titles, Config.items), gearEffects(user, Config.shop)).sellBonus || 0
   }
 
   load(e) {
@@ -143,11 +143,14 @@ export class FishingBag extends plugin {
       `♻️ 已将 ${n} 件海洋垃圾送去回收站，海洋又干净了一点~`,
       `🌊 累计清理：${user.stats.junkCleaned} 件`,
     ]
-    if (guardian && !user.titles.includes(guardian.id))
-      lines.push(`🏅 距离称号【${guardian.emoji} ${guardian.name}】：${progressText(user, guardian)}`)
     const got = checkTitles(user, Config.titles, Config.items)
     UserData.save(user.user_id)
-    for (const t of got) lines.push("", `🏅 恭喜获得称号【${t.emoji} ${t.name}】\n✨ 效果：${effectText(t.effects)}`)
+    if (guardian) {
+      const tier = ownedTier(user, guardian, Config.items)
+      if (tier < guardian.tiers.length)
+        lines.push(`🏅 距离【${guardian.emoji} ${titleName(guardian, tier + 1)}】：${progressText(user, guardian, Config.items)}`)
+    }
+    if (got.length) lines.push("", titleUpText(got))
     return e.reply(withButtons(e, lines.join("\n"), [B.cast, B.multi, B.bag]))
   }
 
@@ -155,7 +158,7 @@ export class FishingBag extends plugin {
     if (!groupAllowed(e)) return false
     const user = this.load(e)
     const s = user.stats
-    const titles = (Config.titles || []).filter(t => user.titles.includes(t.id))
+    const titles = ownedTitles(user, Config.titles, Config.items)
     const max = user.maxFish && itemMap().get(user.maxFish.id)
     const msg = [
       `👤 ${displayName(user)} 的钓鱼信息`,
@@ -169,7 +172,7 @@ export class FishingBag extends plugin {
       max ? `🏆 最大一条：${max.emoji}${max.name} ${formatWeight(user.maxFish.w)}` : "",
       (() => { const l = todayLuck(user); const t = luckTier(l, Config.config.checkin?.tiers); return t ? `${t.emoji} 今日运势：${t.name}（幸运值 ${l}）` : "📅 今天还没打卡" })(),
       `🔥 连续打卡 ${user.checkin.streak} 天 · 累计 ${user.checkin.total} 天`,
-      `🏅 称号：${titles.length ? titles.map(t => `${t.emoji}${t.name}`).join(" ") : "暂无"}`,
+      `🏅 称号：${titles.length ? titles.map(({ title, tier }) => `${title.emoji}${titleName(title, tier)}`).join(" ") : "暂无"}`,
     ].filter(Boolean).join("\n")
     return e.reply(withButtons(e, msg, [B.bag, B.titles, B.dex], [B.checkin, B.myGear, B.myBait]))
   }

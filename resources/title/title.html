@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="{{_res}}/common/common.css" />
+  <link rel="stylesheet" href="{{_res}}/title/title.css" />
+</head>
+<body class="{{theme}}">
+  <div class="container">
+    <div class="head">
+      <div class="logo">🏅</div>
+      <div>
+        <div class="title">{{name}} 的称号</div>
+        <div class="sub">已获得 {{owned}}/{{total}} 个 · 共 {{tiers}}/{{maxTiers}} 级 · 同一称号只按最高一级生效</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      {{each cards c}}
+      <div class="card t {{c.tier ? '' : 'lock'}}" style="--tc: {{c.color}}">
+        <div class="top">
+          <div class="emoji">{{c.emoji}}</div>
+          <div class="info">
+            <div class="name">{{c.name}}</div>
+            <div class="pips">{{each c.pips on}}<span class="{{on ? 'on' : ''}}"></span>{{/each}}</div>
+          </div>
+          {{if c.tier}}<div class="roman">{{c.roman}}</div>{{/if}}
+        </div>
+        <div class="effect">{{c.tier ? c.effect : '🔒 尚未获得'}}</div>
+        {{if c.next}}
+        <div class="next">
+          <div class="need"><span>下一级 {{c.next.name}}</span><span class="muted">{{c.next.progress}}</span></div>
+          <div class="bar"><i style="width: {{c.next.pct}}%"></i></div>
+          <div class="muted small">{{c.next.desc}}</div>
+          <div class="small">→ {{c.next.effect}}</div>
+        </div>
+        {{else}}
+        <div class="next maxed">✨ 已满级</div>
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+
+    {{if sum}}
+    <div class="card sum"><b>✨ 称号总加成</b><div>{{sum}}</div></div>
+    {{/if}}
+    <div class="footer">Fishing-Plugin v{{version}} · 称号按累计统计计算，获得后不会失去</div>
+  </div>
+  <script src="{{_res}}/common/twemoji.min.js"></script>
+  <script src="{{_res}}/common/emoji.js"></script>
+</body>
+</html>

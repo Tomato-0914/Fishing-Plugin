@@ -1,0 +1,19 @@
+.small { font-size: 13px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+.t { padding: 14px 16px; border-top: 5px solid var(--tc); }
+.t.lock { opacity: 0.55; filter: grayscale(0.8); }
+.t .top { display: flex; align-items: center; gap: 10px; }
+.t .emoji { font-size: 34px; line-height: 1; }
+.t .info { flex: 1; }
+.t .name { font-size: 18px; font-weight: 800; }
+.t .roman { font-size: 30px; font-weight: 900; color: var(--tc); }
+.pips { display: flex; gap: 4px; margin-top: 4px; }
+.pips span { width: 18px; height: 5px; border-radius: 3px; background: var(--sub); opacity: 0.25; }
+.pips span.on { background: var(--tc); opacity: 1; }
+.t .effect { font-size: 14px; font-weight: 600; margin: 8px 0 6px; min-height: 20px; }
+.t .next { border-top: 1px dashed var(--card-border); padding-top: 6px; font-size: 13px; }
+.t .next .need { display: flex; justify-content: space-between; font-weight: 700; }
+.t .next.maxed { color: #f2a900; font-weight: 800; font-size: 15px; }
+.bar { height: 6px; border-radius: 3px; background: var(--me); margin: 4px 0; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.sum { font-size: 15px; line-height: 1.7; }

@@ -4,6 +4,7 @@ import UserData from "../components/UserData.js"
 import { periodStat } from "../components/Game.js"
 import { PERIODS } from "../components/Period.js"
 import { withButtons, B } from "../components/Button.js"
+import { ownedTitles } from "../components/Titles.js"
 import { renderOrText } from "../components/Render.js"
 import { groupAllowed, displayName, avatar, updateNickname } from "../components/common.js"
 
@@ -46,7 +47,7 @@ export class FishingRank extends plugin {
   async reply(e, users, type, size, title) {
     const me = UserData.get(e.user_id)
     updateNickname(me, e)
-    const titleMap = new Map((Config.titles || []).map(t => [t.id, t]))
+    // 称号徽章：每个称号的 emoji，Ⅲ 级加 ✦
     const rows = users
       .map(u => {
         const stat = type === "all" ? { value: u.stats.earned, count: u.stats.catches + u.stats.junk + u.stats.police } : periodStat(u, type)
@@ -60,7 +61,7 @@ export class FishingRank extends plugin {
         id: r.u.user_id,
         name: displayName(r.u),
         avatar: avatar(r.u.user_id),
-        badges: (r.u.titles || []).map(id => titleMap.get(id)?.emoji).filter(Boolean).join(""),
+        badges: ownedTitles(r.u, Config.titles, Config.items).map(({ title, tier }) => title.emoji + (tier >= 3 ? "✦" : "")).join(""),
         value: r.value,
         count: r.count,
         isMe: String(r.u.user_id) === String(e.user_id),

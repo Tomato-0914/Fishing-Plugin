@@ -27,6 +27,7 @@ export function newUser(id) {
     period: {},
     dex: {},
     titles: [],
+    titleLv: {},
     records: {},
     checkin: { day: "", luck: 0, time: 0, streak: 0, total: 0, history: [] },
     created: Date.now(),
@@ -39,7 +40,7 @@ function normalize(data, id) {
   const user = { ...base, ...data }
   user.stats = { ...base.stats, ...(data?.stats || {}) }
   for (const k of ["groups", "bag", "titles"]) if (!Array.isArray(user[k])) user[k] = []
-  for (const k of ["period", "dex", "records"]) if (!user[k] || typeof user[k] !== "object") user[k] = {}
+  for (const k of ["period", "dex", "records", "titleLv"]) if (!user[k] || typeof user[k] !== "object") user[k] = {}
   // 旧版单一鱼饵数量 → 普通饵
   if (!user.baits || typeof user.baits !== "object") user.baits = {}
   if (data?.bait != null) {
