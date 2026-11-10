@@ -690,3 +690,39 @@ test("鱼钩：10 级，防跑鱼概率逐级提高", async () => {
   assert.equal(upgradeGear(u, shop, "hook").item.name, "袖钩")
   assert.equal(u.gear.hook, 2)
 })
+
+test("打卡奖励：按幸运值每 10 点一档送鱼饵", async () => {
+  const { checkinReward } = await import("../components/Game.js")
+  const baits = Config.shop.baits
+  const r = luck => { const x = checkinReward(luck, baits); return x && [x.level, x.count, x.bait.name] }
+  assert.equal(checkinReward(0, baits), null)               // 0 什么都不送
+  assert.deepEqual(r(1), [1, 1, "普通饵"])
+  assert.deepEqual(r(7), [1, 7, "普通饵"])
+  assert.deepEqual(r(10), [1, 10, "普通饵"])
+  assert.deepEqual(r(11), [2, 1, "蚯蚓"])
+  assert.deepEqual(r(54), [6, 4, "灵蚕饵"])
+  assert.deepEqual(r(60), [6, 10, "灵蚕饵"])
+  assert.deepEqual(r(100), [10, 10, "混元仙饵"])
+  // 0~100 每个值都对得上：等级 1~10、数量 1~10
+  for (let luck = 1; luck <= 100; luck++) {
+    const x = checkinReward(luck, baits)
+    assert.equal((x.level - 1) * 10 + x.count, luck)
+    assert.ok(x.count >= 1 && x.count <= 10)
+  }
+  // 自定义鱼饵表缺某一级时，退到不超过它的最高级
+  assert.equal(checkinReward(95, baits.filter(b => (b.level || 1) <= 7)).bait.name, "龙涎香饵")
+  // 锅巴不再有打卡赠送鱼饵的配置项，保存时清掉旧值
+  const { supportGuoba } = await import("../guoba/index.js")
+  const { configInfo } = supportGuoba()
+  assert.ok(!configInfo.schemas.some(s => s.field === "checkin.baitReward"))
+  assert.equal(Config.config.checkin.baitReward, undefined)
+  const saved = {}
+  const origSet = Config.set.bind(Config)
+  Config.set = (name, value) => { saved[name] = value }
+  const origCfg = Config.get.bind(Config)
+  Config.get = name => name === "config" ? { ...origCfg("config"), checkin: { ...origCfg("config").checkin, baitReward: 3 } } : origCfg(name)
+  const Result = { ok: (_, msg) => ({ ok: true, msg }), error: (_, msg) => ({ ok: false, msg }) }
+  configInfo.setConfigData({ "checkin.luckyKing": 95 }, { Result })
+  Config.set = origSet; Config.get = origCfg
+  assert.equal(saved.config.checkin.baitReward, undefined)
+})

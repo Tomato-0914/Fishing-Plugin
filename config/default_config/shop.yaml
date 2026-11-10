@@ -85,7 +85,7 @@ gear:
 
 # 鱼饵：每竿消耗 1 个，同时只能使用一种；当前鱼饵用完时自动换成有库存的鱼饵
 # level：鱼饵等级。使用或购买第 N 级鱼饵，需要至少有一件渔具达到 N 级
-# 新手礼包、打卡奖励、救济发放的都是 basic（普通饵），单价取 config.yaml 中的 bait.price
+# 新手礼包、救济发放的是 basic（普通饵），单价取 config.yaml 中的 bait.price；打卡奖励按幸运值送对应等级的鱼饵
 # 价格按“在同等级渔具下每竿多赚的金币”设定：多花的钱总比多赚的少
 baits:
   - { id: basic,   level: 1,  name: 普通饵,   emoji: 🥣, effects: {}, desc: 商店里最常见的饵料 }

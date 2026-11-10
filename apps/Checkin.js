@@ -2,12 +2,12 @@
 import { plugin } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
-import { doCheckin, todayLuck, luckTier, randomLuck, addGroup } from "../components/Game.js"
+import { doCheckin, todayLuck, luckTier, randomLuck, addGroup, checkinReward } from "../components/Game.js"
 import { effectText } from "../components/Titles.js"
 import { periodKey } from "../components/Period.js"
 import { withButtons, B } from "../components/Button.js"
 import { groupAllowed, displayName, updateNickname } from "../components/common.js"
-import { addBait, baitCount } from "../components/Gear.js"
+import { addBait, baitCount, baitLevel, canUseBait } from "../components/Gear.js"
 
 /** 低幸运值待确认：user_id → { day, luck } */
 const pending = new Map()
@@ -74,15 +74,19 @@ export class FishingCheckin extends plugin {
 
     const ret = doCheckin(user, luck)
     addGroup(user, e.group_id)
-    const reward = Math.max(0, Number(cfg.baitReward) || 0)
-    addBait(user, "basic", reward)
+    // 打卡奖励按幸运值决定：每 10 点一档，等级越高送的鱼饵越好
+    const reward = checkinReward(luck, Config.shop?.baits)
+    if (reward) addBait(user, reward.bait.id, reward.count)
 
     const lines = [
       `📅 ${displayName(user)} 打卡成功！`,
       `🍀 今天的幸运值是…… ${luck}`,
       bar(luck),
       this.tierLine(luck),
-      reward ? `🪱 打卡奖励：普通饵 ×${reward}（当前 ${baitCount(user, "basic")}）` : "",
+      reward
+        ? `🎁 打卡奖励：Lv${baitLevel(reward.bait)} ${reward.bait.emoji}${reward.bait.name} ×${reward.count}（当前 ${baitCount(user, reward.bait.id)}）` +
+          (canUseBait(user, reward.bait) ? "" : `\n🔒 需要至少一件 Lv${baitLevel(reward.bait)} 渔具才能使用，先存着吧`)
+        : "🎁 幸运值为 0，今天没有打卡奖励……",
       `🔥 连续打卡 ${ret.streak} 天 · 累计 ${ret.total} 天`,
     ]
     // 今日欧皇 / 非酋：当天第一个达到阈值的人

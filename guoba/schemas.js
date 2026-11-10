@@ -53,7 +53,7 @@ export default [
   num("bait.relief", "每日救济鱼饵", "鱼饵用完、买不起、也没有鱼可卖时每天可领一次，0 为关闭"),
 
   { label: "每日打卡", component: "SOFT_GROUP_BEGIN" },
-  num("checkin.baitReward", "打卡赠送鱼饵", "0 为不送"),
+  { component: "Divider", label: "打卡奖励按幸运值决定：每 10 点一档（1~10 送 1 级鱼饵 … 91~100 送 10 级），数量为本档内的位置，幸运值 0 不送" },
   num("checkin.luckyKing", "欧皇幸运值", "当天首个幸运值 ≥ 此值的人成为今日欧皇", { max: 100 }),
   num("checkin.unluckyKing", "非酋幸运值", "当天首个幸运值 ≤ 此值的人成为今日非酋", { max: 100 }),
   num("checkin.confirmLow", "低幸运值二次确认", "幸运值 ≤ 此值时需再发一遍 #打卡 才揭晓，0 为关闭", { max: 100 }),

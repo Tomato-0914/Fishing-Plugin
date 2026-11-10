@@ -181,3 +181,21 @@ export function doCheckin(user, luck, now = new Date()) {
 
 /** 0~100 的随机幸运值 */
 export const randomLuck = (rng = Math.random) => Math.floor(rng() * 101)
+
+/**
+ * 打卡奖励：按幸运值决定送什么鱼饵、送几个
+ * 每 10 点一档：1~10 送 1 级鱼饵，11~20 送 2 级 … 91~100 送 10 级；数量为在本档的位置（1~10 个）；幸运值 0 不送
+ * 例：7 → 1 级 ×7，10 → 1 级 ×10，54 → 6 级 ×4，100 → 10 级 ×10
+ * @returns {{ level, count, bait } | null}
+ */
+export function checkinReward(luck, baits = []) {
+  luck = Math.floor(Number(luck) || 0)
+  if (luck < 1) return null
+  const level = Math.min(10, Math.ceil(luck / 10))
+  const count = luck - (level - 1) * 10
+  // 找对应等级的鱼饵；自定义鱼饵表缺这一级时，退到不超过它的最高级
+  const lv = b => Math.max(1, Number(b?.level) || 1)
+  const bait = baits.find(b => lv(b) === level) ||
+    [...baits].filter(b => lv(b) <= level).sort((a, b) => lv(b) - lv(a))[0]
+  return bait ? { level, count, bait } : null
+}

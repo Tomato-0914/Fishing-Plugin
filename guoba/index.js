@@ -48,6 +48,8 @@ export function supportGuoba() {
           for (const b of Config.shop?.baits || []) {
             if (prices[b.id] != null && Number(prices[b.id]) === Number(b.price)) delete prices[b.id]
           }
+          // 已取消的旧配置项，保存时一并清掉
+          if (cfg.checkin) delete cfg.checkin.baitReward
           Config.set("config", cfg)
           const p = cfg.probability
           const sum = ["empty", "junk", "N", "R", "SR", "SSR", "UR"].reduce((s, k) => s + Number(p[k] || 0), 0) +
