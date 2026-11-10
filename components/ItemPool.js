@@ -11,6 +11,8 @@ export const RARITY_INFO = {
   hidden: { label: "隐藏", color: "#ff4d6d", icon: "❓" },
 }
 const RARE = new Set(["SR", "SSR", "UR"])
+/** 分档加成的稀有度（effects 写作 boostN / boostR / boostSR / boostSSR / boostUR） */
+export const TIER_BOOST_ORDER = ["N", "R", "SR", "SSR", "UR"]
 
 /** 按权重随机选取 entries: [[key, weight], ...] */
 export function weightedPick(entries, rng = Math.random) {
@@ -53,6 +55,18 @@ export function buildOdds(prob, effects = {}, limits = {}) {
     odds[key] -= cut
     odds.N += cut
   }
+  // 分档加成（渔具）：直接给某个稀有度加 N 个百分点，从 空军 → 垃圾 → 普通 依次扣除（不低于下限），优良以上不会被扣
+  for (const tier of TIER_BOOST_ORDER) {
+    let want = Math.max(0, Number(effects[`boost${tier}`]) || 0)
+    for (const from of ["empty", "junk", "N"]) {
+      if (want <= 0 || from === tier) break
+      const room = Math.max(0, odds[from] - (from === "N" ? floorN : floor(from)))
+      const take = Math.min(room, want)
+      odds[from] -= take
+      odds[tier] += take
+      want -= take
+    }
+  }
   // 稀有加成：SR 以上概率按倍率提高，多出来的从普通鱼扣除（普通鱼不低于下限）
   const boost = Math.max(-100, Number(effects.rareBoost) || 0)
   if (boost > 0) {
@@ -72,6 +86,18 @@ export function buildOdds(prob, effects = {}, limits = {}) {
   for (const [id, chance] of Object.entries(prob.hidden || {}))
     odds[`hidden:${id}`] = Number(chance) || 0
   return odds
+}
+
+/** 实际出现概率（%，已归一化），用于展示：{ empty, junk, N, R, SR, SSR, UR, hidden } */
+export function oddsPercent(prob, effects = {}, limits = {}) {
+  const odds = buildOdds(prob, effects, limits)
+  const total = Object.values(odds).reduce((s, v) => s + v, 0) || 1
+  const out = { hidden: 0 }
+  for (const [k, v] of Object.entries(odds)) {
+    if (k.startsWith("hidden:")) out.hidden += v / total * 100
+    else out[k] = v / total * 100
+  }
+  return out
 }
 
 /** 体型概率（已叠加 largeBoost） */

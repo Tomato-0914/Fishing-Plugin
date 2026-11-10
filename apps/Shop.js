@@ -2,7 +2,9 @@
 import { plugin, puppeteer } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
-import { effectText } from "../components/Titles.js"
+import { effectText, getEffects, mergeEffects } from "../components/Titles.js"
+import { oddsPercent } from "../components/ItemPool.js"
+import { luckEffects } from "../components/Game.js"
 import {
   SLOTS, UPGRADE_NAMES, levelColor, levelLabel, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity,
   upgradeGear, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait,
@@ -215,6 +217,16 @@ export class FishingShop extends plugin {
     }
     lines.push(`🪱 鱼饵：${cur.emoji}${cur.name} ×${baitCount(user, cur.id)} · ${effectText(cur.effects).replace(/^无$/, "无特殊效果")}`)
     lines.push("━━━━━━━━━━━━", `✨ 渔具总加成：${effectText(gearEffects(user, shop))}`)
+    // 当前实际概率：称号 + 今日运势 + 渔具 + 当前鱼饵，和钓鱼时的计算完全一致
+    const cfg = Config.config
+    const effects = mergeEffects(getEffects(user, Config.titles), luckEffects(user, cfg.checkin?.tiers), gearEffects(user, shop), cur.effects)
+    const p = oddsPercent(cfg.probability, effects, cfg.limits)
+    const f = v => `${Number(v.toFixed(1))}%`
+    lines.push(
+      "🎲 当前概率（含称号、今日运势、当前鱼饵）",
+      `　空军 ${f(p.empty)} · 垃圾 ${f(p.junk)} · 普通 ${f(p.N)}`,
+      `　优良 ${f(p.R)} · 稀有 ${f(p.SR)} · 史诗 ${f(p.SSR)} · 传说 ${f(p.UR)}`,
+    )
     return e.reply(withButtons(e, lines.join("\n"), [B.workshop, B.shop, B.start]))
   }
 }

@@ -371,7 +371,7 @@ test("渔具：逐级升级、效果、容量、出售加成", async () => {
   const shop = Config.shop
   const u = newUser("10010")
   assert.deepEqual(u.gear, { rod: 1, line: 1, float: 1, net: 1 })
-  assert.deepEqual(gearEffects(u, shop), {})
+  assert.deepEqual(gearEffects(u, shop), { boostN: 3 }) // Lv1 青竹竿 +2、泡沫漂 +1 普通概率
   assert.equal(bagCapacity(u, shop, cfg.fishing.bagLimit), 200)
   // 金币不够
   assert.equal(upgradeGear(u, shop, "rod").reason, "gold")
@@ -384,7 +384,15 @@ test("渔具：逐级升级、效果、容量、出售加成", async () => {
   assert.equal(upgradeGear(u, shop, "rod").reason, "max")
   for (const slot of ["rod", "line", "float", "net"]) assert.equal(gearLevel(u, slot), 10)
   assert.equal(u.gold, 1000000 - 697500) // 全部 10 级共 697500（其中 Lv1~5 共 68500）
-  assert.deepEqual(gearEffects(u, shop), { rareBoost: 55, largeBoost: 20, lineGuard: 100, emptyReduce: 7, reelWindow: 12, biteReduce: 2, sellBonus: 12 })
+  const maxed = gearEffects(u, shop)
+  const near = (a, b) => Math.abs(a - b) < 1e-9
+  for (const [k, v] of Object.entries({ boostN: 8, boostR: 14, boostSR: 13, boostSSR: 9.1, boostUR: 3.2, largeBoost: 20, lineGuard: 100, reelWindow: 12, biteReduce: 2, sellBonus: 12 }))
+    assert.ok(near(maxed[k], v), `${k}=${maxed[k]}`)
+  // 全部满级后的实际概率：坏结果压到下限，传说明显提升
+  const { oddsPercent } = await import("../components/ItemPool.js")
+  const p = oddsPercent(cfg.probability, maxed, cfg.limits)
+  assert.ok(near(p.empty, 3) && near(p.junk, 5), JSON.stringify(p))
+  assert.ok(p.UR > 5 && p.SSR > 14 && p.R > 30, JSON.stringify(p))
   assert.equal(bagCapacity(u, shop, 200), 3000)
   // 每一级都比上一级更贵、效果不倒退
   for (const slot of ["rod", "line", "float", "net"]) {
@@ -569,4 +577,31 @@ test("十连结果：短格式、按价值排序、Markdown 引用块", async ()
     const text = l.replace(/\p{Extended_Pictographic}|️|[> ]/gu, "")
     assert.ok(text.length <= 14, l)
   }
+})
+
+test("分档加成：从空军→垃圾→普通扣除，遵守下限，优良以上不减少", async () => {
+  const { oddsPercent } = await import("../components/ItemPool.js")
+  const base = buildOdds(cfg.probability)
+  const total = o => Object.values(o).reduce((a, b) => a + b, 0)
+  // 小加成：先从空军扣
+  const a = buildOdds(cfg.probability, { boostR: 5 }, cfg.limits)
+  assert.equal(a.R, base.R + 5)
+  assert.equal(a.empty, base.empty - 5)
+  assert.equal(a.junk, base.junk)
+  // 空军扣到下限后扣垃圾，再扣普通
+  const b = buildOdds(cfg.probability, { boostUR: 40 }, cfg.limits)
+  assert.equal(b.empty, cfg.limits.empty)
+  assert.equal(b.junk, cfg.limits.junk)
+  assert.equal(b.N, base.N - (40 - (base.empty - cfg.limits.empty) - (base.junk - cfg.limits.junk)))
+  for (const k of ["R", "SR", "SSR"]) assert.equal(b[k], base[k])
+  // 超出可扣范围时只加能加的，普通不低于下限
+  const c = buildOdds(cfg.probability, { boostUR: 1000 }, cfg.limits)
+  assert.equal(c.N, cfg.limits.N)
+  assert.ok(Math.abs(total(c) - total(base)) < 1e-9)
+  // 普通档的加成不会从普通自己扣
+  const d = buildOdds(cfg.probability, { boostN: 100 }, cfg.limits)
+  assert.equal(d.N, base.N + (base.empty - cfg.limits.empty) + (base.junk - cfg.limits.junk))
+  // 百分比展示合计 100
+  const pct = oddsPercent(cfg.probability, { boostSR: 3 }, cfg.limits)
+  assert.ok(Math.abs(Object.values(pct).reduce((x, y) => x + y, 0) - 100) < 1e-9)
 })

@@ -52,15 +52,26 @@ const EFFECT_TEXT = {
   largeBoost: ["大体型概率", "%", false],
   sellBonus: ["出售金币", "%", false],
   lineGuard: ["断线概率", "%", true],
+  boostN: ["普通概率", "%", false],
+  boostR: ["优良概率", "%", false],
+  boostSR: ["稀有概率", "%", false],
+  boostSSR: ["史诗概率", "%", false],
+  boostUR: ["传说概率", "%", false],
 }
 
+const TIER_NAMES = { boostN: "普通", boostR: "优良", boostSR: "稀有", boostSSR: "史诗", boostUR: "传说" }
+
 export function effectText(effects = {}) {
-  const parts = Object.entries(effects).filter(([, v]) => Number(v)).map(([k, v]) => {
+  // 分档加成合成一段：普通+4% 优良+7% 稀有+7%
+  const tiers = Object.keys(TIER_NAMES).filter(k => Number(effects[k]))
+    .map(k => `${TIER_NAMES[k]}+${Number(Number(effects[k]).toFixed(2))}%`).join(" ")
+  const parts = Object.entries(effects).filter(([k, v]) => Number(v) && !TIER_NAMES[k]).map(([k, v]) => {
     const [name, unit, inverse] = EFFECT_TEXT[k] || [k, "", false]
     const up = inverse ? v < 0 : v > 0
     if (k === "lineGuard" && v >= 100) return `${name} -100%（不再断线）`
     return `${name} ${up ? "+" : "-"}${Math.abs(v)}${unit}`
   })
+  if (tiers) parts.unshift(tiers)
   return parts.length ? parts.join("，") : "无"
 }
 
