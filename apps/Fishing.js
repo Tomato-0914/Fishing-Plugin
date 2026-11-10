@@ -6,7 +6,7 @@ import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
 import { addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier, luckEffects } from "../components/Game.js"
-import { consumeBait, totalBait, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, allEffects } from "../components/Gear.js"
+import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, allEffects } from "../components/Gear.js"
 import { resolveCast, summarize, formatMulti } from "../components/Catch.js"
 import { checkTitles, getEffects, effectText } from "../components/Titles.js"
 import { withButtons, B } from "../components/Button.js"
@@ -138,15 +138,22 @@ export class Fishing extends plugin {
       return null
     }
 
-    if (totalBait(user) < 1) {
+    // 只算能用的鱼饵：等级超过渔具的高级鱼饵留在库存里，暂时用不了
+    if (usableBait(user, shop) < 1) {
       const items = itemMap()
       const hasSellable = user.bag.some(x => items.get(x.id)?.rarity !== "junk")
-      const relief = reliefBait(user, { amount: bcfg.relief, price, hasSellable })
+      const relief = reliefBait(user, { amount: bcfg.relief, price, hasSellable, usable: 0 })
       if (relief) {
         UserData.save(id)
         await this.send(e, `🎁 看你两手空空，钓鱼协会送了你 ${relief} 个鱼饵，继续加油吧！（每天限领一次）`)
       } else {
-        const tips = [`🪱 鱼饵用完啦~`, `普通饵 ${price} 金币/个，发送 #购买鱼饵 [种类] [数量] 补充`, `👛 当前金币：${user.gold}`]
+        const locked = totalBait(user) > 0
+        const tips = [
+          locked ? "🔒 库存里的鱼饵等级太高，你的渔具还用不了~" : "🪱 鱼饵用完啦~",
+          `普通饵 ${price} 金币/个，发送 #购买鱼饵 [种类] [数量] 补充`,
+          locked ? "💡 把任意一件渔具升到鱼饵的等级就能用了（#渔具工坊）" : "",
+          `👛 当前金币：${user.gold}`,
+        ].filter(Boolean)
         if (user.gold < price && hasSellable) tips.push("💡 金币不够？先 #一键出售 卖掉鱼护里的鱼吧")
         await this.send(e, withButtons(e, tips.join("\n"),
           user.gold < price && hasSellable ? [B.sellAll, B.bag] : [B.buyBait, B.buyBaitInput, B.shop]))
@@ -154,6 +161,14 @@ export class Fishing extends plugin {
       }
     }
     return { id, user, name, fcfg, shop, limit }
+  }
+
+  /** 自动换鱼饵的提示 */
+  switchText(used) {
+    if (!used?.switched) return ""
+    if (used.reason === "locked")
+      return `🔒 ${used.from.name}需要至少一件 Lv${baitLevel(used.from)} 渔具，已自动换成${used.bait.name}`
+    return `🔄 ${used.from.name}用完了，已自动换成${used.bait.name}`
   }
 
   /** 装备、运势两行 */
@@ -204,10 +219,10 @@ export class Fishing extends plugin {
     sessions.set(id, s)
 
     const remain = baitCount(user, bait.id)
-    const total = totalBait(user)
+    const total = usableBait(user, shop)
     const warn = total === 0 ? "（鱼饵已用完，记得 #购买鱼饵）" : remain === 0 ? "（这种用完了，下一竿自动换）" : total <= 2 ? "（快用完了，记得 #购买鱼饵）" : ""
     await this.sendCast(e, [
-      used.switched ? `🔄 ${used.from.name}用完了，已自动换成${bait.name}` : "",
+      this.switchText(used),
       `🎣 ${name} ${pick(CAST_TEXT)}`,
       this.gearLine(user, shop),
       `🪱 ${bait.name}（剩 ${remain}）${warn}`,
@@ -314,11 +329,13 @@ export class Fishing extends plugin {
     const { id, user, name, fcfg, shop, limit } = ctx
 
     const want = Math.max(1, Math.floor(Number(fcfg.multiCount) || 10))
-    const n = Math.min(want, totalBait(user), limit - user.bag.length)
+    const n = Math.min(want, usableBait(user, shop), limit - user.bag.length)
     const baits = []
+    let lockNote = ""
     for (let i = 0; i < n; i++) {
       const used = consumeBait(user, shop)
       if (!used) break
+      if (used.reason === "locked" && !lockNote) lockNote = this.switchText(used)
       baits.push(used.bait)
     }
     user.stats.casts += baits.length
@@ -334,13 +351,14 @@ export class Fishing extends plugin {
     const usedCount = new Map()
     for (const b of baits) usedCount.set(b.name, (usedCount.get(b.name) || 0) + 1)
     const short = baits.length < want
-      ? `⚠️ ${totalBait(user) === 0 ? "鱼饵" : "鱼护空间"}只够钓 ${baits.length} 竿`
+      ? `⚠️ ${usableBait(user, shop) === 0 ? "鱼饵" : "鱼护空间"}只够钓 ${baits.length} 竿`
       : ""
     await this.sendCast(e, [
+      lockNote,
       `🎣 ${name} 一字排开 ${baits.length} 根鱼竿，齐刷刷抛进了水里……`,
       short,
       this.gearLine(user, shop),
-      `🪱 ${[...usedCount].map(([k, v]) => `${k} ×${v}`).join("、")}（剩余鱼饵 ${totalBait(user)}）`,
+      `🪱 ${[...usedCount].map(([k, v]) => `${k} ×${v}`).join("、")}（剩余可用鱼饵 ${usableBait(user, shop)}）`,
       this.luckLine(user),
       "⏳ 稍等片刻，收网后统一结算",
     ].filter(Boolean).join("\n"), fcfg.multiImage)

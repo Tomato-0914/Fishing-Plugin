@@ -29,6 +29,9 @@ export function gearItem(shop, slot, level) {
 
 export const maxLevel = (shop, slot) => shop?.gear?.[slot]?.levels?.length || 1
 
+/** 四件渔具里最高的等级（决定能用哪些鱼饵） */
+export const maxGearLevel = user => Math.max(...SLOTS.map(s => gearLevel(user, s)))
+
 /** 所有已装备渔具的效果之和 */
 export function gearEffects(user, shop) {
   return mergeEffects(...SLOTS.map(s => gearItem(shop, s, gearLevel(user, s))?.effects))
@@ -86,6 +89,12 @@ export function baitPrice(shop, id, bait = 2) {
   return Math.max(0, Number(baitDef(shop, id)?.price) || 0)
 }
 
+/** 鱼饵等级：未填写时视为 1 级 */
+export const baitLevel = bait => Math.max(1, Number(bait?.level) || 1)
+
+/** 能否使用 / 购买：至少有一件渔具达到鱼饵等级 */
+export const canUseBait = (user, bait) => baitLevel(bait) <= maxGearLevel(user)
+
 export const baitCount = (user, id) => Math.max(0, Number(user.baits?.[id]) || 0)
 
 export const totalBait = user => Object.values(user.baits || {}).reduce((s, n) => s + Math.max(0, Number(n) || 0), 0)
@@ -102,27 +111,39 @@ export function currentBait(user, shop) {
 }
 
 /**
- * 抛竿消耗 1 个鱼饵：当前鱼饵用完时自动换成有库存的鱼饵（普通饵优先，其次按商店顺序）
- * @returns {{ bait, switched:boolean, from? } | null} 没有任何鱼饵时返回 null
+ * 抛竿消耗 1 个鱼饵
+ * - 当前鱼饵等级超过渔具（reason: "locked"）：换成能用、有库存的最高级鱼饵
+ * - 当前鱼饵用完（reason: "empty"）：换成能用、有库存的鱼饵，普通饵优先，其次按商店顺序
+ * 能用的鱼饵都没有库存时返回 null（高级鱼饵仍保留在库存里，渔具升级后可用）
+ * @returns {{ bait, switched:boolean, from, reason? } | null}
  */
 export function consumeBait(user, shop) {
   const cur = currentBait(user, shop)
   let bait = cur
-  if (baitCount(user, cur.id) < 1) {
-    const order = ["basic", ...baitList(shop).map(b => b.id).filter(id => id !== "basic")]
-    const id = order.find(i => baitCount(user, i) > 0)
-    if (!id) return null
-    bait = baitDef(shop, id) || { id, name: id, effects: {} }
-    user.baitUse = id
+  let reason
+  const usable = baitList(shop).filter(b => canUseBait(user, b) && baitCount(user, b.id) > 0)
+  if (!canUseBait(user, cur)) {
+    reason = "locked"
+    bait = [...usable].sort((a, b) => baitLevel(b) - baitLevel(a))[0]
+  } else if (baitCount(user, cur.id) < 1) {
+    reason = "empty"
+    bait = usable.find(b => b.id === "basic") || usable[0]
   }
+  if (!bait) return null
+  if (bait.id !== cur.id) user.baitUse = bait.id
   user.baits[bait.id]--
-  return { bait, switched: bait.id !== cur.id, from: cur }
+  return { bait, switched: bait.id !== cur.id, from: cur, reason }
 }
+
+/** 能用的鱼饵总数（等级够、有库存） */
+export const usableBait = (user, shop) =>
+  baitList(shop).filter(b => canUseBait(user, b)).reduce((s, b) => s + baitCount(user, b.id), 0)
 
 /** 切换鱼饵（必须有库存） */
 export function useBait(user, shop, id) {
   const b = baitDef(shop, id)
   if (!b) return { ok: false, reason: "unknown" }
+  if (!canUseBait(user, b)) return { ok: false, reason: "locked", bait: b, need: baitLevel(b) }
   if (baitCount(user, id) < 1) return { ok: false, reason: "empty", bait: b }
   user.baitUse = id
   return { ok: true, bait: b }
@@ -133,6 +154,7 @@ export function buyBait(user, shop, id, count, baitCfg = 2) {
   count = Math.floor(Number(count) || 0)
   const bait = baitDef(shop, id)
   if (!bait) return { ok: false, reason: "unknown" }
+  if (!canUseBait(user, bait)) return { ok: false, reason: "locked", bait, need: baitLevel(bait) }
   if (count < 1) return { ok: false, reason: "count" }
   const price = baitPrice(shop, id, baitCfg)
   const cost = count * price

@@ -11,21 +11,21 @@
       <div class="logo">🏪</div>
       <div>
         <div class="title">鱼饵商店</div>
-        <div class="sub">{{name}} · 👛 {{gold}} 金币</div>
+        <div class="sub">{{name}} · 👛 {{gold}} 金币 · 🧰 渔具最高 Lv{{gearLv}}</div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-title">🪱 鱼饵 <span class="muted small">每竿消耗 1 个，同时只用一种，用完自动换成有库存的</span></div>
+      <div class="card-title">🪱 鱼饵 <span class="muted small">每竿消耗 1 个 · 第 N 级鱼饵需要至少一件 Lv N 渔具</span></div>
       {{each baits b}}
-      <div class="bait {{b.current ? 'using' : ''}}">
+      <div class="bait {{b.current ? 'using' : ''}} {{b.locked ? 'locked' : ''}}">
         <div class="b-emoji">{{b.emoji}}</div>
         <div class="b-info">
-          <div class="b-name">{{b.name}}{{if b.current}}<span class="using-tag">使用中</span>{{/if}}</div>
+          <div class="b-name"><span class="tag" style="background: {{b.color}}">Lv{{b.level}}</span>{{b.name}}{{if b.current}}<span class="using-tag">使用中</span>{{/if}}</div>
           <div class="small">{{b.text == '无' ? '无特殊效果' : b.text}}</div>
           <div class="muted small">{{b.desc}}</div>
         </div>
-        <div class="b-count muted">库存 {{b.count}}</div>
+        <div class="b-count muted">{{b.locked ? '🔒 需 Lv' + b.level + ' 渔具' : '库存 ' + b.count}}</div>
         <div class="b-price">{{b.price}} <small>金币</small></div>
       </div>
       {{/each}}

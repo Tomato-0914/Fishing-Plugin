@@ -420,13 +420,14 @@ test("鱼饵：多种鱼饵、切换、用完自动换", async () => {
   const shop = Config.shop
   const u = newUser("10011")
   u.gold = 1000
+  u.gear.rod = 2 // 蚯蚓是 Lv2 鱼饵，需要一件 Lv2 渔具
   assert.equal(findBait(shop, "").id, "basic")
   assert.equal(findBait(shop, "蚯蚓").id, "worm")
   assert.equal(findBait(shop, "秘饵").id, "golden")
   assert.equal(findBait(shop, "不存在"), null)
-  assert.equal(buyBait(u, shop, "worm", 2).cost, 8)
+  assert.equal(buyBait(u, shop, "worm", 2).cost, 6)
   assert.equal(buyBait(u, shop, "basic", 1, 2).cost, 2)
-  assert.equal(useBait(u, shop, "golden").reason, "empty")
+  assert.equal(useBait(u, shop, "golden").reason, "locked") // 金丝秘饵 Lv5
   assert.equal(useBait(u, shop, "worm").ok, true)
   assert.equal(currentBait(u, shop).id, "worm")
   assert.equal(consumeBait(u, shop).switched, false)
@@ -483,13 +484,13 @@ test("鱼饵单价：普通饵取 bait.price，其他鱼饵可用 bait.prices �
   const { baitPrice, buyBait } = await import("../components/Gear.js")
   const shop = Config.shop
   assert.equal(baitPrice(shop, "basic", 2), 2)          // 兼容直接传数字
-  assert.equal(baitPrice(shop, "worm", 2), 4)           // 没覆盖 → shop.yaml
+  assert.equal(baitPrice(shop, "worm", 2), 3)           // 没覆盖 → shop.yaml
   const bait = { price: 3, prices: { worm: 7, golden: 0, scent: "" } }
   assert.equal(baitPrice(shop, "basic", bait), 3)
   assert.equal(baitPrice(shop, "worm", bait), 7)
   assert.equal(baitPrice(shop, "golden", bait), 0)      // 0 也是有效价格
-  assert.equal(baitPrice(shop, "scent", bait), 6)       // 空值 → shop.yaml
-  const u = newUser("10020"); u.gold = 100
+  assert.equal(baitPrice(shop, "scent", bait), 4)       // 空值 → shop.yaml
+  const u = newUser("10020"); u.gold = 100; u.gear.line = 2
   assert.equal(buyBait(u, shop, "worm", 10, bait).cost, 70)
 })
 
@@ -526,17 +527,17 @@ test("锅巴：鱼饵单价读写", async () => {
   const { supportGuoba } = await import("../guoba/index.js")
   const { configInfo } = supportGuoba()
   const fields = configInfo.schemas.map(s => s.field).filter(Boolean)
-  for (const id of ["worm", "scent", "shrimp", "golden"]) assert.ok(fields.includes(`bait.prices.${id}`), id)
+  for (const id of ["worm", "scent", "shrimp", "golden", "silk", "amber", "stardust", "phoenix", "primal"]) assert.ok(fields.includes(`bait.prices.${id}`), id)
   assert.ok(fields.includes("fishing.multiCount") && fields.includes("fishing.multiCooldown"))
   const data = configInfo.getConfigData()
-  assert.equal(data.bait.prices.worm, 4)
-  assert.equal(data.bait.prices.golden, 25)
+  assert.equal(data.bait.prices.worm, 3)
+  assert.equal(data.bait.prices.golden, 6)
   // 保存：改了的写入，和 shop.yaml 相同的不写
   const saved = {}
   const origSet = Config.set.bind(Config)
   Config.set = (name, value) => { saved[name] = value }
   const Result = { ok: (_, msg) => ({ ok: true, msg }), error: (_, msg) => ({ ok: false, msg }) }
-  const ret = configInfo.setConfigData({ "bait.prices.worm": 5, "bait.prices.golden": 25 }, { Result })
+  const ret = configInfo.setConfigData({ "bait.prices.worm": 5, "bait.prices.golden": 6 }, { Result })
   Config.set = origSet
   assert.equal(ret.ok, true, ret.msg)
   assert.deepEqual(saved.config.bait.prices, { worm: 5 })
@@ -627,4 +628,46 @@ test("渔具越好：普通越来越少，稀有以上越来越多", async () =>
   assert.ok(rows[9].N < rows[0].N / 4, "满级普通不到 1 级的四分之一")
   assert.ok(rows[9].R < rows[4].R, "满级优良比 5 级少")
   assert.ok(rows[9].UR > rows[0].UR * 4, "满级传说是 1 级的 4 倍以上")
+})
+
+test("鱼饵等级：10 档，至少一件同等级渔具才能买和用", async () => {
+  const { buyBait, useBait, consumeBait, usableBait, canUseBait, baitLevel, maxGearLevel, baitDef, baitPrice } = await import("../components/Gear.js")
+  const { reliefBait } = await import("../components/Game.js")
+  const shop = Config.shop
+  // 10 档，等级 1~10，价格逐档上涨
+  assert.deepEqual(shop.baits.map(baitLevel), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+  const prices = shop.baits.map(b => baitPrice(shop, b.id, cfg.bait))
+  for (let i = 1; i < prices.length; i++) assert.ok(prices[i] > prices[i - 1], `Lv${i + 1} 价格`)
+  // 渔具 4/3/3/4 → 最高 4 级，用不了金丝秘饵（Lv5）
+  const u = newUser("10030")
+  u.gear = { rod: 4, line: 3, float: 3, net: 4 }
+  u.gold = 10000
+  assert.equal(maxGearLevel(u), 4)
+  assert.equal(canUseBait(u, baitDef(shop, "shrimp")), true)
+  assert.equal(canUseBait(u, baitDef(shop, "golden")), false)
+  assert.deepEqual(buyBait(u, shop, "golden", 5, cfg.bait), { ok: false, reason: "locked", bait: baitDef(shop, "golden"), need: 5 })
+  assert.equal(u.gold, 10000) // 买不了，不扣钱
+  assert.equal(buyBait(u, shop, "shrimp", 3, cfg.bait).ok, true)
+  // 已经囤了高级鱼饵：保留但用不了，抛竿时换成能用的最高级
+  u.baits.golden = 7
+  u.baits.basic = 2
+  u.baitUse = "golden"
+  assert.equal(useBait(u, shop, "golden").reason, "locked")
+  assert.equal(usableBait(u, shop), 5) // 活虾 3 + 普通饵 2，金丝秘饵不算
+  const c = consumeBait(u, shop)
+  assert.deepEqual([c.bait.id, c.switched, c.reason, c.from.id], ["shrimp", true, "locked", "golden"])
+  assert.equal(u.baits.golden, 7)
+  // 能用的都用完后返回 null，高级鱼饵仍在
+  consumeBait(u, shop); consumeBait(u, shop); consumeBait(u, shop); consumeBait(u, shop)
+  assert.equal(consumeBait(u, shop), null)
+  assert.equal(u.baits.golden, 7)
+  // 只剩用不了的鱼饵也可以领救济
+  u.gold = 0
+  assert.equal(reliefBait(u, { amount: 5, price: 2, usable: usableBait(u, shop) }), 5)
+  // 升到 5 级就能用了
+  u.gear.rod = 5
+  assert.equal(useBait(u, shop, "golden").ok, true)
+  // 满级渔具能用混元仙饵
+  const v = newUser("10031"); v.gear = { rod: 10, line: 1, float: 1, net: 1 }; v.gold = 1000
+  assert.equal(buyBait(v, shop, "primal", 1, cfg.bait).ok, true)
 })

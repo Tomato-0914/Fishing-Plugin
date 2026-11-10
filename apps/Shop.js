@@ -8,6 +8,7 @@ import { luckEffects } from "../components/Game.js"
 import {
   SLOTS, UPGRADE_NAMES, levelColor, levelLabel, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity,
   upgradeGear, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait,
+  baitLevel, canUseBait, maxGearLevel, levelColor as lvColor,
 } from "../components/Gear.js"
 import { withButtons, B } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
@@ -96,20 +97,22 @@ export class FishingShop extends plugin {
     const user = this.load(e)
     const shop = this.shopCfg
     const cur = currentBait(user, shop)
+    const gearLv = maxGearLevel(user)
     const baits = baitList(shop).map(b => ({
-      ...b, price: baitPrice(shop, b.id, this.baitCfg), count: baitCount(user, b.id), current: b.id === cur.id, text: effectText(b.effects),
+      ...b, level: baitLevel(b), color: lvColor(baitLevel(b)), locked: !canUseBait(user, b),
+      price: baitPrice(shop, b.id, this.baitCfg), count: baitCount(user, b.id), current: b.id === cur.id, text: effectText(b.effects),
     }))
-    const msg = await renderOrText(puppeteer, "shop", { name: displayName(user), gold: user.gold, baits }, () => [
-      `🏪 鱼饵商店 · 👛 ${user.gold} 金币`,
+    const msg = await renderOrText(puppeteer, "shop", { name: displayName(user), gold: user.gold, gearLv, baits }, () => [
+      `🏪 鱼饵商店 · 👛 ${user.gold} 金币 · 渔具最高 Lv${gearLv}`,
       "━━━━━━━━━━━━",
-      "🪱 鱼饵（每竿消耗 1 个，同时只用一种）",
-      ...baits.map(b => `${b.current ? "▶" : "　"}${b.emoji}${b.name} ${b.price} 金币 · 库存 ${b.count} · ${b.text === "无" ? b.desc : b.text}`),
+      "🪱 鱼饵（每竿消耗 1 个；第 N 级鱼饵需要至少一件 Lv N 渔具）",
+      ...baits.map(b => `${b.current ? "▶" : "　"}Lv${b.level} ${b.emoji}${b.name} ${b.price} 金币 · ${b.locked ? `🔒 需 Lv${b.level} 渔具` : `库存 ${b.count}`} · ${b.text === "无" ? b.desc : b.text}`),
       "━━━━━━━━━━━━",
       "#购买鱼饵 种类 数量 · #使用鱼饵 种类",
     ].join("\n"))
     if (!msg) return true
-    // 每种鱼饵一个“买 10 个”按钮，QQBot 每行最多 5 个
-    const buy = baits.map(b => ({ text: `${b.name}×10`, callback: `#购买鱼饵 ${b.name} 10` }))
+    // 能买的鱼饵各一个“买 10 个”按钮（高级的排前面），QQBot 每行最多 5 个、最多 5 行
+    const buy = baits.filter(b => !b.locked).reverse().slice(0, 12).map(b => ({ text: `${b.name}×10`, callback: `#购买鱼饵 ${b.name} 10` }))
     const rows = []
     for (let i = 0; i < buy.length; i += 3) rows.push(buy.slice(i, i + 3))
     return e.reply(withButtons(e, msg, ...rows, [B.buyBaitInput, B.myBait, B.workshop]))
@@ -152,6 +155,11 @@ export class FishingShop extends plugin {
     if (num > maxBuy) return e.reply(`🪱 一次最多购买 ${maxBuy} 个鱼饵~`)
 
     const ret = buyBait(user, shop, bait.id, num, this.baitCfg)
+    if (!ret.ok && ret.reason === "locked")
+      return e.reply(withButtons(e, [
+        `🔒 ${bait.emoji}${bait.name}是 Lv${ret.need} 鱼饵，需要至少一件渔具达到 Lv${ret.need} 才能购买`,
+        `🧰 你的渔具最高 Lv${maxGearLevel(user)}，先去 #渔具工坊 升级吧`,
+      ].join("\n"), [B.workshop, B.shop]))
     if (!ret.ok) {
       const lines = [`👛 金币不足：${num} 个${bait.name}需要 ${ret.cost} 金币，你只有 ${user.gold} 金币`]
       lines.push(ret.afford > 0 ? `💡 最多可以买 ${ret.afford} 个` : "💡 先 #一键出售 卖掉鱼护里的鱼换点金币吧")
@@ -180,6 +188,11 @@ export class FishingShop extends plugin {
     const bait = findBait(shop, keyword)
     if (!bait) return e.reply(`❓ 没有「${keyword}」这种鱼饵\n可选：${baitList(shop).map(b => b.name).join("、")}`)
     const ret = useBait(user, shop, bait.id)
+    if (!ret.ok && ret.reason === "locked")
+      return e.reply(withButtons(e, [
+        `🔒 ${bait.emoji}${bait.name}是 Lv${ret.need} 鱼饵，需要至少一件渔具达到 Lv${ret.need} 才能使用`,
+        `🧰 你的渔具最高 Lv${maxGearLevel(user)}${baitCount(user, bait.id) ? `，库存的 ${baitCount(user, bait.id)} 个会一直保留` : ""}`,
+      ].join("\n"), [B.workshop, B.myBait]))
     if (!ret.ok)
       return e.reply(withButtons(e, `🪱 你还没有${bait.name}，先买一些吧（${baitPrice(shop, bait.id, this.baitCfg)} 金币/个）`,
         [{ text: `买 10 个${bait.name}`, callback: `#购买鱼饵 ${bait.name} 10` }]))
@@ -195,10 +208,10 @@ export class FishingShop extends plugin {
     const owned = baitList(shop).filter(b => baitCount(user, b.id) > 0 || b.id === cur.id)
     return e.reply(withButtons(e, [
       `🪱 ${displayName(user)} 的鱼饵（共 ${totalBait(user)} 个）`,
-      ...owned.map(b => `${b.id === cur.id ? "▶ " : "　"}${b.emoji}${b.name} ×${baitCount(user, b.id)} · ${effectText(b.effects).replace(/^无$/, "无特殊效果")}`),
-      `👛 金币：${user.gold}`,
+      ...owned.map(b => `${b.id === cur.id ? "▶ " : "　"}Lv${baitLevel(b)} ${b.emoji}${b.name} ×${baitCount(user, b.id)} · ${canUseBait(user, b) ? effectText(b.effects).replace(/^无$/, "无特殊效果") : `🔒 需 Lv${baitLevel(b)} 渔具`}`),
+      `👛 金币：${user.gold} · 🧰 渔具最高 Lv${maxGearLevel(user)}`,
     ].join("\n"),
-      owned.filter(b => b.id !== cur.id && baitCount(user, b.id) > 0).slice(0, 5).map(b => ({ text: `使用${b.name}`, callback: `#使用鱼饵 ${b.name}` })),
+      owned.filter(b => b.id !== cur.id && baitCount(user, b.id) > 0 && canUseBait(user, b)).slice(-5).reverse().map(b => ({ text: `使用${b.name}`, callback: `#使用鱼饵 ${b.name}` })),
       [B.buyBait, B.buyBaitInput, B.shop]))
   }
 

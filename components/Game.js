@@ -131,9 +131,10 @@ export function isNewPlayer(user) {
  * 救济鱼饵：一个鱼饵都没有、买不起普通饵、鱼护里也没有能卖的鱼时，每天发放一次普通饵
  * @returns 发放数量，不满足条件返回 0
  */
-export function reliefBait(user, { amount = 0, price = 0, hasSellable = false, now = new Date() } = {}) {
+export function reliefBait(user, { amount = 0, price = 0, hasSellable = false, usable, now = new Date() } = {}) {
   amount = Math.floor(Number(amount) || 0)
-  if (amount < 1 || totalBait(user) > 0 || user.gold >= price || hasSellable) return 0
+  // usable：能用的鱼饵数（等级不够的高级鱼饵不算），不传时按全部库存
+  if (amount < 1 || (usable ?? totalBait(user)) > 0 || user.gold >= price || hasSellable) return 0
   const today = periodKey("day", now)
   if (user.reliefDay === today) return 0
   user.reliefDay = today

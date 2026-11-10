@@ -68,14 +68,21 @@ gear:
       - { name: 龙宫鱼护, price: 30000, capacity: 2600, effects: { boostR: 0.2, boostSR: 1.7, boostSSR: 1.1, boostUR: 0.3, sellBonus: 10 }, desc: 据说是龙宫的旧物，鱼进去都舍不得出来 }
       - { name: 四海鱼护, price: 40000, capacity: 3000, effects: { boostR: 0.2, boostSR: 2, boostSSR: 1.5, boostUR: 0.6, sellBonus: 12 }, desc: 装得下四海之鱼，卖相好得不像话 }
 
-# 鱼饵：每竿消耗 1 个，同时只能使用一种；当前鱼饵用完时自动换成还有库存的鱼饵
+# 鱼饵：每竿消耗 1 个，同时只能使用一种；当前鱼饵用完时自动换成有库存的鱼饵
+# level：鱼饵等级。使用或购买第 N 级鱼饵，需要至少有一件渔具达到 N 级
 # 新手礼包、打卡奖励、救济发放的都是 basic（普通饵），单价取 config.yaml 中的 bait.price
+# 价格按“在同等级渔具下每竿多赚的金币”设定：多花的钱总比多赚的少
 baits:
-  - { id: basic,  name: 普通饵,   emoji: 🥣, effects: {},                              desc: 商店里最常见的饵料 }
-  - { id: worm,   name: 蚯蚓,     emoji: 🪱, price: 4,  effects: { biteReduce: 2, emptyReduce: 2 }, desc: 万能活饵，几乎什么鱼都爱吃 }
-  - { id: scent,  name: 腥香饵,   emoji: 🧆, price: 6,  effects: { junkReduce: 4 },    desc: 加了鱼粉虾粉，香味能把鱼引过来 }
-  - { id: shrimp, name: 活虾,     emoji: 🦐, price: 10, effects: { largeBoost: 8 },    desc: 掠食性的大鱼最爱吃活虾 }
-  - { id: golden, name: 金丝秘饵, emoji: ✨, price: 25, effects: { rareBoost: 15 },    desc: 老钓鱼佬的独门配方，从不外传 }
+  - { id: basic,   level: 1,  name: 普通饵,   emoji: 🥣, effects: {}, desc: 商店里最常见的饵料 }
+  - { id: worm,    level: 2,  name: 蚯蚓,     emoji: 🪱, price: 3,  effects: { boostR: 6, biteReduce: 2 }, desc: 万能活饵，几乎什么鱼都爱吃 }
+  - { id: scent,   level: 3,  name: 腥香饵,   emoji: 🧆, price: 4,  effects: { boostR: 10, boostSR: 2, junkReduce: 4 }, desc: 加了鱼粉虾粉，香味能把鱼引过来 }
+  - { id: shrimp,  level: 4,  name: 活虾,     emoji: 🦐, price: 5,  effects: { boostR: 4, boostSR: 4, largeBoost: 10 }, desc: 掠食性的大鱼最爱吃活虾 }
+  - { id: golden,  level: 5,  name: 金丝秘饵, emoji: ✨, price: 6,  effects: { boostSR: 5, rareBoost: 15 }, desc: 老钓鱼佬的独门配方，从不外传 }
+  - { id: silk,    level: 6,  name: 灵蚕饵,   emoji: 🐛, price: 8,  effects: { boostSSR: 3, rareBoost: 20, biteReduce: 1 }, desc: 灵蚕吐丝裹成的饵，鱼闻到就围过来 }
+  - { id: amber,   level: 7,  name: 龙涎香饵, emoji: 🫧, price: 13, effects: { boostSSR: 4, rareBoost: 25, largeBoost: 10 }, desc: 一缕龙涎香，大鱼隔着半个湖都闻得到 }
+  - { id: stardust,level: 8,  name: 星屑饵,   emoji: 🌠, price: 18, effects: { boostUR: 2, rareBoost: 30, largeBoost: 5 }, desc: 用流星落下的碎屑揉成，在水里一闪一闪 }
+  - { id: phoenix, level: 9,  name: 凤凰火饵, emoji: 🪶, price: 27, effects: { boostUR: 2.5, rareBoost: 35, largeBoost: 12 }, desc: 裹着一根凤凰羽毛，入水不灭 }
+  - { id: primal,  level: 10, name: 混元仙饵, emoji: 🔮, price: 30, effects: { boostUR: 5, rareBoost: 45, largeBoost: 25, biteReduce: 2 }, desc: 传说中仙人钓鱼用的饵，连龙王都会上钩 }
 
 # 断线：收杆时大鱼可能挣断鱼线跑掉（%），鱼线的 lineGuard 按比例降低
 lineBreak:
