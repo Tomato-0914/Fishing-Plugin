@@ -12,6 +12,7 @@ import {
 } from "../components/Gear.js"
 import { withButtons, B } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
+import { equipmentBonus } from "../components/PlannedEquipment.js"
 import { groupAllowed, updateNickname, displayName } from "../components/common.js"
 
 const UPGRADE_BUTTONS = [
@@ -34,7 +35,7 @@ export class FishingShop extends plugin {
         { reg: /^#?(购买|买)鱼饵\s*(.*)$/, fnc: "buy" },
         { reg: /^#?(使用|切换|换)鱼饵\s*(.+)$/, fnc: "use" },
         { reg: /^#?(我的)?鱼饵$/, fnc: "bait" },
-        { reg: /^#?我的(渔具|装备)$/, fnc: "gear" },
+        { reg: /^#?我的渔具$/, fnc: "gear" },
       ],
     })
   }
@@ -232,7 +233,7 @@ export class FishingShop extends plugin {
     lines.push("━━━━━━━━━━━━", `✨ 渔具总加成：${effectText(gearEffects(user, shop))}`)
     // 当前实际概率：称号 + 今日运势 + 渔具 + 当前鱼饵，和钓鱼时的计算完全一致
     const cfg = Config.config
-    const effects = mergeEffects(getEffects(user, Config.titles, Config.items), luckEffects(user, cfg.checkin?.tiers), gearEffects(user, shop), cur.effects)
+    const effects = mergeEffects(getEffects(user, Config.titles, Config.items), luckEffects(user, cfg.checkin?.tiers), gearEffects(user, shop), equipmentBonus(user), cur.effects)
     const p = oddsPercent(cfg.probability, effects, cfg.limits)
     const f = v => `${Number(v.toFixed(1))}%`
     lines.push(
