@@ -109,8 +109,9 @@ export function formatMulti(rounds, { sizeLabels = {}, markdown = false } = {}) 
   if (!lines.length) return [...head, ...tail].join("\n")
   const detail = lines[0]?.startsWith("📦") ? lines : [markdown ? "**✨ 稀有鱼获 / 特殊事件**" : "✨ 稀有鱼获 / 特殊事件", ...lines]
   if (markdown) {
-    const formatted = detail.map(line => line === "📦 其他鱼获" ? "**📦 其他鱼获**" : line)
-    return [...head, "", ...formatted, ...tail].join("\n")
+    // 恢复最初 QQBot 的 Markdown 引用列表；只对明细添加 >，保留顶部统计的完整宽度。
+    const quoted = detail.map(line => `> ${line}`)
+    return [...head, "", ...quoted, "", ...tail].join("\n")
   }
   return [...head, "", ...detail, ...tail].join("\n")
 }
