@@ -63,7 +63,7 @@ export function roundLine(r, sizeLabels = {}) {
  * 十连结果文字（简洁版）
  * - 稀有及以上、特殊事件逐条列出，同一种鱼合并为 “×N”
  * - 普通、高级只给数量和总价；垃圾、空军、断线只给数量
- * @param markdown true 时（QQBot）逐条部分放进 Markdown 引用块；否则为纯文本
+ * @param markdown true 时（QQBot）使用 Markdown 加粗标题与分区；否则为纯文本
  */
 export function formatMulti(rounds, { sizeLabels = {}, markdown = false } = {}) {
   const sum = summarize(rounds)
@@ -94,10 +94,10 @@ export function formatMulti(rounds, { sizeLabels = {}, markdown = false } = {}) 
   const lowValue = low.N[1] + low.R[1]
   if (lowParts.length) lines.push("📦 其他鱼获", ...lowParts, `合计 ${lowValue} 金币`)
 
-  // 统计与明细分区，避免移动端窄屏把金币单位挤到下一行。
+  // 保持两种协议相同的实际换行；QQBot 仅添加轻量 Markdown 样式。
   const head = [
-    "🎣 十连收网",
-    `💰 收获金币：${sum.value}`,
+    markdown ? "**🎣 十连收网**" : "🎣 十连收网",
+    markdown ? `💰 **收获金币：${sum.value}**` : `💰 收获金币：${sum.value}`,
     `🐟 鱼获 ${sum.fish}｜垃圾 ${sum.junk}｜空军 ${sum.empty}`,
   ]
   const tail = [
@@ -106,9 +106,11 @@ export function formatMulti(rounds, { sizeLabels = {}, markdown = false } = {}) 
     sum.banned ? `⛔ 禁渔作废 ${sum.banned}` : "",
     sum.snapped ? "💡 升级鱼线可减少断线" : "",
   ].filter(Boolean)
-  if (!lines.length) return [...head, ...tail].join("\n")
-  // 不再使用 Markdown 引用块：QQBot 客户端会为引用块添加缩进，
-  // 挤压可用宽度并导致明细及金币数值异常换行。
-  const detail = lines[0]?.startsWith("📦") ? lines : ["✨ 稀有鱼获 / 特殊事件", ...lines]
-  return [...head, "", ...detail, ...tail].join("\n")
+  if (!lines.length) return [...head, ...tail].join("\\n")
+  const detail = lines[0]?.startsWith("📦") ? lines : [markdown ? "**✨ 稀有鱼获 / 特殊事件**" : "✨ 稀有鱼获 / 特殊事件", ...lines]
+  if (markdown) {
+    const formatted = detail.map(line => line === "📦 其他鱼获" ? "**📦 其他鱼获**" : line)
+    return [...head, "", ...formatted, ...tail].join("\\n")
+  }
+  return [...head, "", ...detail, ...tail].join("\\n")
 }

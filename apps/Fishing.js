@@ -434,9 +434,9 @@ export class Fishing extends plugin {
 
     const sum = summarize(rounds)
     const sizeLabels = Object.fromEntries(Object.entries(cfg.size || {}).map(([k, v]) => [k, v.label]))
-    // 统一使用紧凑纯文本，避免 QQBot Markdown 引用块压缩显示宽度
+    // QQBot 使用轻量 Markdown 加粗标题，其他协议保持纯文本；均不使用引用块
     const left = multiLeft(user, Number(cfg.fishing?.multiDaily ?? 10))
-    const msg = formatMulti(rounds, { sizeLabels }) +
+    const msg = formatMulti(rounds, { sizeLabels, markdown: e.bot?.adapter?.id === "QQBot" }) +
       `\n🎟️ 剩余十连：${left.free} 次${left.bonus ? `（额外 ${left.bonus} 次）` : ""}` +
       (cd ? `\n⏳ 冷却：${cd} 秒` : "")
     await this.send(e, withButtons(e, msg,
