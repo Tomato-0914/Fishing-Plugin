@@ -11,6 +11,7 @@ import { resolveCast, summarize, formatMulti } from "../components/Catch.js"
 import { checkTitles, getEffects, effectText, titleUpText } from "../components/Titles.js"
 import { withButtons, B } from "../components/Button.js"
 import { equipmentEffects } from "../components/Equipment.js"
+import { buffEffects } from "../components/Buffs.js"
 import { mergeEffects } from "../components/Titles.js"
 import { groupAllowed, displayName, updateNickname, pick, itemMap } from "../components/common.js"
 
@@ -76,7 +77,7 @@ export class Fishing extends plugin {
     return allEffects({
       titles: getEffects(user, Config.titles, Config.items),
       luck: luckEffects(user, this.cfg.checkin?.tiers),
-      gear: mergeEffects(gearEffects(user, Config.shop), equipmentEffects(user)),
+      gear: mergeEffects(gearEffects(user, Config.shop), equipmentEffects(user), buffEffects(user)),
       bait: bait?.effects,
     })
   }
