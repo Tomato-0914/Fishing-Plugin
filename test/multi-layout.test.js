@@ -13,7 +13,7 @@ test("十连汇总将金币和数量分行，并区分合并鱼获", () => {
   assert.match(text, /✨ 稀有鱼获 \/ 特殊事件/)
   assert.match(text, /📦 其他鱼获/)
   assert.match(text, /合计 56 金币/)
-  assert.doesNotMatch(text, /^> /m)
+  assert.doesNotMatch(text, /^> /m)\n  assert.doesNotMatch(text, /\\\\n/)\n  assert.match(formatMulti(rounds), /^🎣 十连收网\\n💰 收获金币：205/m)
   assert.equal(summarize(rounds).value, 205)
 })
 test("全空军仍有完整汇总", () => {
