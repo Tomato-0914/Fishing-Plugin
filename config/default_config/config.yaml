@@ -34,8 +34,8 @@ fishing:
   castImage: resources/img/cast.jpg
   # 十连钓鱼：一次抛出的竿数，以及结束后的挂鱼饵时间（秒）
   multiCount: 10
-  # 每天可以十连的次数（0 点重置）；用完后只能单次钓鱼
-  multiDaily: 10
+  # 每天可以十连的次数（0 点重置）；测试阶段提高至 100 次，正式运营可改回 10
+  multiDaily: 100
   # 单次钓鱼额外获得 1 次十连机会的概率（%），鱼钩会提高这个概率；额外机会不会过期，最多存 multiBonusMax 次
   multiTicketChance: 2
   multiBonusMax: 50
