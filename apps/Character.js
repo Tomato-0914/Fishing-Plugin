@@ -5,6 +5,7 @@ import Config from "../components/Config.js"
 import { characterProgress } from "../components/Progression.js"
 import { SLOTS, gearLevel, gearItem, gearEffects, currentBait, bagCapacity } from "../components/Gear.js"
 import { effectText } from "../components/Titles.js"
+import { currentEquipment, itemName, equipmentBonus } from "../components/PlannedEquipment.js"
 import { groupAllowed, updateNickname, displayName } from "../components/common.js"
 
 export class FishingCharacter extends plugin {
@@ -71,6 +72,10 @@ export class FishingCharacter extends plugin {
       "📌 #钓鱼等级 查看升级进度",
       "📌 #我的渔具 查看完整装备和概率",
       "📌 #渔具工坊 升级渔具",
+      "🛠️ 正式装备养成",
+      ...currentEquipment(user).map(item => itemName(item)),
+      `✨ 装备额外属性：${effectText(equipmentBonus(user))}`,
+      "📌 #装备工坊 / #我的装备",
       "🐾 宠物系统：后续版本开放",
     ].join("\n"))
   }
