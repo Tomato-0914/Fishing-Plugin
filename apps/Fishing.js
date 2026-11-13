@@ -10,6 +10,8 @@ import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gear
 import { resolveCast, summarize, formatMulti } from "../components/Catch.js"
 import { checkTitles, getEffects, effectText, titleUpText } from "../components/Titles.js"
 import { withButtons, B } from "../components/Button.js"
+import { equipmentBonus } from "../components/PlannedEquipment.js"
+import { mergeEffects } from "../components/Titles.js"
 import { groupAllowed, displayName, updateNickname, pick, itemMap } from "../components/common.js"
 
 /** 进行中的钓鱼：user_id → { stage: "waiting" | "bite" | "multi", timer, castAt, biteAt } */
@@ -74,7 +76,7 @@ export class Fishing extends plugin {
     return allEffects({
       titles: getEffects(user, Config.titles, Config.items),
       luck: luckEffects(user, this.cfg.checkin?.tiers),
-      gear: gearEffects(user, Config.shop),
+      gear: mergeEffects(gearEffects(user, Config.shop), equipmentBonus(user)),
       bait: bait?.effects,
     })
   }
