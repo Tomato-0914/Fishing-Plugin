@@ -92,17 +92,23 @@ export function formatMulti(rounds, { sizeLabels = {}, markdown = false } = {}) 
   }
   const lowParts = [["N", "⚪ 普通"], ["R", "🟢 高级"]].filter(([k]) => low[k][0]).map(([k, label]) => `${label} ×${low[k][0]}`)
   const lowValue = low.N[1] + low.R[1]
-  if (lowParts.length) lines.push(`${lowParts.join(" · ")} · 共 ${lowValue} 金币`)
+  if (lowParts.length) lines.push("📦 其他鱼获", ...lowParts, `合计 ${lowValue} 金币`)
 
-  const head = `🎣 十连收网 · ${rounds.length} 竿 · 💰 ${sum.value} 金币`
+  // 统计与明细分区，避免移动端窄屏把金币单位挤到下一行。
+  const head = [
+    "🎣 十连收网",
+    `💰 收获金币：${sum.value}`,
+    `🐟 鱼获 ${sum.fish}｜垃圾 ${sum.junk}｜空军 ${sum.empty}`,
+  ]
   const tail = [
-    [`🐟 ${sum.fish}`, `🗑️ ${sum.junk}`, `🌊 ${sum.empty}`, sum.snapped ? `💥 ${sum.snapped}` : "", sum.banned ? `🚫 ${sum.banned} 竿作废` : ""].filter(Boolean).join(" · "),
-    sum.snapped ? "💡 #渔具工坊 升级鱼线可以减少断线" : "",
+    sum.snapped ? `💥 断线 ${sum.snapped}` : "",
+    sum.protected ? `🚫 保护动物 ${sum.protected}` : "",
+    sum.banned ? `⛔ 禁渔作废 ${sum.banned}` : "",
+    sum.snapped ? "💡 升级鱼线可减少断线" : "",
   ].filter(Boolean)
-  if (!lines.length) return [head, ...tail].join("\n")
-  if (markdown) {
-    // 引用块后空一行，否则下面的汇总会被并进引用块
-    return `${head}\n${lines.map(l => `> ${l}`).join("\n")}\n\n${tail.join("\n")}`
-  }
-  return [head, ...lines.map(l => `  ${l}`), ...tail].join("\n")
+  if (!lines.length) return [...head, ...tail].join("\\n")
+  // 不再使用 Markdown 引用块：QQBot 客户端会为引用块添加缩进，
+  // 挤压可用宽度并导致明细及金币数值异常换行。
+  const detail = lines[0]?.startsWith("📦") ? lines : ["✨ 稀有鱼获 / 特殊事件", ...lines]
+  return [...head, "", ...detail, ...tail].join("\\n")
 }

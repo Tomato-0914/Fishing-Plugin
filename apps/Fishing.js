@@ -434,13 +434,14 @@ export class Fishing extends plugin {
 
     const sum = summarize(rounds)
     const sizeLabels = Object.fromEntries(Object.entries(cfg.size || {}).map(([k, v]) => [k, v.label]))
-    // QQBot 的文字按 Markdown 渲染：钓获放进引用块；其他协议用纯文本
+    // 统一使用紧凑纯文本，避免 QQBot Markdown 引用块压缩显示宽度
     const left = multiLeft(user, Number(cfg.fishing?.multiDaily ?? 10))
-    const msg = formatMulti(rounds, { sizeLabels, markdown: e.bot?.adapter?.id === "QQBot" }) +
-      `\n🎟️ 今日十连剩余 ${left.free} 次${left.bonus ? ` · 额外 ${left.bonus} 次` : ""}${cd ? ` · ⏳ ${cd} 秒后可再钓` : ""}`
+    const msg = formatMulti(rounds, { sizeLabels }) +
+      `\n🎟️ 剩余十连：${left.free} 次${left.bonus ? `（额外 ${left.bonus} 次）` : ""}` +
+      (cd ? `\n⏳ 冷却：${cd} 秒` : "")
     await this.send(e, withButtons(e, msg,
-      [B.multi, B.fish],
-      [B.bag, B.sellAll, ...(sum.junk ? [B.discard] : [])]))
+      [{ ...B.multi, text: "🔟 十连" }, { ...B.fish, text: "🎣 钓鱼" }],
+      [{ ...B.bag, text: "🎒 鱼护" }, { ...B.sellAll, text: "💰 出售" }, ...(sum.junk ? [{ ...B.discard, text: "♻️ 清理" }] : [])]))
     await this.announceTitles(e, user)
   }
 
