@@ -41,7 +41,7 @@ export class FishingTitle extends plugin {
       return {
         emoji: t.emoji,
         name: tier ? titleName(t, tier) : t.name,
-        tier, max, roman: ROMAN[tier] || "",
+        tier, max, roman: max > 1 ? ROMAN[tier] || "" : "★",
         color: TIER_COLORS[Math.min(tier, 3)],
         pips: Array.from({ length: max }, (_, i) => i < tier),
         effect: tier ? effectText(tierEffects(t, tier)) : "",

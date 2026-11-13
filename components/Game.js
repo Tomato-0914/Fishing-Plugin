@@ -30,7 +30,7 @@ export function addGroup(user, groupId) {
  * 记录一次收杆结果
  * @returns {{ value:number, reward:number, stored:boolean }}
  */
-export function recordResult(user, result, { now = new Date(), policeReward = 0 } = {}) {
+export function recordResult(user, result, { now = new Date(), policeReward = 0, protectedPenalty = {}, paimonGift = 0 } = {}) {
   touchPeriods(user, now)
   const s = user.stats
   if (result.type === "empty") {
@@ -49,6 +49,24 @@ export function recordResult(user, result, { now = new Date(), policeReward = 0 
   let reward = 0
   let stored = true
 
+  // 保护动物：自动放生，禁渔并罚款（金币不足时扣到 0 为止），不计入排行
+  if (item.special === "protected") {
+    s.protected = (s.protected || 0) + 1
+    const fine = Math.min(Math.max(0, user.gold), Math.max(0, Number(protectedPenalty.gold) || 0))
+    user.gold -= fine
+    const minutes = Math.max(0, Number(protectedPenalty.banMinutes) || 0)
+    if (minutes) user.banUntil = Math.max(Number(user.banUntil) || 0, now.getTime() + minutes * 60000)
+    return { value: 0, reward: 0, stored: false, penalty: { fine, minutes, banUntil: user.banUntil } }
+  }
+
+  // 派蒙：不进鱼护；第一次钓到由称号「最好的伙伴」奖励，之后每次送一份谢礼
+  if (item.special === "paimon") {
+    s.paimon = (s.paimon || 0) + 1
+    const gift = s.paimon > 1 ? Math.max(0, Number(paimonGift) || 0) : 0
+    user.gold += gift
+    return { value: 0, reward: gift, stored: false, paimon: { first: s.paimon === 1, gift } }
+  }
+
   if (item.special === "police") {
     // 人民碎片：报警领取奖励，不进鱼护
     s.police++
@@ -60,7 +78,10 @@ export function recordResult(user, result, { now = new Date(), policeReward = 0 
     if (item.rarity === "junk") s.junk++
     else s.catches++
     if (item.id === "ocean_heart") s.heart++
-    if (item.rarity === "UR") s.ur++
+    // 传说猎人按传说及以上计数；史诗、神话另外单独记录
+    if (["UR", "EP", "MR"].includes(item.rarity)) s.ur++
+    if (item.rarity === "EP") s.ep = (s.ep || 0) + 1
+    if (item.rarity === "MR") s.mr = (s.mr || 0) + 1
     const entry = { id: item.id, p: result.price || 0, t: now.getTime() }
     if (result.size) entry.s = result.size
     if (result.weight != null) entry.w = result.weight
@@ -198,4 +219,37 @@ export function checkinReward(luck, baits = []) {
   const bait = baits.find(b => lv(b) === level) ||
     [...baits].filter(b => lv(b) <= level).sort((a, b) => lv(b) - lv(a))[0]
   return bait ? { level, count, bait } : null
+}
+
+/* ==================== 十连次数 ==================== */
+
+/** 今天的十连状态 { day, used, bonus }：跨天时重置 used，额外机会 bonus 保留 */
+export function multiState(user, now = new Date()) {
+  const today = periodKey("day", now)
+  user.multi ||= { day: today, used: 0, bonus: 0 }
+  if (user.multi.day !== today) { user.multi.day = today; user.multi.used = 0 }
+  user.multi.bonus = Math.max(0, Number(user.multi.bonus) || 0)
+  return user.multi
+}
+
+/** 剩余次数：free 今日免费次数，bonus 额外机会 */
+export function multiLeft(user, daily = 10, now = new Date()) {
+  const m = multiState(user, now)
+  return { free: Math.max(0, Number(daily) - m.used), bonus: m.bonus }
+}
+
+/** 消耗一次十连：先用今日次数，再用额外机会；没有次数返回 null */
+export function useMulti(user, daily = 10, now = new Date()) {
+  const m = multiState(user, now)
+  if (m.used < Number(daily)) { m.used++; return "free" }
+  if (m.bonus > 0) { m.bonus--; return "bonus" }
+  return null
+}
+
+/** 获得一次额外十连机会（不超过上限），返回是否获得 */
+export function grantMultiTicket(user, max = 50, now = new Date()) {
+  const m = multiState(user, now)
+  if (m.bonus >= Number(max)) return false
+  m.bonus++
+  return true
 }

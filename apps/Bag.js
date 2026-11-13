@@ -1,7 +1,7 @@
 import { plugin, puppeteer } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
-import { RARITY_INFO, isDexFish, formatWeight } from "../components/ItemPool.js"
+import { RARITY_INFO, isDexFish, formatWeight, SIZE_ORDER } from "../components/ItemPool.js"
 import { groupBag, sellEntries, discardJunk, todayLuck, luckTier } from "../components/Game.js"
 import { checkTitles, getEffects, effectText, progressText, mergeEffects, ownedTier, ownedTitles, titleName, titleUpText } from "../components/Titles.js"
 import { gearEffects, bagCapacity, totalBait, gearItem, gearLevel } from "../components/Gear.js"
@@ -12,8 +12,8 @@ import { dayKey } from "../components/Period.js"
 import { groupAllowed, itemMap, displayName, updateNickname, avatar } from "../components/common.js"
 
 /** 鱼护展示顺序：隐藏 → 传说 → … → 普通 → 垃圾 */
-const ORDER = ["hidden", "UR", "SSR", "SR", "R", "N", "junk"]
-const SIZE_ORDER = ["large", "medium", "small"]
+/** 鱼护 / 图鉴展示顺序：隐藏 → 神话 → 史诗 → 传说 → … → 普通 → 垃圾 → 保护动物 */
+const ORDER = ["hidden", "MR", "EP", "UR", "SSR", "SR", "R", "N", "junk", "protected"]
 
 export class FishingBag extends plugin {
   constructor() {
@@ -234,7 +234,10 @@ export class FishingBag extends plugin {
     const sizes = sizeTable(item, cfg.size).map(s => ({
       ...s, weight: `${formatWeight(s.wMin)} ~ ${formatWeight(s.wMax)}`, price: s.pMin === s.pMax ? `${s.pMin}` : `${s.pMin} ~ ${s.pMax}`,
     }))
-    const price = item.special === "police" ? `警局奖励 ${cfg.policeReward} 金币`
+    const pen = cfg.protectedPenalty || {}
+    const price = item.special === "protected" ? `🚫 禁止捕捞（误钓罚款 ${pen.gold ?? 0} 金币、禁渔 ${pen.banMinutes ?? 0} 分钟）`
+      : item.special === "paimon" ? "不能卖！派蒙是伙伴"
+      : item.special === "police" ? `警局奖励 ${cfg.policeReward} 金币`
       : item.rarity === "junk" ? "0 金币（可 #清理垃圾 统一回收）"
         : sizes.length ? `${sizes[0].pMin} ~ ${sizes[sizes.length - 1].pMax} 金币` : `${item.price || 0} 金币`
     const data = {
@@ -242,7 +245,8 @@ export class FishingBag extends plugin {
       rarity: item.rarity, label: r.label, color: r.color,
       habitat: item.habitat || "未知", intro: item.intro || item.desc || "",
       chance: formatChance(itemChance(item, all, cfg.probability)), price, sizes,
-      unlocked: count > 0, count,
+      // 保护动物用于科普，不用钓到也能看介绍
+      unlocked: count > 0 || item.rarity === "protected", count,
       first: rec.first ? dayKey(new Date(rec.first)) : "",
       maxW: rec.maxW != null ? `${formatWeight(rec.maxW)}${rec.maxS ? `（${cfg.size?.[rec.maxS]?.label || ""}）` : ""}` : "",
       maxP: rec.maxP || 0,

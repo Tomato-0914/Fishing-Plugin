@@ -9,7 +9,7 @@ export const LEVEL_COLORS = [
   "#fa8c16", "#f5222d", "#eb2f96", "#13c2c2",
   "linear-gradient(90deg, #ff4d4f, #faad14, #52c41a, #1890ff, #722ed1)",
 ]
-export const LEVEL_LABELS = ["普通", "优良", "稀有", "史诗", "传说", "神话", "至尊", "圣品", "天品", "永恒"]
+export const LEVEL_LABELS = ["普通", "高级", "稀有", "神器", "传说", "史诗", "神话", "至尊", "圣品", "永恒"]
 export const levelColor = lv => LEVEL_COLORS[Math.min(lv, LEVEL_COLORS.length) - 1]
 export const levelLabel = lv => LEVEL_LABELS[Math.min(lv, LEVEL_LABELS.length) - 1]
 
@@ -168,11 +168,9 @@ export function buyBait(user, shop, id, count, baitCfg = 2) {
 
 /* ---------------- 断线 ---------------- */
 
-/** 十连钓鱼后的挂鱼饵时间（秒）：按 multiCdReduce% 缩短，最多 -90% */
-export function multiCooldown(base, effects = {}) {
-  const cut = Math.min(90, Math.max(0, Number(effects.multiCdReduce) || 0))
-  return Math.max(0, Math.round(Number(base) * (1 - cut / 100)))
-}
+/** 单次钓鱼额外获得十连机会的概率（%）：基础概率 + 鱼钩等的 multiTicket */
+export const multiTicketChance = (base, effects = {}) =>
+  Math.min(100, Math.max(0, (Number(base) || 0) + (Number(effects.multiTicket) || 0)))
 
 /** 鱼钩防跑鱼：咬钩后没及时收杆时，按 holdChance% 的概率鱼仍被钩住 */
 export function holdsOnTimeout(effects = {}, rng = Math.random) {
@@ -184,8 +182,9 @@ export function holdsOnTimeout(effects = {}, rng = Math.random) {
 export function breakChance(result, lineBreak = {}, effects = {}) {
   if (result?.type !== "item") return 0
   const r = result.rarity
-  if (r === "junk" || r === "hidden") return 0
-  let chance = (Number(lineBreak[r]) || 0) + (result.size === "large" ? Number(lineBreak.large) || 0 : 0)
+  if (["junk", "hidden", "protected"].includes(r)) return 0
+  const sizeExtra = result.size === "large" || result.size === "xlarge" ? Number(lineBreak[result.size]) || 0 : 0
+  let chance = (Number(lineBreak[r]) || 0) + sizeExtra
   chance *= 1 - Math.min(100, Math.max(0, Number(effects.lineGuard) || 0)) / 100
   return Math.max(0, Math.min(100, chance))
 }

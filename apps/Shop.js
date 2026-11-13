@@ -238,7 +238,8 @@ export class FishingShop extends plugin {
     lines.push(
       "🎲 当前概率（含称号、今日运势、当前鱼饵）",
       `　空军 ${f(p.empty)} · 垃圾 ${f(p.junk)} · 普通 ${f(p.N)}`,
-      `　优良 ${f(p.R)} · 稀有 ${f(p.SR)} · 史诗 ${f(p.SSR)} · 传说 ${f(p.UR)}`,
+      `　高级 ${f(p.R)} · 稀有 ${f(p.SR)} · 神器 ${f(p.SSR)}`,
+      `　传说 ${f(p.UR)} · 史诗 ${f(p.EP)} · 神话 ${f(p.MR)}`,
     )
     return e.reply(withButtons(e, lines.join("\n"), [B.workshop, B.shop, B.start]))
   }

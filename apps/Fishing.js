@@ -5,8 +5,8 @@ import { Plugin_Path } from "../components/Paths.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
-import { addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier, luckEffects } from "../components/Game.js"
-import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, allEffects, holdsOnTimeout, maxLevel, multiCooldown } from "../components/Gear.js"
+import { multiLeft, useMulti, grantMultiTicket, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier, luckEffects } from "../components/Game.js"
+import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, allEffects, holdsOnTimeout, maxLevel, multiTicketChance } from "../components/Gear.js"
 import { resolveCast, summarize, formatMulti } from "../components/Catch.js"
 import { checkTitles, getEffects, effectText, titleUpText } from "../components/Titles.js"
 import { withButtons, B } from "../components/Button.js"
@@ -125,6 +125,15 @@ export class Fishing extends plugin {
       if (session.stage === "multi") { await this.send(e, "🎣 十连的鱼竿还在水里，正在收网，稍等一下~"); return null }
       if (session.stage === "bite") { await this.send(e, withButtons(e, "🐟 浮漂正在剧烈抖动！快发送 #收杆！", [B.reel(e)])); return null }
       await this.send(e, pick(WAITING_TEXT))
+      return null
+    }
+
+    // 误钓保护动物后禁渔
+    const ban = (Number(user.banUntil) || 0) - Date.now()
+    if (ban > 0) {
+      const until = new Date(user.banUntil)
+      const hm = `${String(until.getHours()).padStart(2, "0")}:${String(until.getMinutes()).padStart(2, "0")}`
+      await this.send(e, `🚫 你误钓了保护动物，正在禁渔中~\n⏳ 还剩 ${Math.ceil(ban / 60000)} 分钟（${hm} 解禁）`)
       return null
     }
 
@@ -310,15 +319,21 @@ export class Fishing extends plugin {
    * @param prefix 结果前面附加的一行提示
    */
   async settle(e, id, user, s, prefix = "") {
-    const withPrefix = msg => {
-      if (!prefix) return msg
-      if (Array.isArray(msg)) return [`${prefix}\n${msg[0]}`, ...msg.slice(1)]
-      return `${prefix}\n${msg}`
-    }
     const cfg = this.cfg
     const shop = Config.shop
     const effects = this.effectsFor(user, baitDef(shop, s.bait))
-    const { result, snapped, chance: snap, reward } = resolveCast(user, { items: Config.items, cfg, shop, effects })
+    const round = resolveCast(user, { items: Config.items, cfg, shop, effects })
+    const { result, snapped, chance: snap, reward } = round
+    // 单次钓鱼有概率额外获得 1 次十连机会（鱼钩提高概率）；误钓保护动物时没有
+    let suffix = ""
+    const ticketChance = multiTicketChance(cfg.fishing?.multiTicketChance ?? 2, effects)
+    if (!round.penalty && ticketChance > 0 && Math.random() * 100 < ticketChance && grantMultiTicket(user, cfg.fishing?.multiBonusMax ?? 50))
+      suffix = `🎟️ 运气不错！获得 1 次额外十连机会（现有 ${user.multi.bonus} 次）`
+    const withPrefix = msg => {
+      const wrap = t => [prefix, t, suffix].filter(Boolean).join("\n")
+      if (Array.isArray(msg)) return [wrap(msg[0]), ...msg.slice(1)]
+      return wrap(msg)
+    }
 
     // 断线：大鱼挣断鱼线跑掉
     if (snapped) {
@@ -339,7 +354,7 @@ export class Fishing extends plugin {
     this.startCooldown(id, user)
     UserData.save(id)
 
-    await this.send(e, withPrefix(this.resultMsg(e, user, result, reward)))
+    await this.send(e, withPrefix(this.resultMsg(e, user, result, reward, round)))
     return this.announceTitles(e, user)
   }
 
@@ -349,6 +364,20 @@ export class Fishing extends plugin {
     const ctx = await this.precheck(e)
     if (!ctx) return true
     const { id, user, name, fcfg, shop, limit } = ctx
+
+    // 每天的十连次数：先用今日次数，再用单钓攒下的额外机会
+    const daily = Number(fcfg.multiDaily ?? 10)
+    const left = multiLeft(user, daily)
+    if (left.free + left.bonus < 1) {
+      const chance = multiTicketChance(fcfg.multiTicketChance ?? 2, gearEffects(user, shop))
+      return this.send(e, withButtons(e, [
+        `🎟️ 今天的 ${daily} 次十连已经用完啦~`,
+        `🎣 单次钓鱼有 ${Number(chance.toFixed(2))}% 的概率额外获得 1 次十连机会`,
+        "💡 升级鱼钩可以提高这个概率，明天 0 点十连次数会重置",
+      ].join("\n"), [B.cast]))
+    }
+    useMulti(user, daily)
+    const after = multiLeft(user, daily)
 
     const want = Math.max(1, Math.floor(Number(fcfg.multiCount) || 10))
     const n = Math.min(want, usableBait(user, shop), limit - user.bag.length)
@@ -382,6 +411,7 @@ export class Fishing extends plugin {
       this.gearLine(user, shop),
       `🪱 ${[...usedCount].map(([k, v]) => `${k} ×${v}`).join("、")}（剩余可用鱼饵 ${usableBait(user, shop)}）`,
       this.luckLine(user),
+      `🎟️ 今日十连剩余 ${after.free} 次${after.bonus ? `（另有额外机会 ${after.bonus} 次）` : ""}`,
       "⏳ 稍等片刻，收网后统一结算",
     ].filter(Boolean).join("\n"), fcfg.multiImage)
     await this.announceTitles(e, user)
@@ -396,24 +426,23 @@ export class Fishing extends plugin {
     const cfg = this.cfg
     const shop = Config.shop
     const rounds = baits.map(bait => resolveCast(user, { items: Config.items, cfg, shop, effects: this.effectsFor(user, bait) }))
-    // 十连后的挂鱼饵时间：鱼钩 3 级起按比例缩短
-    const gearEff = gearEffects(user, shop)
-    const cd = this.startCooldown(id, user, multiCooldown(Number(cfg.fishing?.multiCooldown ?? 100), gearEff))
+    // 两次十连之间的最短间隔（防刷屏）
+    const cd = this.startCooldown(id, user, Number(cfg.fishing?.multiCooldown ?? 30))
     UserData.save(id)
 
     const sum = summarize(rounds)
     const sizeLabels = Object.fromEntries(Object.entries(cfg.size || {}).map(([k, v]) => [k, v.label]))
     // QQBot 的文字按 Markdown 渲染：钓获放进引用块；其他协议用纯文本
-    const cut = Number(gearEff.multiCdReduce) || 0
+    const left = multiLeft(user, Number(cfg.fishing?.multiDaily ?? 10))
     const msg = formatMulti(rounds, { sizeLabels, markdown: e.bot?.adapter?.id === "QQBot" }) +
-      `\n⏳ ${cd} 秒后可以再次十连${cut ? `（鱼钩 -${cut}%）` : ""}`
+      `\n🎟️ 今日十连剩余 ${left.free} 次${left.bonus ? ` · 额外 ${left.bonus} 次` : ""}${cd ? ` · ⏳ ${cd} 秒后可再钓` : ""}`
     await this.send(e, withButtons(e, msg,
       [B.multi, B.fish],
       [B.bag, B.sellAll, ...(sum.junk ? [B.discard] : [])]))
     await this.announceTitles(e, user)
   }
 
-  resultMsg(e, user, result, reward) {
+  resultMsg(e, user, result, reward, round = {}) {
     if (result.type === "empty") {
       return withButtons(e, pick([
         "🎣 收杆……什么都没钓到~ 🌊",
@@ -423,6 +452,34 @@ export class Fishing extends plugin {
     }
     const { item } = result
     const r = RARITY_INFO[item.rarity] || {}
+
+    // 保护动物：放生 + 处罚
+    if (item.special === "protected") {
+      const p = round.penalty || {}
+      const until = p.banUntil ? new Date(p.banUntil) : null
+      const hm = until ? `${String(until.getHours()).padStart(2, "0")}:${String(until.getMinutes()).padStart(2, "0")}` : ""
+      return withButtons(e, [
+        `🚫 糟糕！钓上来的是国家保护动物——${item.emoji}【${r.label}】${item.name}`,
+        "━━━━━━━━━━━━",
+        `💬 ${item.intro || item.desc}`,
+        "🕊️ 已经小心地把它放回水里了",
+        `⚖️ 处罚：罚款 ${p.fine ?? 0} 金币，禁渔 ${p.minutes ?? 0} 分钟${hm ? `（${hm} 解禁）` : ""}`,
+        `👛 当前金币：${user.gold}`,
+      ].join("\n"), [{ text: `📖 了解${item.name}`, callback: `#钓鱼图鉴 ${item.name}` }, B.bag])
+    }
+
+    // 派蒙：第一次送称号，之后送谢礼
+    if (item.special === "paimon") {
+      return withButtons(e, round.paimon?.first ? [
+        `🧚 水面漂上来一个小家伙……${item.emoji}【${r.label}】${item.name}`,
+        "💬 “才不是应急食品！”",
+        "✨ 派蒙决定以后跟着你一起钓鱼冒险！",
+      ].join("\n") : [
+        `🧚 又是派蒙！它从水里冒出来跟你打了个招呼`,
+        `🎁 派蒙送了你 ${round.paimon?.gift ?? 0} 金币作为谢礼`,
+        `👛 当前金币：${user.gold}`,
+      ].join("\n"), [B.cast, B.multi], [B.titles])
+    }
 
     if (item.special === "police") {
       return withButtons(e, [
@@ -448,7 +505,10 @@ export class Fishing extends plugin {
 
     const sizeLabel = result.size ? (Config.config.size?.[result.size]?.label || "") : ""
     const lines = [
-      item.rarity === "hidden" ? "✨✨ 海面泛起了奇异的蓝光…… ✨✨" : item.rarity === "UR" ? "🌟 鱼竿弯成了满月！传说级的大家伙！" : "🎣 收杆！",
+      item.rarity === "MR" ? "🌌 天地变色！神话中的存在被你钓了上来！" :
+        item.rarity === "EP" ? "🔥 水面翻起巨浪！史诗级的生物上钩了！" :
+          item.rarity === "hidden" ? "✨✨ 海面泛起了奇异的蓝光…… ✨✨" :
+            item.rarity === "UR" ? "🌟 鱼竿弯成了满月！传说级的大家伙！" : "🎣 收杆！",
       "━━━━━━━━━━━━",
       `${item.emoji} 【${r.label}】${item.name}${sizeLabel ? `（${sizeLabel}）` : ""}${result.weight != null ? `  ${formatWeight(result.weight)}` : ""}`,
       `💰 价值：${result.price} 金币`,

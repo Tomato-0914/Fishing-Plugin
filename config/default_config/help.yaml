@@ -3,7 +3,8 @@
   list:
     - { icon: 🎣, title: "#钓鱼 / #抛竿 / 🎣", desc: 甩出鱼竿，等待鱼儿上钩 }
     - { icon: 🪝, title: "#收杆", desc: 浮漂下沉后及时收杆，太早太晚都会空手 }
-    - { icon: 🔟, title: "#十连钓鱼", desc: 一次抛出 10 竿，自动收网统一结算 }
+    - { icon: 🔟, title: "#十连钓鱼", desc: 每天 10 次，单钓有概率送额外机会 }
+    - { icon: 🚫, title: 保护动物, desc: 误钓会被罚款并禁渔 1 小时 }
     - { icon: 🧺, title: "#我的鱼饵", desc: 每竿消耗 1 个鱼饵，新人赠送 10 个普通饵 }
 - group: 📅 打卡
   list:
@@ -26,7 +27,7 @@
     - { icon: 🔧, title: "#渔具工坊", desc: 查看渔具等级与升级价格 }
     - { icon: 🧰, title: "#我的渔具", desc: 装备与总加成一览 }
     - { icon: 🎣, title: "#升级鱼竿 / 鱼线", desc: 鱼竿提升稀有与大鱼，鱼线防断线 }
-    - { icon: 🪝, title: "#升级鱼钩", desc: 不容易跑鱼，3 级起缩短十连间隔 }
+    - { icon: 🪝, title: "#升级鱼钩", desc: 不容易跑鱼，3 级起提高额外十连机会 }
     - { icon: 🎈, title: "#升级浮漂 / 鱼护", desc: 浮漂减少空军，鱼护扩容加价 }
 - group: 🏪 鱼饵商店
   list:

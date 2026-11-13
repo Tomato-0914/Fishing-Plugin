@@ -24,14 +24,16 @@ test("默认配置与物品池完整", () => {
   for (const i of items) {
     assert.ok(!ids.has(i.id), `重复 id ${i.id}`)
     ids.add(i.id)
-    if (!["junk", "hidden"].includes(i.rarity)) assert.ok(i.price > 0 && Array.isArray(i.weight), i.id)
+    if (!["junk", "hidden", "protected"].includes(i.rarity)) assert.ok(i.price > 0 && Array.isArray(i.weight), i.id)
   }
-  for (const r of ["junk", "N", "R", "SR", "SSR", "UR"]) assert.ok(items.some(i => i.rarity === r), r)
-  for (const id of Object.keys(cfg.probability.hidden)) assert.ok(itemMap.has(id), id)
+  for (const r of ["junk", "N", "R", "SR", "SSR", "UR", "EP", "MR", "protected"]) assert.ok(items.some(i => i.rarity === r), r)
+  for (const id of Object.keys({ ...cfg.probability.hidden, ...cfg.probability.protected })) assert.ok(itemMap.has(id), id)
   // 不放国家重点保护野生动物（以及容易引起争议的近似名称）
   const PROTECTED = ["鲟", "江豚", "白鱀豚", "海豚", "鲥", "松江鲈", "四鳃鲈", "胭脂鱼", "海马", "鲎", "苏眉", "老鼠斑",
     "黄唇鱼", "大鲵", "娃娃鱼", "龟", "玳瑁", "砗磲", "鹦鹉螺", "珊瑚", "鲸", "海豹", "哲罗鲑", "细鳞鲑", "唐鱼", "金线鲃", "河蚌", "锦绣龙虾"]
-  for (const banned of PROTECTED) assert.ok(!items.some(i => i.name.includes(banned)), banned)
+  // 保护动物只能以 protected 出现（钓到会受罚），不能当普通鱼钓和卖
+  for (const banned of PROTECTED) for (const i of items.filter(x => x.name.includes(banned)))
+    assert.equal(i.rarity, "protected", `${i.name} 必须是保护动物`)
   // 每件物品都有介绍、栖息地；名称不重复
   assert.equal(new Set(items.map(i => i.name)).size, items.length)
   assert.equal(cfg.policeReward, 5000)
@@ -62,7 +64,7 @@ test("垃圾售价为 0，鱼有体型与重量", () => {
     if (r.rarity === "junk") { junk++; assert.equal(r.price, 0); assert.equal(r.size, undefined) }
     else if (r.item.weight) {
       fish++
-      assert.ok(["small", "medium", "large"].includes(r.size))
+      assert.ok(["small", "medium", "large", "xlarge"].includes(r.size))
       const [lo, hi] = r.item.weight
       assert.ok(r.weight >= lo - 0.001 && r.weight <= hi + 0.001)
       assert.ok(r.price >= 1)
@@ -343,7 +345,7 @@ test("图鉴详情：概率、体型区间、搜索、个人记录", async () =>
 
   // 体型区间与 roll 实际结果一致
   const table = sizeTable(tuna, cfg.size)
-  assert.deepEqual(table.map(s => s.label), ["小", "中", "大"])
+  assert.deepEqual(table.map(s => s.label), ["小", "中", "大", "超大"])
   const rng = seeded(11)
   for (let i = 0; i < 3000; i++) {
     const r = roll({ items: [tuna], probability: { SSR: 100 }, size: cfg.size }, {}, rng)
@@ -512,12 +514,14 @@ test("一竿结算：断线不入鱼护，十连汇总", async () => {
   assert.equal(u.bag.length, 1)
   assert.equal(r2.value, r2.result.price)
 
-  // 十连：200 次模拟，汇总数字自洽
+  // 十连：200 次模拟（不含保护动物），汇总数字自洽
   const v = newUser("10022")
   const rng = seeded(9)
-  const rounds = Array.from({ length: 200 }, () => resolveCast(v, { items, cfg, shop, rng }))
+  const noProt = { ...cfg, probability: { ...cfg.probability, protected: {} } }
+  const rounds = Array.from({ length: 200 }, () => resolveCast(v, { items, cfg: noProt, shop, rng }))
   const s = summarize(rounds)
-  assert.equal(s.fish + s.junk + s.empty + s.snapped, 200)
+  assert.equal(s.fish + s.junk + s.empty + s.snapped + s.protected + s.banned, 200)
+  assert.equal(s.protected + s.banned, 0)
   assert.equal(v.bag.length, s.fish + s.junk - rounds.filter(x => !x.snapped && x.result.item?.special === "police").length)
   assert.equal(s.value, rounds.reduce((a, x) => a + x.value, 0))
   assert.ok(s.best && s.best.value === Math.max(...rounds.filter(x => !x.snapped && x.result.type === "item" && x.result.rarity !== "junk").map(x => x.value)))
@@ -545,7 +549,7 @@ test("锅巴：鱼饵单价读写", async () => {
   fs.rmSync(dir, { recursive: true, force: true })
 })
 
-test("十连结果：短格式、按价值排序、Markdown 引用块", async () => {
+test("十连结果：简洁格式，高级鱼逐条、低级鱼合并", async () => {
   const { formatMulti, roundLine } = await import("../components/Catch.js")
   const it = id => itemMap.get(id)
   const fish = (id, value, size) => ({ snapped: false, value, reward: 0, result: { type: "item", item: it(id), rarity: it(id).rarity, size, price: value } })
@@ -555,35 +559,28 @@ test("十连结果：短格式、按价值排序、Markdown 引用块", async ()
     fish("grouperking", 341, "medium"),
     { snapped: true, value: 0, reward: 0, result: { type: "item", item: it("tuna"), rarity: "SSR", size: "large", price: 180 } },
     fish("can", 0),
-    { snapped: false, value: 5000, reward: 5000, result: { type: "item", item: it("people_fragment"), rarity: "hidden", price: 0 } },
-    fish("crucian", 4, "small"),
+    fish("prawn", 30, "small"), fish("prawn", 44, "large"),
+    fish("crucian", 4, "small"), fish("crucian", 5, "medium"), fish("carp", 15, "medium"),
   ]
-  const sizeLabels = { small: "小", medium: "中", large: "大" }
+  const sizeLabels = { small: "小", medium: "中", large: "大", xlarge: "超大" }
   assert.equal(roundLine(rounds[2], sizeLabels), "🟡🐠 石斑鱼王·中 341 ✨")
-  assert.equal(roundLine(rounds[0], sizeLabels), "🔵🦀 梭子蟹·中 38")
   const md = formatMulti(rounds, { sizeLabels, markdown: true })
   const lines = md.split("\n")
-  assert.equal(lines[0], "🎣 十连收网 · 7 竿 · 💰 5383 金币")
-  // 报警 → 按价值 → 断线 → 垃圾 → 空军
-  assert.deepEqual(lines.slice(1, 8), [
-    "> 🚨 ❓ 人民碎片 已报警 +5000",
-    "> 🟡🐠 石斑鱼王·中 341 ✨",
-    "> 🔵🦀 梭子蟹·中 38",
-    "> ⚪🐟 小鲫鱼·小 4",
+  assert.equal(lines[0], "🎣 十连收网 · 10 竿 · 💰 477 金币")
+  assert.deepEqual(lines.slice(1, 6), [
     "> 💥 🟣🐟 金枪鱼·大 断线跑了",
-    "> 🗑️ 🥫 易拉罐",
-    "> 🌊 空军",
+    "> 🟡🐠 石斑鱼王·中 341 ✨",
+    "> 🔵🦐 对虾 ×2 74",                 // 同一种合并
+    "> 🔵🦀 梭子蟹·中 38",
+    "> ⚪ 普通 ×2 · 🟢 高级 ×1 · 共 24 金币", // 普通、高级只给汇总
   ])
-  assert.equal(lines[8], "") // 引用块后空行
-  assert.ok(lines[9].startsWith("🐟 "))
+  assert.equal(lines[6], "") // 引用块后空行
+  assert.ok(lines[7].startsWith("🐟 7 · 🗑️ 1 · 🌊 1 · 💥 1"), lines[7])
   // 纯文本：没有 ">" 也没有空行
   const plain = formatMulti(rounds, { sizeLabels })
   assert.ok(!plain.includes(">") && !plain.includes("\n\n"))
-  // 每行都很短，手机上不换行（不含 emoji 的文字 ≤ 14 个字）
-  for (const l of md.split("\n").filter(l => l.startsWith(">"))) {
-    const text = l.replace(/\p{Extended_Pictographic}|️|[> ]/gu, "")
-    assert.ok(text.length <= 14, l)
-  }
+  // 比旧格式（每竿一行）短
+  assert.ok(md.split("\n").length < rounds.length + 4)
 })
 
 test("分档加成：从空军→垃圾→普通扣除，遵守下限，优良以上不减少", async () => {
@@ -678,14 +675,12 @@ test("鱼钩：10 级，防跑鱼概率逐级提高", async () => {
   const shop = Config.shop
   const holds = shop.gear.hook.levels.map(l => l.effects?.holdChance || 0)
   assert.deepEqual(holds, [0, 10, 20, 30, 40, 50, 60, 70, 80, 90])
-  // 十连间隔：3 级起缩短，满级 -50%
-  const { multiCooldown, gearEffects } = await import("../components/Gear.js")
-  const cuts = shop.gear.hook.levels.map(l => l.effects?.multiCdReduce || 0)
-  assert.deepEqual(cuts, [0, 0, 5, 10, 15, 20, 25, 30, 40, 50])
-  assert.equal(multiCooldown(100, {}), 100)
-  assert.equal(multiCooldown(100, gearEffects({ gear: { hook: 3 } }, shop)), 95)
-  assert.equal(multiCooldown(100, gearEffects({ gear: { hook: 10 } }, shop)), 50)
-  assert.equal(multiCooldown(100, { multiCdReduce: 500 }), 10) // 最多 -90%
+  // 额外十连机会：3 级起提高，满级 +5%
+  const { multiTicketChance, gearEffects } = await import("../components/Gear.js")
+  const ticks = shop.gear.hook.levels.map(l => l.effects?.multiTicket || 0)
+  assert.deepEqual(ticks, [0, 0, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5])
+  assert.equal(multiTicketChance(2, {}), 2)
+  assert.equal(multiTicketChance(2, gearEffects({ gear: { hook: 10 } }, shop)), 7)
   assert.equal(gearItem(shop, "hook", 10).name, "龙牙神钩")
   // 概率与配置一致
   const rng = seeded(21)
@@ -741,7 +736,7 @@ test("分级称号：Ⅰ/Ⅱ/Ⅲ，只取最高一级，不同称号叠加，获
   const titles = Config.titles
   const T = id => titles.find(t => t.id === id)
   // 每个称号 3 级，门槛逐级提高；钓鱼相关的跨度大（100 / 3000 / 50000）
-  for (const t of titles) {
+  for (const t of titles.filter(t => t.tiers.length > 1)) {
     assert.equal(t.tiers.length, 3, t.id)
     const needs = t.tiers.map(x => x.need === "all" ? Infinity : x.need)
     assert.ok(needs[0] < needs[1] && needs[1] < needs[2], t.id)
@@ -778,4 +773,73 @@ test("分级称号：Ⅰ/Ⅱ/Ⅲ，只取最高一级，不同称号叠加，获
   // 打卡达人按累计打卡天数
   u.checkin.total = 30
   assert.equal(checkTitles(u, titles, items).find(x => x.title.id === "diligent").tier, 2)
+})
+
+test("保护动物：放生、罚款（不扣成负数）、禁渔，十连后面的竿作废", async () => {
+  const { recordResult } = await import("../components/Game.js")
+  const { resolveCast, summarize } = await import("../components/Catch.js")
+  const sturgeon = itemMap.get("chinese_sturgeon")
+  const now = new Date(2026, 10, 13, 12, 0)
+  const u = newUser("10060"); u.gold = 25000
+  const r = recordResult(u, { type: "item", item: sturgeon, rarity: "protected", price: 0 }, { now, protectedPenalty: { gold: 10000, banMinutes: 60 } })
+  assert.deepEqual([r.stored, r.value, r.penalty.fine, r.penalty.minutes], [false, 0, 10000, 60])
+  assert.equal(u.gold, 15000)
+  assert.equal(u.banUntil, now.getTime() + 3600000)
+  assert.equal(u.bag.length, 0)
+  const poor = newUser("10061"); poor.gold = 300
+  assert.equal(recordResult(poor, { type: "item", item: sturgeon, rarity: "protected" }, { now, protectedPenalty: cfg.protectedPenalty }).penalty.fine, 300)
+  assert.equal(poor.gold, 0) // 扣到 0 为止
+  // 禁渔中，十连后面的竿不再结算
+  const after = resolveCast(u, { items, cfg, shop: Config.shop, now: new Date(now.getTime() + 60000) })
+  assert.equal(after.banned, true)
+  assert.equal(summarize([after]).banned, 1)
+  // 不受渔具、称号加成影响（固定概率）
+  const huge = { boostMR: 999, rareBoost: 500 }
+  const base = buildOdds(cfg.probability)
+  assert.equal(buildOdds(cfg.probability, huge, cfg.limits)["hidden:chinese_sturgeon"], base["hidden:chinese_sturgeon"])
+})
+
+test("派蒙：第一次获得称号「最好的伙伴」，之后送谢礼", async () => {
+  const { recordResult } = await import("../components/Game.js")
+  const { checkTitles, titleName } = await import("../components/Titles.js")
+  const paimon = itemMap.get("paimon")
+  const u = newUser("10062")
+  const a = recordResult(u, { type: "item", item: paimon, rarity: "hidden" }, { paimonGift: 520 })
+  assert.deepEqual(a.paimon, { first: true, gift: 0 })
+  const got = checkTitles(u, Config.titles, items)
+  assert.equal(titleName(got[0].title, got[0].tier), "最好的伙伴") // 单级称号不带 Ⅰ
+  const b = recordResult(u, { type: "item", item: paimon, rarity: "hidden" }, { paimonGift: 520 })
+  assert.deepEqual(b.paimon, { first: false, gift: 520 })
+  assert.equal(u.gold, 520)
+  assert.equal(u.bag.length, 0)
+})
+
+test("十连次数：每天 10 次，额外机会不过期，跨天重置", async () => {
+  const { multiLeft, useMulti, grantMultiTicket } = await import("../components/Game.js")
+  const d1 = new Date(2026, 10, 13, 9), d2 = new Date(2026, 10, 14, 9)
+  const u = newUser("10063")
+  for (let i = 0; i < 10; i++) assert.equal(useMulti(u, 10, d1), "free")
+  assert.equal(useMulti(u, 10, d1), null)
+  assert.equal(grantMultiTicket(u, 2, d1), true)
+  assert.equal(grantMultiTicket(u, 2, d1), true)
+  assert.equal(grantMultiTicket(u, 2, d1), false) // 到上限
+  assert.deepEqual(multiLeft(u, 10, d1), { free: 0, bonus: 2 })
+  assert.equal(useMulti(u, 10, d1), "bonus")
+  assert.deepEqual(multiLeft(u, 10, d2), { free: 10, bonus: 1 }) // 跨天：今日次数重置，额外机会保留
+})
+
+test("超大体型与新稀有度", async () => {
+  const { buildSizeOdds } = await import("../components/ItemPool.js")
+  assert.equal(cfg.size.xlarge.chance, 3)
+  const s = buildSizeOdds(cfg.size, { xlBoost: 5 })
+  assert.equal(s.xlarge, 8)
+  assert.equal(s.small, cfg.size.small.chance - 5)
+  // 超大比大更值钱，更容易断线
+  const { breakChance } = await import("../components/Gear.js")
+  const lb = Config.shop.lineBreak
+  assert.ok(breakChance({ type: "item", rarity: "UR", size: "xlarge" }, lb) > breakChance({ type: "item", rarity: "UR", size: "large" }, lb))
+  assert.equal(breakChance({ type: "item", rarity: "protected" }, lb), 0)
+  // 神话、史诗都有鱼
+  assert.deepEqual(items.filter(i => i.rarity === "MR").map(i => i.name).sort(), ["克拉肯", "鲲鹏", "龙"].sort())
+  assert.ok(items.filter(i => i.rarity === "EP").length >= 3)
 })

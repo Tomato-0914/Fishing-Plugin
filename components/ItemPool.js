@@ -1,18 +1,29 @@
 /** 物品池与抽取算法（纯函数，不依赖 Yunzai，便于测试） */
 
-export const RARITIES = ["junk", "N", "R", "SR", "SSR", "UR", "hidden"]
+/**
+ * 稀有度（统一顺序：普通 → 高级 → 稀有 → 神器 → 传说 → 史诗 → 神话）
+ * 内部 id 沿用旧值以兼容存档：N 普通、R 高级、SR 稀有、SSR 神器、UR 传说、EP 史诗、MR 神话
+ * hidden 隐藏款、protected 保护动物（误钓会受罚）、junk 垃圾
+ */
+export const RARITIES = ["junk", "N", "R", "SR", "SSR", "UR", "EP", "MR", "hidden", "protected"]
 export const RARITY_INFO = {
   junk: { label: "垃圾", color: "#8d8d8d", icon: "🗑️" },
   N: { label: "普通", color: "#9aa5b1", icon: "⚪" },
-  R: { label: "优良", color: "#3bb273", icon: "🟢" },
+  R: { label: "高级", color: "#3bb273", icon: "🟢" },
   SR: { label: "稀有", color: "#3a8dde", icon: "🔵" },
-  SSR: { label: "史诗", color: "#a259ff", icon: "🟣" },
+  SSR: { label: "神器", color: "#a259ff", icon: "🟣" },
   UR: { label: "传说", color: "#f2a900", icon: "🟡" },
-  hidden: { label: "隐藏", color: "#ff4d6d", icon: "❓" },
+  EP: { label: "史诗", color: "#fa6e1e", icon: "🟠" },
+  MR: { label: "神话", color: "#e5242b", icon: "🔴" },
+  hidden: { label: "隐藏", color: "linear-gradient(90deg, #ff4d4f, #faad14, #52c41a, #1890ff, #722ed1)", icon: "🌈" },
+  protected: { label: "保护动物", color: "#0e9f6e", icon: "🚫" },
 }
-const RARE = new Set(["SR", "SSR", "UR"])
-/** 分档加成的稀有度（effects 写作 boostN / boostR / boostSR / boostSSR / boostUR） */
-export const TIER_BOOST_ORDER = ["N", "R", "SR", "SSR", "UR"]
+/** 稀有及以上（rareBoost 作用的档位） */
+const RARE = new Set(["SR", "SSR", "UR", "EP", "MR"])
+/** 分档加成的稀有度（effects 写作 boostN / boostR / boostSR / boostSSR / boostUR / boostEP / boostMR） */
+export const TIER_BOOST_ORDER = ["N", "R", "SR", "SSR", "UR", "EP", "MR"]
+/** 鱼类稀有度从低到高（图鉴、鱼护排序用） */
+export const FISH_TIERS = ["N", "R", "SR", "SSR", "UR", "EP", "MR"]
 /** 分档加成按这个顺序扣除（只扣比目标低的档位） */
 const BOOST_SOURCES = ["empty", "junk", "N", "R", "SR"]
 
@@ -46,6 +57,8 @@ export function buildOdds(prob, effects = {}, limits = {}) {
     SR: Number(prob.SR) || 0,
     SSR: Number(prob.SSR) || 0,
     UR: Number(prob.UR) || 0,
+    EP: Number(prob.EP) || 0,
+    MR: Number(prob.MR) || 0,
   }
   // 下限不能高于配置的原始概率
   const floor = k => Math.min(odds[k], Math.max(0, Number(limits[k]) || 0))
@@ -57,7 +70,7 @@ export function buildOdds(prob, effects = {}, limits = {}) {
     odds[key] -= cut
     odds.N += cut
   }
-  // 分档加成（渔具 / 鱼饵）：直接给某个稀有度加 N 个百分点，从比它低的档位里按 空军 → 垃圾 → 普通 → 优良 → 稀有
+  // 分档加成（渔具 / 鱼饵）：直接给某个稀有度加 N 个百分点，从比它低的档位里按 空军 → 垃圾 → 普通 → 高级 → 稀有
   // 的顺序扣除，每档不低于 limits 下限；史诗、传说不会被扣。渔具越好，先没了空军和垃圾，再越来越难钓到低级鱼
   const floors = { empty: floor("empty"), junk: floor("junk"), N: floorN, R: floor("R"), SR: floor("SR") }
   for (const tier of TIER_BOOST_ORDER) {
@@ -70,10 +83,10 @@ export function buildOdds(prob, effects = {}, limits = {}) {
       want -= take
     }
   }
-  // 稀有加成：SR 以上概率按倍率提高，多出来的部分和分档加成一样按 空军 → 垃圾 → 普通 → 优良 扣除（不低于下限）
+  // 稀有加成：SR 以上概率按倍率提高，多出来的部分和分档加成一样按 空军 → 垃圾 → 普通 → 高级 扣除（不低于下限）
   const boost = Math.max(-100, Number(effects.rareBoost) || 0)
   if (boost > 0) {
-    // 倍率加成本身也提高稀有，所以只从 优良 及以下扣
+    // 倍率加成本身也提高稀有，所以只从 高级 及以下扣
     const rareSources = BOOST_SOURCES.filter(k => k !== "SR")
     const room = rareSources.reduce((a, k) => a + Math.max(0, odds[k] - floors[k]), 0)
     const want = [...RARE].reduce((s, r) => s + odds[r] * boost / 100, 0)
@@ -93,7 +106,8 @@ export function buildOdds(prob, effects = {}, limits = {}) {
       odds.N += cut
     }
   }
-  for (const [id, chance] of Object.entries(prob.hidden || {}))
+  // 隐藏款、保护动物：单独设置的固定概率，不受渔具和称号影响
+  for (const [id, chance] of Object.entries({ ...(prob.hidden || {}), ...(prob.protected || {}) }))
     odds[`hidden:${id}`] = Number(chance) || 0
   return odds
 }
@@ -113,15 +127,23 @@ export function oddsPercent(prob, effects = {}, limits = {}) {
 /** 体型概率（已叠加 largeBoost） */
 export function buildSizeOdds(size, effects = {}) {
   const odds = Object.fromEntries(Object.entries(size).map(([k, v]) => [k, Number(v.chance) || 0]))
-  const boost = Math.min(odds.small ?? 0, Number(effects.largeBoost) || 0)
-  if (boost > 0 && "large" in odds) {
-    odds.small -= boost
-    odds.large += boost
+  // largeBoost：小 → 大；xlBoost：小 → 超大（小体型扣完再扣中体型）
+  for (const [key, target] of [["largeBoost", "large"], ["xlBoost", "xlarge"]]) {
+    let want = Math.max(0, Number(effects[key]) || 0)
+    if (!want || !(target in odds)) continue
+    for (const from of ["small", "medium"]) {
+      const take = Math.min(odds[from] ?? 0, want)
+      odds[from] -= take
+      odds[target] += take
+      want -= take
+    }
   }
   return odds
 }
 
-export const SIZE_RANGE = { small: [0, 0.4], medium: [0.4, 0.75], large: [0.75, 1] }
+export const SIZE_RANGE = { small: [0, 0.4], medium: [0.4, 0.75], large: [0.75, 0.93], xlarge: [0.93, 1] }
+/** 体型从大到小（鱼护、图鉴展示用） */
+export const SIZE_ORDER = ["xlarge", "large", "medium", "small"]
 
 const round2 = n => Math.round(n * 1000) / 1000
 
@@ -161,7 +183,7 @@ export function roll({ items, probability, size, limits }, effects = {}, rng = M
 }
 
 /** 鱼类图鉴范围：除垃圾和隐藏款外的所有物品 */
-export const isDexFish = item => item && item.rarity !== "junk" && item.rarity !== "hidden"
+export const isDexFish = item => item && !["junk", "hidden", "protected"].includes(item.rarity)
 
 export function formatWeight(kg) {
   if (kg == null) return ""

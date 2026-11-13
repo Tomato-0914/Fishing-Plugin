@@ -2,14 +2,14 @@
 # 修改请复制本文件到 config/config/shop.yaml，只写要改的部分即可（列表会整段替换）
 # 渔具为升级制：每类 10 级，Lv1 免费，必须拥有上一级才能购买下一级，购买后自动装备
 # effects 写法与称号相同：
-#   boostN / boostR / boostSR / boostSSR / boostUR  普通 / 优良 / 稀有 / 史诗 / 传说概率 +N 个百分点，
-#     从比它低的档位按 空军 → 垃圾 → 普通 → 优良 的顺序扣除（不低于 config.yaml 的 limits 下限），稀有以上不会被扣
+#   boostN / boostR / boostSR / boostSSR / boostUR  普通 / 高级 / 稀有 / 神器 / 传说概率（另有 boostEP 史诗、boostMR 神话） +N 个百分点，
+#     从比它低的档位按 空军 → 垃圾 → 普通 → 高级 的顺序扣除（不低于 config.yaml 的 limits 下限），稀有以上不会被扣
 #   rareBoost 稀有以上概率 +N%（相对值）  largeBoost 大体型概率 +N%
 #   emptyReduce 空军概率 -N%              junkReduce 垃圾概率 -N%
 #   reelWindow 收杆时间 +N 秒              biteReduce 咬钩等待 -N 秒
 #   lineGuard 断线概率 -N%（相对值）        sellBonus 出售金币 +N%
 #   holdChance 咬钩后没及时收杆时，N% 概率鱼钩仍把鱼钩住（不跑鱼）
-#   multiCdReduce 十连钓鱼后的挂鱼饵时间 -N%（最多 -90%）
+#   multiTicket 单次钓鱼额外获得十连机会的概率 +N%（加在 config.yaml 的 multiTicketChance 上）
 # 鱼护的 capacity 为容量；Lv1 鱼护的容量取 config.yaml 中的 fishing.bagLimit
 
 gear:
@@ -47,14 +47,14 @@ gear:
     levels:
       - { name: 铁钩, price: 0, effects: { boostN: 0.4 }, desc: 最普通的铁钩，钓小鱼够用了 }
       - { name: 袖钩, price: 300, effects: { boostN: 0.6, holdChance: 10 }, desc: 钩条细、入口快，小鱼一咬就中 }
-      - { name: 倒刺钩, price: 1000, effects: { boostN: 0.6, boostR: 0.4, holdChance: 20, multiCdReduce: 5 }, desc: 钩尖带倒刺，鱼一旦咬上就不容易脱钩 }
-      - { name: 碳钢钩, price: 3000, effects: { boostN: 0.6, boostR: 0.6, boostSR: 0.2, holdChance: 30, multiCdReduce: 10 }, desc: 高碳钢打造，又硬又锋利 }
-      - { name: 钛合金钩, price: 8000, effects: { boostN: 0.4, boostR: 0.7, boostSR: 0.6, boostSSR: 0.1, holdChance: 40, multiCdReduce: 15 }, desc: 轻巧耐腐蚀，在海里泡多久都不生锈 }
-      - { name: 寒铁钩, price: 12000, effects: { boostN: 0.2, boostR: 0.7, boostSR: 1.1, boostSSR: 0.3, holdChance: 50, multiCdReduce: 20 }, desc: 极北寒铁锻成，冰冷刺骨，鱼一碰就僵住 }
-      - { name: 玄晶钩, price: 16000, effects: { boostR: 0.6, boostSR: 1.6, boostSSR: 0.6, boostUR: 0.1, holdChance: 60, multiCdReduce: 25 }, desc: 通体透明的玄晶，在水里几乎看不见 }
-      - { name: 星芒钩, price: 22000, effects: { boostR: 0.5, boostSR: 2, boostSSR: 1.1, boostUR: 0.2, holdChance: 70, multiCdReduce: 30 }, desc: 钩尖闪着星光，一刺就牢牢扣住 }
-      - { name: 凤喙钩, price: 30000, effects: { boostR: 0.4, boostSR: 2.5, boostSSR: 1.7, boostUR: 0.5, holdChance: 80, multiCdReduce: 40 }, desc: 凤凰喙磨成的钩，再大的鱼也挣不脱 }
-      - { name: 龙牙神钩, price: 40000, effects: { boostR: 0.2, boostSR: 3, boostSSR: 2.3, boostUR: 0.8, holdChance: 90, multiCdReduce: 50 }, desc: 传说用龙王的一颗牙磨成，钩上的鱼没有一条跑掉过 }
+      - { name: 倒刺钩, price: 1000, effects: { boostN: 0.6, boostR: 0.4, holdChance: 20, multiTicket: 0.5 }, desc: 钩尖带倒刺，鱼一旦咬上就不容易脱钩 }
+      - { name: 碳钢钩, price: 3000, effects: { boostN: 0.6, boostR: 0.6, boostSR: 0.2, holdChance: 30, multiTicket: 1 }, desc: 高碳钢打造，又硬又锋利 }
+      - { name: 钛合金钩, price: 8000, effects: { boostN: 0.4, boostR: 0.7, boostSR: 0.6, boostSSR: 0.1, holdChance: 40, multiTicket: 1.5 }, desc: 轻巧耐腐蚀，在海里泡多久都不生锈 }
+      - { name: 寒铁钩, price: 12000, effects: { boostN: 0.2, boostR: 0.7, boostSR: 1.1, boostSSR: 0.3, holdChance: 50, multiTicket: 2 }, desc: 极北寒铁锻成，冰冷刺骨，鱼一碰就僵住 }
+      - { name: 玄晶钩, price: 16000, effects: { boostR: 0.6, boostSR: 1.6, boostSSR: 0.6, boostUR: 0.1, holdChance: 60, multiTicket: 2.5 }, desc: 通体透明的玄晶，在水里几乎看不见 }
+      - { name: 星芒钩, price: 22000, effects: { boostR: 0.5, boostSR: 2, boostSSR: 1.1, boostUR: 0.2, holdChance: 70, multiTicket: 3 }, desc: 钩尖闪着星光，一刺就牢牢扣住 }
+      - { name: 凤喙钩, price: 30000, effects: { boostR: 0.4, boostSR: 2.5, boostSSR: 1.7, boostUR: 0.5, holdChance: 80, multiTicket: 4 }, desc: 凤凰喙磨成的钩，再大的鱼也挣不脱 }
+      - { name: 龙牙神钩, price: 40000, effects: { boostR: 0.2, boostSR: 3, boostSSR: 2.3, boostUR: 0.8, holdChance: 90, multiTicket: 5 }, desc: 传说用龙王的一颗牙磨成，钩上的鱼没有一条跑掉过 }
   float:
     name: 浮漂
     emoji: 🎈
@@ -102,6 +102,9 @@ baits:
 
 # 断线：收杆时大鱼可能挣断鱼线跑掉（%），鱼线的 lineGuard 按比例降低
 lineBreak:
-  SSR: 6        # 史诗
+  SSR: 6        # 神器
   UR: 12        # 传说
-  large: 4      # 大体型额外增加（垃圾、隐藏款不会断线）
+  EP: 16        # 史诗
+  MR: 20        # 神话
+  large: 4      # 大体型额外增加（垃圾、隐藏款、保护动物不会断线）
+  xlarge: 8     # 超大体型额外增加

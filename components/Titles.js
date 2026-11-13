@@ -35,7 +35,8 @@ export function ownedTier(user, t, items = []) {
   return Math.max(Number(user.titleLv?.[t.id]) || 0, computeTier(user, t, items))
 }
 
-export const titleName = (t, tier) => `${t.name}${ROMAN[tier] || ""}`
+/** 称号名：多级称号带 Ⅰ/Ⅱ/Ⅲ，只有一级的特殊称号不带 */
+export const titleName = (t, tier) => (t.tiers?.length || 0) > 1 ? `${t.name}${ROMAN[tier] || ""}` : t.name
 
 /** 检查称号升级，返回本次新获得 / 升级的称号 [{ title, tier, from }] */
 export function checkTitles(user, titles = [], items = []) {
@@ -101,18 +102,21 @@ const EFFECT_TEXT = {
   sellBonus: ["出售金币", "%", false],
   lineGuard: ["断线概率", "%", true],
   holdChance: ["没及时收杆时不跑鱼", "%", false],
-  multiCdReduce: ["十连间隔", "%", true],
+  multiTicket: ["额外十连机会", "%", false],
+  xlBoost: ["超大体型概率", "%", false],
   boostN: ["普通概率", "%", false],
-  boostR: ["优良概率", "%", false],
+  boostR: ["高级概率", "%", false],
   boostSR: ["稀有概率", "%", false],
-  boostSSR: ["史诗概率", "%", false],
+  boostSSR: ["神器概率", "%", false],
   boostUR: ["传说概率", "%", false],
+  boostEP: ["史诗概率", "%", false],
+  boostMR: ["神话概率", "%", false],
 }
 
-const TIER_NAMES = { boostN: "普通", boostR: "优良", boostSR: "稀有", boostSSR: "史诗", boostUR: "传说" }
+const TIER_NAMES = { boostN: "普通", boostR: "高级", boostSR: "稀有", boostSSR: "神器", boostUR: "传说", boostEP: "史诗", boostMR: "神话" }
 
 export function effectText(effects = {}) {
-  // 分档加成合成一段：普通+4% 优良+7% 稀有+7%
+  // 分档加成合成一段：普通+4% 高级+7% 稀有+7%
   const tiers = Object.keys(TIER_NAMES).filter(k => Number(effects[k]))
     .map(k => `${TIER_NAMES[k]}+${Number(Number(effects[k]).toFixed(2))}%`).join(" ")
   const parts = Object.entries(effects).filter(([k, v]) => Number(v) && !TIER_NAMES[k]).map(([k, v]) => {

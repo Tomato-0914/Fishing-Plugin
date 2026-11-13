@@ -5,7 +5,7 @@ import { buildOdds, SIZE_RANGE, isDexFish } from "./ItemPool.js"
 export function itemChance(item, items, probability) {
   const odds = buildOdds(probability)
   const total = Object.values(odds).reduce((s, v) => s + v, 0) || 1
-  if (item.rarity === "hidden") return (odds[`hidden:${item.id}`] || 0) / total * 100
+  if (item.rarity === "hidden" || item.rarity === "protected") return (odds[`hidden:${item.id}`] || 0) / total * 100
   const pool = items.filter(i => i.rarity === item.rarity)
   const weightSum = pool.reduce((s, i) => s + (i.chance ?? 1), 0) || 1
   return (odds[item.rarity] || 0) / total * 100 * (item.chance ?? 1) / weightSum
@@ -22,7 +22,7 @@ export function formatChance(pct) {
 export function sizeTable(item, size = {}) {
   if (!Array.isArray(item.weight)) return []
   const [wMin, wMax] = item.weight
-  return ["small", "medium", "large"].filter(k => size[k]).map(k => {
+  return ["small", "medium", "large", "xlarge"].filter(k => size[k]).map(k => {
     const [lo, hi] = SIZE_RANGE[k]
     const mult = Number(size[k].price) || 1
     const base = Number(item.price) || 0
@@ -48,6 +48,6 @@ export function findItems(keyword, items) {
 
 /** 图鉴编号：按物品池顺序，鱼类在前、垃圾其次、隐藏最后 */
 export function dexNo(item, items) {
-  const order = [...items.filter(isDexFish), ...items.filter(i => i.rarity === "junk"), ...items.filter(i => i.rarity === "hidden")]
+  const order = [...items.filter(isDexFish), ...items.filter(i => i.rarity === "junk"), ...items.filter(i => i.rarity === "hidden"), ...items.filter(i => i.rarity === "protected")]
   return String(order.indexOf(item) + 1).padStart(3, "0")
 }

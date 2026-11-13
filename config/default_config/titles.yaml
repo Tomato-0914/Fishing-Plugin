@@ -108,3 +108,12 @@
     - { need: 1, effects: { boostUR: 0.5 } }
     - { need: 3, effects: { boostSSR: 1, boostUR: 1 } }
     - { need: 8, effects: { boostSSR: 2, boostUR: 2 } }
+
+# ---------- 特殊称号（只有一级） ----------
+- id: bestie
+  name: 最好的伙伴
+  emoji: 🧚
+  stat: paimon
+  desc: 钓到派蒙
+  tiers:
+    - { need: 1, effects: { rareBoost: 5, sellBonus: 10 } }

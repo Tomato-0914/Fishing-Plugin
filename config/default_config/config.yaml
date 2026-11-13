@@ -34,7 +34,13 @@ fishing:
   castImage: resources/img/cast.jpg
   # 十连钓鱼：一次抛出的竿数，以及结束后的挂鱼饵时间（秒）
   multiCount: 10
-  multiCooldown: 100
+  # 每天可以十连的次数（0 点重置）；用完后只能单次钓鱼
+  multiDaily: 10
+  # 单次钓鱼额外获得 1 次十连机会的概率（%），鱼钩会提高这个概率；额外机会不会过期，最多存 multiBonusMax 次
+  multiTicketChance: 2
+  multiBonusMax: 50
+  # 两次十连之间的最短间隔（秒），防刷屏
+  multiCooldown: 30
   # 十连钓鱼的配图，留空则不发送
   multiImage: resources/img/multi.jpg
 
@@ -42,15 +48,33 @@ fishing:
 probability:
   empty: 15     # 什么都没钓到
   junk: 20      # 海洋垃圾（售价 0）
-  N: 30         # 普通
-  R: 18         # 优良
+  N: 29.13      # 普通
+  R: 18         # 高级
   SR: 10        # 稀有
-  SSR: 5        # 史诗
+  SSR: 5        # 神器
   UR: 1.94      # 传说
-  # 隐藏款，单独设置概率（%）
+  EP: 0.4       # 史诗
+  MR: 0.1       # 神话
+  # 隐藏款，单独设置概率（%），不受渔具和称号影响
   hidden:
     people_fragment: 0.05   # 人民碎片
     ocean_heart: 0.01       # 海洋之心
+    paimon: 0.02            # 派蒙
+  # 保护动物：误钓会受罚（见 protectedPenalty），单独设置概率（%），不受渔具和称号影响
+  protected:
+    chinese_sturgeon: 0.1   # 中华鲟
+    finless_porpoise: 0.05  # 长江江豚
+    chinese_sucker: 0.08    # 胭脂鱼
+    roughskin_sculpin: 0.08 # 松江鲈
+    hawksbill: 0.04         # 玳瑁
+
+# 误钓保护动物的惩罚：禁渔时长（分钟）与罚款（金币不足时扣到 0 为止）
+protectedPenalty:
+  banMinutes: 60
+  gold: 10000
+
+# 派蒙：第一次钓到获得称号「最好的伙伴」，之后每次钓到送的谢礼（金币）
+paimonGift: 520
 
 # 概率下限（%）：称号、打卡、渔具叠加后不会低于这些值
 limits:
@@ -62,9 +86,10 @@ limits:
 
 # 鱼的体型：出现概率（%）与售价倍率
 size:
-  small:  { label: 小, chance: 55, price: 0.8 }
-  medium: { label: 中, chance: 35, price: 1.0 }
-  large:  { label: 大, chance: 10, price: 1.5 }
+  small:  { label: 小,   chance: 53, price: 0.8 }
+  medium: { label: 中,   chance: 34, price: 1.0 }
+  large:  { label: 大,   chance: 10, price: 1.5 }
+  xlarge: { label: 超大, chance: 3,  price: 2.5 }
 
 # 鱼饵：每次抛竿消耗 1 个
 bait:

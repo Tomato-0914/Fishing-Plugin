@@ -52,8 +52,8 @@ export function supportGuoba() {
           if (cfg.checkin) delete cfg.checkin.baitReward
           Config.set("config", cfg)
           const p = cfg.probability
-          const sum = ["empty", "junk", "N", "R", "SR", "SSR", "UR"].reduce((s, k) => s + Number(p[k] || 0), 0) +
-            Object.values(p.hidden || {}).reduce((s, v) => s + Number(v || 0), 0)
+          const sum = ["empty", "junk", "N", "R", "SR", "SSR", "UR", "EP", "MR"].reduce((s, k) => s + Number(p[k] || 0), 0) +
+            Object.values({ ...(p.hidden || {}), ...(p.protected || {}) }).reduce((s, v) => s + Number(v || 0), 0)
           const tip = Math.abs(sum - 100) > 0.001 ? `（概率总和为 ${Number(sum.toFixed(4))}%，将按比例换算）` : ""
           return Result.ok({}, `保存成功 🎣${tip}`)
         } catch (err) {

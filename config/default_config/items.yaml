@@ -1,11 +1,11 @@
 # ===== 物品池 =====
 # 修改请复制本文件到 config/config/items.yaml（整份替换默认物品池）
-# rarity: junk 垃圾 / N 普通 / R 优良 / SR 稀有 / SSR 史诗 / UR 传说 / hidden 隐藏
+# rarity: junk 垃圾 / N 普通 / R 高级 / SR 稀有 / SSR 神器 / UR 传说 / EP 史诗 / MR 神话 / hidden 隐藏 / protected 保护动物
 # price: 中体型基础售价（金币），小/大体型按 config.yaml 中 size 倍率换算
 # weight: [最小, 最大] 重量（kg），按体型落在不同区间
 # chance: 同稀有度内的相对权重，默认 1
 # habitat: 栖息地；intro: 图鉴中的详细介绍（#钓鱼图鉴 名称 查看）
-# 出于避免争议考虑，物品池不包含任何国家保护动物（如中华鲟、江豚等）
+# 保护动物（protected）只作为惩罚出现：钓到后自动放生，并按 config.yaml 的 protectedPenalty 禁渔、扣金币
 
 # ---------- 海洋垃圾（售价 0） ----------
 - id: slipper
@@ -276,7 +276,7 @@
   habitat: 山涧溪流
   intro: "嘴巴弯弯像马嘴，性情活泼好斗，雄鱼在繁殖季身上会出现鲜艳的婚姻色。"
 
-# ---------- 优良 R ----------
+# ---------- 高级 R ----------
 - id: carp
   name: 鲤鱼
   emoji: 🐟
@@ -559,7 +559,7 @@
   habitat: 近海礁石、河口
   intro: "俗称黑加吉，警惕性很高，咬钩很轻，矶钓高手才钓得到。"
 
-# ---------- 史诗 SSR ----------
+# ---------- 神器 SSR ----------
 - id: tuna
   name: 金枪鱼
   emoji: 🐟
@@ -752,6 +752,73 @@
   habitat: 传说中的火山海域
   intro: "据说生活在海底火山口附近，鳞片红得像燃烧的火焰，钓上来时鱼身还是烫的。"
 
+# ---------- 史诗 EP ----------
+- id: megalodon
+  name: 巨齿鲨
+  emoji: 🦈
+  rarity: EP
+  price: 900
+  weight: [2000, 30000]
+  desc: 早已灭绝的远古巨鲨
+  habitat: 远古深海
+  intro: "生活在数百万年前的巨型鲨鱼，一颗牙齿就有手掌那么大。没人知道它为什么还会出现在这里。"
+- id: jiao
+  name: 蛟
+  emoji: 🐲
+  rarity: EP
+  price: 1000
+  weight: [200, 800]
+  desc: 还没化龙的蛟
+  habitat: 传说中的深潭
+  intro: "传说蛟修炼千年才能化为龙，平时潜在深潭里兴风作浪。被钓上来时它看起来很不服气。"
+- id: chimaera
+  name: 银鲛王
+  emoji: 👑
+  rarity: EP
+  price: 850
+  weight: [30, 120]
+  desc: 深海银鲛的首领
+  habitat: 极深海
+  intro: "银鲛是一类古老的深海软骨鱼，这一条体型大得惊人，额头上长着一顶天然的“王冠”。"
+- id: thunderray
+  name: 雷霆鳐
+  emoji: ⚡
+  rarity: EP
+  price: 1100
+  weight: [80, 400]
+  desc: 鳍边噼啪作响
+  habitat: 雷雨中的大洋
+  intro: "据说只在雷雨天浮上海面，翅膀一样的胸鳍边缘闪着电光，靠近时头发都会竖起来。"
+
+# ---------- 神话 MR ----------
+- id: kunpeng
+  name: 鲲鹏
+  emoji: 🦅
+  rarity: MR
+  price: 2600
+  weight: [10000, 99999]
+  desc: 北冥有鱼，其名为鲲
+  habitat: 北冥
+  intro: "《庄子》里说：鲲之大，不知其几千里也；化而为鸟，其名为鹏。你钓上来的这条，好像正准备起飞。"
+- id: dragon
+  name: 龙
+  emoji: 🐉
+  rarity: MR
+  price: 3000
+  weight: [500, 5000]
+  desc: 能兴云布雨的神龙
+  habitat: 九天之上的云海
+  intro: "传说中的神龙，能大能小，能升能隐。它会被鱼钩钩住，大概只是陪你玩一会儿。"
+- id: kraken
+  name: 克拉肯
+  emoji: 🐙
+  rarity: MR
+  price: 2400
+  weight: [3000, 20000]
+  desc: 北欧传说中的海怪
+  habitat: 北海深渊
+  intro: "北欧水手传说中的巨型海怪，触手能把整艘船拖进海底。还好你的鱼竿够结实。"
+
 # ---------- 隐藏 ----------
 - id: people_fragment
   name: 人民碎片
@@ -761,7 +828,6 @@
   desc: 一具浮尸……钓到后会自动报警
   habitat: 未知水域
   intro: "一具身份不明的遗体。遇到这种情况请立即报警并保护现场，不要自行处理——钓鱼佬也是守法好公民。"
-  # 钓到后自动报警，获得 config.yaml 中 policeReward 金币，不进入鱼护
 - id: ocean_heart
   name: 海洋之心
   emoji: 💎
@@ -770,3 +836,53 @@
   desc: 传说沉睡在海底的蓝色宝石
   habitat: 深海
   intro: "传说沉睡在海底的蓝色宝石，散发着幽幽的蓝光。没人知道它是怎么挂到你的鱼钩上的。"
+- id: paimon
+  name: 派蒙
+  emoji: 🧚
+  rarity: hidden
+  special: paimon
+  desc: 才不是应急食品！
+  habitat: 不知道从哪飘来的
+  intro: "一个漂浮在水面上的小家伙，被钓上来后气鼓鼓地说“才不是应急食品”，然后决定跟着你一起冒险。"
+
+# ---------- 保护动物（误钓会受罚：禁渔 + 扣金币，自动放生） ----------
+- id: chinese_sturgeon
+  name: 中华鲟
+  emoji: 🐟
+  rarity: protected
+  special: protected
+  desc: 国家一级保护动物
+  habitat: 长江及近海
+  intro: "中华鲟是国家一级重点保护野生动物，被称为“水中大熊猫”，已经在地球上生活了上亿年。误捕后应立即放生并报告渔政部门。"
+- id: finless_porpoise
+  name: 长江江豚
+  emoji: 🐬
+  rarity: protected
+  special: protected
+  desc: 国家一级保护动物
+  habitat: 长江中下游
+  intro: "长江江豚是国家一级重点保护野生动物，长江里仅存的淡水鲸类，因为总是带着微笑被称为“微笑天使”。"
+- id: chinese_sucker
+  name: 胭脂鱼
+  emoji: 🐠
+  rarity: protected
+  special: protected
+  desc: 国家二级保护动物
+  habitat: 长江
+  intro: "胭脂鱼是国家二级重点保护野生动物，背鳍高高扬起像一面帆，成年后身上会泛出胭脂般的红色。"
+- id: roughskin_sculpin
+  name: 松江鲈
+  emoji: 🐟
+  rarity: protected
+  special: protected
+  desc: 国家二级保护动物
+  habitat: 近海河口
+  intro: "松江鲈又叫四鳃鲈，是国家二级重点保护野生动物，历史上是有名的江南美味，如今野生种群十分稀少。"
+- id: hawksbill
+  name: 玳瑁
+  emoji: 🐢
+  rarity: protected
+  special: protected
+  desc: 国家一级保护动物
+  habitat: 热带珊瑚礁
+  intro: "玳瑁是国家一级重点保护野生动物，鹰嘴状的嘴巴能啄食珊瑚缝里的海绵。买卖、捕杀玳瑁及其制品都是违法行为。"
