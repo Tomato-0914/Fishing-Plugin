@@ -106,11 +106,11 @@ export function formatMulti(rounds, { sizeLabels = {}, markdown = false } = {}) 
     sum.banned ? `⛔ 禁渔作废 ${sum.banned}` : "",
     sum.snapped ? "💡 升级鱼线可减少断线" : "",
   ].filter(Boolean)
-  if (!lines.length) return [...head, ...tail].join("\\n")
+  if (!lines.length) return [...head, ...tail].join("\n")
   const detail = lines[0]?.startsWith("📦") ? lines : [markdown ? "**✨ 稀有鱼获 / 特殊事件**" : "✨ 稀有鱼获 / 特殊事件", ...lines]
   if (markdown) {
     const formatted = detail.map(line => line === "📦 其他鱼获" ? "**📦 其他鱼获**" : line)
-    return [...head, "", ...formatted, ...tail].join("\\n")
+    return [...head, "", ...formatted, ...tail].join("\n")
   }
-  return [...head, "", ...detail, ...tail].join("\\n")
+  return [...head, "", ...detail, ...tail].join("\n")
 }
