@@ -106,9 +106,9 @@ export function formatMulti(rounds, { sizeLabels = {}, markdown = false } = {}) 
     sum.banned ? `⛔ 禁渔作废 ${sum.banned}` : "",
     sum.snapped ? "💡 升级鱼线可减少断线" : "",
   ].filter(Boolean)
-  if (!lines.length) return [...head, ...tail].join("\\n")
+  if (!lines.length) return [...head, ...tail].join("\n")
   // 不再使用 Markdown 引用块：QQBot 客户端会为引用块添加缩进，
   // 挤压可用宽度并导致明细及金币数值异常换行。
   const detail = lines[0]?.startsWith("📦") ? lines : ["✨ 稀有鱼获 / 特殊事件", ...lines]
-  return [...head, "", ...detail, ...tail].join("\\n")
+  return [...head, "", ...detail, ...tail].join("\n")
 }
