@@ -12,10 +12,10 @@
     - { icon: 🏅, title: "#我的称号", desc: 查看称号及加成 }
 - group: 🔧 渔具工坊
   list:
-    - { icon: 🛒, title: "#购买渔具", desc: 查看五类渔具和购买升级价格 }
-    - { icon: 🧰, title: "#我的渔具", desc: 查看渔具等级及属性 }
-    - { icon: ⬆️, title: "#渔具升级 鱼竿", desc: 升级指定渔具：鱼竿、鱼线、鱼钩、浮漂、鱼护 }
-    - { icon: 🔨, title: "#渔具锻造", desc: 暂未开放，后续开发 }
+    - { icon: 🛒, title: "#购买渔具", desc: 查看20阶渔具及购买价格 }
+    - { icon: 🧰, title: "#我的渔具", desc: 查看已拥有、已穿戴渔具及强化锻造属性 }
+    - { icon: 🛒, title: "#购买渔具 鱼竿 9", desc: 按角色等级购买指定阶位的渔具 }\n    - { icon: 🎽, title: "#装备渔具 鱼竿 9", desc: 切换已拥有的渔具 }\n    - { icon: ⬆️, title: "#渔具强化 鱼竿 9", desc: 强化指定阶位渔具，最高+15 }
+    - { icon: 🔨, title: "#渔具锻造 鱼竿 9", desc: 锻造指定阶位渔具，最高+8 }
 - group: 📅 打卡
   list:
     - { icon: 📅, title: "#打卡", desc: 每日签到获取幸运值与奖励 }
