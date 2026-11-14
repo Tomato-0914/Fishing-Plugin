@@ -2,7 +2,7 @@ import { plugin, puppeteer } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { RARITY_INFO, isDexFish, formatWeight, SIZE_ORDER } from "../components/ItemPool.js"
-import { groupBag, sellEntries, discardJunk, todayLuck, luckTier } from "../components/Game.js"
+import { groupBag, sellEntries, discardJunk, todayLuck, luckTier, repriceBag, protectedFine } from "../components/Game.js"
 import { checkTitles, getEffects, effectText, progressText, mergeEffects, ownedTier, ownedTitles, titleName, titleUpText } from "../components/Titles.js"
 import { gearEffects, bagCapacity, totalBait, gearItem, gearLevel, SLOTS, ownedGear } from "../components/Gear.js"
 import { withButtons, B } from "../components/Button.js"
@@ -42,6 +42,8 @@ export class FishingBag extends plugin {
   load(e) {
     const user = UserData.get(e.user_id)
     updateNickname(user, e)
+    // 鱼价调整后，鱼护里的旧鱼获按当前价格展示和出售
+    if (repriceBag(user, itemMap(), Config.config.size)) UserData.save(user.user_id)
     return user
   }
 
@@ -265,7 +267,8 @@ export class FishingBag extends plugin {
       ...s, weight: `${formatWeight(s.wMin)} ~ ${formatWeight(s.wMax)}`, price: s.pMin === s.pMax ? `${s.pMin}` : `${s.pMin} ~ ${s.pMax}`,
     }))
     const pen = cfg.protectedPenalty || {}
-    const price = item.special === "protected" ? `🚫 禁止捕捞（误钓罚款 ${pen.gold ?? 0} 金币、禁渔 ${pen.banMinutes ?? 0} 分钟）`
+    const fineText = Number(pen.goldRate) > 0 ? `当前金币的 ${pen.goldRate}%（最多 ${pen.gold ?? 0}，你现在会被罚 ${protectedFine(user.gold, pen)}）` : `${pen.gold ?? 0} 金币`
+    const price = item.special === "protected" ? `🚫 禁止捕捞（误钓罚款 ${fineText}、禁渔 ${pen.banMinutes ?? 0} 分钟）`
       : item.special === "paimon" ? "不能卖！派蒙是伙伴"
       : item.special === "police" ? `警局奖励 ${cfg.policeReward} 金币`
       : item.rarity === "junk" ? "0 金币（可 #清理垃圾 统一回收）"

@@ -83,7 +83,8 @@ export default [
   num("probability.protected.roughskin_sculpin", "松江鲈", "", { step: 0.001 }),
   num("probability.protected.hawksbill", "玳瑁", "", { step: 0.001 }),
   num("protectedPenalty.banMinutes", "误钓禁渔时长(分钟)", "", { max: 1440 }),
-  num("protectedPenalty.gold", "误钓罚款(金币)", "金币不足时扣到 0 为止"),
+  num("protectedPenalty.goldRate", "误钓罚款比例(%)", "按当前金币的百分比罚款，0 为固定罚款", { max: 100, step: 0.1 }),
+  num("protectedPenalty.gold", "误钓罚款上限(金币)", "按比例罚款时的上限；比例为 0 时为固定罚款，金币不足时扣到 0 为止"),
   num("paimonGift", "派蒙谢礼(金币)", "已有称号后再钓到派蒙时赠送"),
 
   { label: "体型与奖励", component: "SOFT_GROUP_BEGIN" },

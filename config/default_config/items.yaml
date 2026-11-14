@@ -135,7 +135,7 @@
   name: 小鲫鱼
   emoji: 🐟
   rarity: N
-  price: 4
+  price: 13
   weight: [0.05, 0.4]
   desc: 河边最常见的小鱼
   habitat: 淡水湖泊、河流
@@ -144,7 +144,7 @@
   name: 泥鳅
   emoji: 🐍
   rarity: N
-  price: 3
+  price: 10
   weight: [0.02, 0.1]
   desc: 滑溜溜抓不住
   habitat: 稻田、池塘淤泥
@@ -153,7 +153,7 @@
   name: 小河虾
   emoji: 🦐
   rarity: N
-  price: 3
+  price: 10
   weight: [0.005, 0.03]
   desc: 油炸一下很香
   habitat: 河湖浅水草丛
@@ -162,7 +162,7 @@
   name: 麦穗鱼
   emoji: 🐟
   rarity: N
-  price: 2
+  price: 7
   weight: [0.01, 0.05]
   desc: 小小一条
   habitat: 池塘、小溪
@@ -171,7 +171,7 @@
   name: 白条鱼
   emoji: 🐟
   rarity: N
-  price: 4
+  price: 13
   weight: [0.05, 0.3]
   desc: 水面上的小银条
   habitat: 江河、湖泊上层
@@ -180,7 +180,7 @@
   name: 蛤蜊
   emoji: 🐚
   rarity: N
-  price: 3
+  price: 10
   weight: [0.01, 0.05]
   desc: 怎么咬上钩的？
   habitat: 浅海泥沙滩
@@ -189,7 +189,7 @@
   name: 罗非鱼
   emoji: 🐟
   rarity: N
-  price: 6
+  price: 20
   weight: [0.2, 1.2]
   desc: 生命力顽强
   habitat: 温暖的淡水与咸淡水
@@ -198,7 +198,7 @@
   name: 沙丁鱼
   emoji: 🐟
   rarity: N
-  price: 5
+  price: 17
   weight: [0.05, 0.2]
   desc: 总是成群结队
   habitat: 近海上层
@@ -207,7 +207,7 @@
   name: 小黄鱼
   emoji: 🐟
   rarity: N
-  price: 5
+  price: 17
   weight: [0.05, 0.3]
   desc: 大黄鱼的小表亲
   habitat: 近海
@@ -216,7 +216,7 @@
   name: 鳑鲏
   emoji: 🐟
   rarity: N
-  price: 2
+  price: 7
   weight: [0.005, 0.02]
   desc: 身上泛着彩虹光
   habitat: 小河、池塘
@@ -225,7 +225,7 @@
   name: 棒花鱼
   emoji: 🐟
   rarity: N
-  price: 2
+  price: 7
   weight: [0.01, 0.06]
   desc: 贴着沙底慢慢游
   habitat: 河湖沙底
@@ -234,7 +234,7 @@
   name: 虾虎鱼
   emoji: 🐟
   rarity: N
-  price: 3
+  price: 10
   weight: [0.01, 0.06]
   desc: 吸在石头上不肯走
   habitat: 浅水石缝
@@ -243,7 +243,7 @@
   name: 螺蛳
   emoji: 🐌
   rarity: N
-  price: 2
+  price: 7
   weight: [0.005, 0.02]
   desc: 嗦螺的那个螺
   habitat: 河沟、稻田
@@ -252,7 +252,7 @@
   name: 白鲢
   emoji: 🐟
   rarity: N
-  price: 6
+  price: 20
   weight: [0.5, 5]
   desc: 一受惊就跳出水面
   habitat: 江河、水库上层
@@ -261,7 +261,7 @@
   name: 鲮鱼
   emoji: 🐟
   rarity: N
-  price: 5
+  price: 17
   weight: [0.1, 0.8]
   desc: 豆豉鲮鱼罐头的主角
   habitat: 华南江河
@@ -270,7 +270,7 @@
   name: 马口鱼
   emoji: 🐟
   rarity: N
-  price: 3
+  price: 10
   weight: [0.02, 0.15]
   desc: 溪流里的小霸王
   habitat: 山涧溪流
@@ -281,7 +281,7 @@
   name: 鲤鱼
   emoji: 🐟
   rarity: R
-  price: 15
+  price: 26
   weight: [0.5, 6]
   desc: 鱼跃龙门的那位
   habitat: 江河、湖泊、水库
@@ -290,7 +290,7 @@
   name: 草鱼
   emoji: 🐟
   rarity: R
-  price: 14
+  price: 25
   weight: [1, 8]
   desc: 适合做酸菜鱼
   habitat: 江河、湖泊中下层
@@ -299,7 +299,7 @@
   name: 鲈鱼
   emoji: 🐟
   rarity: R
-  price: 20
+  price: 35
   weight: [0.5, 3]
   desc: 清蒸最佳
   habitat: 近海及河口
@@ -308,7 +308,7 @@
   name: 河蟹
   emoji: 🦀
   rarity: R
-  price: 18
+  price: 32
   weight: [0.1, 0.3]
   desc: 横着走的家伙
   habitat: 河流、湖泊岸边
@@ -317,7 +317,7 @@
   name: 小龙虾
   emoji: 🦞
   rarity: R
-  price: 12
+  price: 21
   weight: [0.02, 0.08]
   desc: 夜宵首选
   habitat: 稻田、沟渠、池塘
@@ -326,7 +326,7 @@
   name: 带鱼
   emoji: 🐟
   rarity: R
-  price: 18
+  price: 32
   weight: [0.3, 1.5]
   desc: 银光闪闪
   habitat: 近海中下层
@@ -335,7 +335,7 @@
   name: 鲶鱼
   emoji: 🐟
   rarity: R
-  price: 16
+  price: 28
   weight: [0.5, 5]
   desc: 长着两撇胡子
   habitat: 江河、湖泊底层
@@ -344,7 +344,7 @@
   name: 鲳鱼
   emoji: 🐟
   rarity: R
-  price: 22
+  price: 39
   weight: [0.2, 1]
   desc: 扁扁的很可爱
   habitat: 近海中下层
@@ -353,7 +353,7 @@
   name: 黄鳝
   emoji: 🐍
   rarity: R
-  price: 18
+  price: 32
   weight: [0.1, 0.6]
   desc: 滑溜溜的泥洞住户
   habitat: 稻田、池塘泥洞
@@ -362,7 +362,7 @@
   name: 黄颡鱼
   emoji: 🐟
   rarity: R
-  price: 16
+  price: 28
   weight: [0.05, 0.4]
   desc: 俗称黄辣丁
   habitat: 江河湖泊底层
@@ -371,7 +371,7 @@
   name: 鳙鱼
   emoji: 🐟
   rarity: R
-  price: 14
+  price: 25
   weight: [1, 10]
   desc: 又叫胖头鱼
   habitat: 江河湖泊中上层
@@ -380,7 +380,7 @@
   name: 鳊鱼
   emoji: 🐟
   rarity: R
-  price: 15
+  price: 26
   weight: [0.3, 2]
   desc: 身子又扁又高
   habitat: 湖泊中下层
@@ -389,7 +389,7 @@
   name: 青鱼
   emoji: 🐟
   rarity: R
-  price: 20
+  price: 35
   weight: [2, 15]
   desc: 四大家鱼里的大个子
   habitat: 江河湖泊底层
@@ -398,7 +398,7 @@
   name: 乌鳢
   emoji: 🐟
   rarity: R
-  price: 22
+  price: 39
   weight: [0.5, 4]
   desc: 俗称黑鱼，脾气火爆
   habitat: 池塘、水草丛
@@ -407,7 +407,7 @@
   name: 翘嘴
   emoji: 🐟
   rarity: R
-  price: 20
+  price: 35
   weight: [0.3, 3]
   desc: 嘴巴向上翘着
   habitat: 江河湖泊上层
@@ -416,7 +416,7 @@
   name: 秋刀鱼
   emoji: 🐟
   rarity: R
-  price: 12
+  price: 21
   weight: [0.1, 0.25]
   desc: 细长得像一把刀
   habitat: 北太平洋
@@ -427,7 +427,7 @@
   name: 黄花鱼
   emoji: 🐠
   rarity: SR
-  price: 35
+  price: 70
   weight: [0.2, 1]
   desc: 金灿灿的
   habitat: 近海
@@ -436,7 +436,7 @@
   name: 大闸蟹
   emoji: 🦀
   rarity: SR
-  price: 45
+  price: 90
   weight: [0.15, 0.4]
   desc: 秋天的味道
   habitat: 江湖，秋季洄游到河口
@@ -445,7 +445,7 @@
   name: 石斑鱼
   emoji: 🐠
   rarity: SR
-  price: 55
+  price: 110
   weight: [1, 10]
   desc: 礁石里的潜伏者
   habitat: 热带、亚热带礁石区
@@ -454,7 +454,7 @@
   name: 鳗鱼
   emoji: 🐍
   rarity: SR
-  price: 50
+  price: 100
   weight: [0.3, 2]
   desc: 适合做鳗鱼饭
   habitat: 江河与深海之间洄游
@@ -463,7 +463,7 @@
   name: 对虾
   emoji: 🦐
   rarity: SR
-  price: 30
+  price: 60
   weight: [0.03, 0.1]
   desc: 成双成对
   habitat: 近海泥沙底
@@ -472,7 +472,7 @@
   name: 鱿鱼
   emoji: 🦑
   rarity: SR
-  price: 40
+  price: 80
   weight: [0.2, 2]
   desc: 喷了你一脸墨
   habitat: 近海到大洋
@@ -481,7 +481,7 @@
   name: 鳜鱼
   emoji: 🐠
   rarity: SR
-  price: 48
+  price: 95
   weight: [0.3, 2]
   desc: 桃花流水鳜鱼肥
   habitat: 江河、湖泊
@@ -490,7 +490,7 @@
   name: 梭子蟹
   emoji: 🦀
   rarity: SR
-  price: 38
+  price: 75
   weight: [0.2, 0.6]
   desc: 钳子很有力
   habitat: 近海泥沙底
@@ -499,7 +499,7 @@
   name: 河豚
   emoji: 🐡
   rarity: SR
-  price: 45
+  price: 90
   weight: [0.2, 1.5]
   desc: 一生气就鼓成球
   habitat: 近海与河口
@@ -508,7 +508,7 @@
   name: 马鲛鱼
   emoji: 🐟
   rarity: SR
-  price: 40
+  price: 80
   weight: [1, 6]
   desc: 游起来像一枚鱼雷
   habitat: 近海中上层
@@ -517,7 +517,7 @@
   name: 真鲷
   emoji: 🐠
   rarity: SR
-  price: 50
+  price: 100
   weight: [0.5, 4]
   desc: 通红喜庆的加吉鱼
   habitat: 近海礁石区
@@ -526,7 +526,7 @@
   name: 鲍鱼
   emoji: 🐚
   rarity: SR
-  price: 55
+  price: 110
   weight: [0.05, 0.3]
   desc: 牢牢吸在礁石上
   habitat: 近岸礁石
@@ -535,7 +535,7 @@
   name: 皮皮虾
   emoji: 🦐
   rarity: SR
-  price: 32
+  price: 65
   weight: [0.03, 0.12]
   desc: 出拳快得看不清
   habitat: 近海泥沙
@@ -544,7 +544,7 @@
   name: 罗氏沼虾
   emoji: 🦐
   rarity: SR
-  price: 36
+  price: 70
   weight: [0.05, 0.2]
   desc: 长着一对蓝色大钳
   habitat: 淡水池塘
@@ -553,7 +553,7 @@
   name: 黑鲷
   emoji: 🐟
   rarity: SR
-  price: 42
+  price: 85
   weight: [0.3, 3]
   desc: 咬钩轻得像羽毛
   habitat: 近海礁石、河口
@@ -564,7 +564,7 @@
   name: 金枪鱼
   emoji: 🐟
   rarity: SSR
-  price: 120
+  price: 290
   weight: [10, 80]
   desc: 深海里的速度之王
   habitat: 热带及温带大洋
@@ -573,7 +573,7 @@
   name: 帝王蟹
   emoji: 🦀
   rarity: SSR
-  price: 150
+  price: 370
   weight: [1, 5]
   desc: 蟹中之王
   habitat: 寒冷海域深处
@@ -582,7 +582,7 @@
   name: 澳洲龙虾
   emoji: 🦞
   rarity: SSR
-  price: 140
+  price: 340
   weight: [0.5, 3]
   desc: 威风凛凛
   habitat: 南半球温带礁石区
@@ -591,7 +591,7 @@
   name: 三文鱼
   emoji: 🍣
   rarity: SSR
-  price: 90
+  price: 220
   weight: [2, 15]
   desc: 逆流而上的勇士
   habitat: 冷水海域与河流
@@ -600,7 +600,7 @@
   name: 比目鱼
   emoji: 🐟
   rarity: SSR
-  price: 80
+  price: 200
   weight: [0.5, 5]
   desc: 两只眼睛长在一边
   habitat: 近海沙质海底
@@ -609,7 +609,7 @@
   name: 鮟鱇鱼
   emoji: 🐡
   rarity: SSR
-  price: 100
+  price: 250
   weight: [2, 20]
   desc: 头上挂着一盏小灯
   habitat: 深海与大陆架海底
@@ -618,7 +618,7 @@
   name: 鳕鱼
   emoji: 🐟
   rarity: SSR
-  price: 95
+  price: 230
   weight: [2, 20]
   desc: 雪白细嫩少小刺
   habitat: 寒冷海域
@@ -627,7 +627,7 @@
   name: 象拔蚌
   emoji: 🐚
   rarity: SSR
-  price: 130
+  price: 320
   weight: [0.5, 2]
   desc: 长着一条“象鼻子”
   habitat: 泥沙海底
@@ -636,7 +636,7 @@
   name: 雪蟹
   emoji: 🦀
   rarity: SSR
-  price: 120
+  price: 290
   weight: [0.5, 2]
   desc: 腿又细又长
   habitat: 寒冷海域
@@ -645,7 +645,7 @@
   name: 牡丹虾
   emoji: 🦐
   rarity: SSR
-  price: 110
+  price: 270
   weight: [0.05, 0.2]
   desc: 红艳艳的大虾
   habitat: 北太平洋深海
@@ -654,7 +654,7 @@
   name: 鬼头刀
   emoji: 🐟
   rarity: SSR
-  price: 85
+  price: 210
   weight: [3, 25]
   desc: 闪着金绿色光芒
   habitat: 热带大洋表层
@@ -663,7 +663,7 @@
   name: 剑鱼
   emoji: 🐟
   rarity: SSR
-  price: 150
+  price: 370
   weight: [30, 200]
   desc: 上颌像一把长剑
   habitat: 温暖大洋
@@ -674,7 +674,7 @@
   name: 黄金锦鲤
   emoji: 🎏
   rarity: UR
-  price: 300
+  price: 700
   weight: [2, 10]
   desc: 转发这条锦鲤……
   habitat: 观赏池塘
@@ -683,7 +683,7 @@
   name: 深海巨鱿
   emoji: 🦑
   rarity: UR
-  price: 380
+  price: 900
   weight: [50, 300]
   desc: 触手比船还长
   habitat: 深海
@@ -692,7 +692,7 @@
   name: 石斑鱼王
   emoji: 🐠
   rarity: UR
-  price: 350
+  price: 850
   weight: [50, 200]
   desc: 礁石区的霸主
   habitat: 礁石区深处
@@ -701,7 +701,7 @@
   name: 极光鲑鱼
   emoji: 🌈
   rarity: UR
-  price: 420
+  price: 1000
   weight: [5, 25]
   desc: 鳞片闪着极光
   habitat: 极地冷水
@@ -710,7 +710,7 @@
   name: 龙王虾
   emoji: 🐲
   rarity: UR
-  price: 500
+  price: 1200
   weight: [3, 15]
   desc: 传说中龙宫的守卫
   habitat: 传说中的龙宫
@@ -719,7 +719,7 @@
   name: 皇带鱼
   emoji: 🎗️
   rarity: UR
-  price: 400
+  price: 950
   weight: [20, 150]
   desc: 银色的深海飘带
   habitat: 深海
@@ -728,7 +728,7 @@
   name: 蓝龙虾
   emoji: 🦞
   rarity: UR
-  price: 460
+  price: 1100
   weight: [0.5, 3]
   desc: 两百万只里才有一只
   habitat: 寒冷海域礁石
@@ -737,7 +737,7 @@
   name: 鎏金鲶王
   emoji: 👑
   rarity: UR
-  price: 380
+  price: 900
   weight: [20, 80]
   desc: 皮肤泛着金光的老鲶鱼
   habitat: 传说中的大江深潭
@@ -746,7 +746,7 @@
   name: 赤焰真鲷
   emoji: 🔥
   rarity: UR
-  price: 420
+  price: 1000
   weight: [3, 15]
   desc: 鳞片红得像在燃烧
   habitat: 传说中的火山海域
@@ -757,7 +757,7 @@
   name: 巨齿鲨
   emoji: 🦈
   rarity: EP
-  price: 900
+  price: 2350
   weight: [2000, 30000]
   desc: 早已灭绝的远古巨鲨
   habitat: 远古深海
@@ -766,7 +766,7 @@
   name: 蛟
   emoji: 🐲
   rarity: EP
-  price: 1000
+  price: 2600
   weight: [200, 800]
   desc: 还没化龙的蛟
   habitat: 传说中的深潭
@@ -775,7 +775,7 @@
   name: 银鲛王
   emoji: 👑
   rarity: EP
-  price: 850
+  price: 2200
   weight: [30, 120]
   desc: 深海银鲛的首领
   habitat: 极深海
@@ -784,7 +784,7 @@
   name: 雷霆鳐
   emoji: ⚡
   rarity: EP
-  price: 1100
+  price: 2850
   weight: [80, 400]
   desc: 鳍边噼啪作响
   habitat: 雷雨中的大洋
@@ -795,7 +795,7 @@
   name: 鲲鹏
   emoji: 🦅
   rarity: MR
-  price: 2600
+  price: 6350
   weight: [10000, 99999]
   desc: 北冥有鱼，其名为鲲
   habitat: 北冥
@@ -804,7 +804,7 @@
   name: 龙
   emoji: 🐉
   rarity: MR
-  price: 3000
+  price: 7300
   weight: [500, 5000]
   desc: 能兴云布雨的神龙
   habitat: 九天之上的云海
@@ -813,7 +813,7 @@
   name: 克拉肯
   emoji: 🐙
   rarity: MR
-  price: 2400
+  price: 5850
   weight: [3000, 20000]
   desc: 北欧传说中的海怪
   habitat: 北海深渊
@@ -832,7 +832,7 @@
   name: 海洋之心
   emoji: 💎
   rarity: hidden
-  price: 8888
+  price: 18888
   desc: 传说沉睡在海底的蓝色宝石
   habitat: 深海
   intro: "传说沉睡在海底的蓝色宝石，散发着幽幽的蓝光。没人知道它是怎么挂到你的鱼钩上的。"

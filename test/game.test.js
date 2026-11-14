@@ -36,7 +36,7 @@ test("默认配置与物品池完整", () => {
     assert.equal(i.rarity, "protected", `${i.name} 必须是保护动物`)
   // 每件物品都有介绍、栖息地；名称不重复
   assert.equal(new Set(items.map(i => i.name)).size, items.length)
-  assert.equal(cfg.policeReward, 5000)
+  assert.equal(cfg.policeReward, 15000)
 })
 
 test("概率分布接近配置", () => {
@@ -787,8 +787,14 @@ test("保护动物：放生、罚款（不扣成负数）、禁渔，十连后�
   assert.equal(u.banUntil, now.getTime() + 3600000)
   assert.equal(u.bag.length, 0)
   const poor = newUser("10061"); poor.gold = 300
-  assert.equal(recordResult(poor, { type: "item", item: sturgeon, rarity: "protected" }, { now, protectedPenalty: cfg.protectedPenalty }).penalty.fine, 300)
-  assert.equal(poor.gold, 0) // 扣到 0 为止
+  assert.equal(recordResult(poor, { type: "item", item: sturgeon, rarity: "protected" }, { now, protectedPenalty: { gold: 10000 } }).penalty.fine, 300)
+  assert.equal(poor.gold, 0) // 固定罚款：扣到 0 为止
+  // 默认配置：按当前金币 5% 罚款，最多 10000
+  const rich = newUser("10062"); rich.gold = 1000000
+  assert.equal(recordResult(rich, { type: "item", item: sturgeon, rarity: "protected" }, { now, protectedPenalty: cfg.protectedPenalty }).penalty.fine, 10000)
+  const mid = newUser("10063"); mid.gold = 22980
+  assert.equal(recordResult(mid, { type: "item", item: sturgeon, rarity: "protected" }, { now, protectedPenalty: cfg.protectedPenalty }).penalty.fine, 1149)
+  assert.equal(mid.gold, 22980 - 1149)
   // 禁渔中，十连后面的竿不再结算
   const after = resolveCast(u, { items, cfg, shop: Config.shop, now: new Date(now.getTime() + 60000) })
   assert.equal(after.banned, true)
@@ -842,4 +848,41 @@ test("超大体型与新稀有度", async () => {
   // 神话、史诗都有鱼
   assert.deepEqual(items.filter(i => i.rarity === "MR").map(i => i.name).sort(), ["克拉肯", "鲲鹏", "龙"].sort())
   assert.ok(items.filter(i => i.rarity === "EP").length >= 3)
+})
+
+test("鱼价调整：旧鱼获按当前鱼价重新定价，同一条鱼与钓上来时价格一致", async () => {
+  const { repriceBag } = await import("../components/Game.js")
+  const { entryPrice } = await import("../components/ItemPool.js")
+  const rng = seeded(7)
+  const fish = items.filter(i => Array.isArray(i.weight) && !["junk", "hidden", "protected"].includes(i.rarity))
+  // 用当前配置钓到的鱼，重新定价后价格不变（允许 ±1 的四舍五入误差）
+  for (let n = 0; n < 300; n++) {
+    const item = fish[n % fish.length]
+    const r = roll({ items: [item], probability: { mode: "legacy", [item.rarity]: 100 }, size: cfg.size }, {}, rng)
+    if (r.type !== "item") continue
+    const p = entryPrice({ id: item.id, s: r.size, w: r.weight }, item, cfg.size)
+    assert.ok(Math.abs(p - r.price) <= 1, `${item.name} ${r.size} ${r.weight}: ${p} vs ${r.price}`)
+  }
+  // 旧价格的鱼获按新价格重新计算；垃圾为 0；缺少体型的条目保留原价
+  const u = newUser("10070")
+  const cod = fish.find(i => i.rarity === "N")
+  u.bag = [
+    { id: cod.id, p: 1, s: "medium", w: cod.weight[0] + (cod.weight[1] - cod.weight[0]) * 0.575 },
+    { id: "slipper", p: 5 },
+    { id: cod.id, p: 3 },
+  ]
+  assert.equal(repriceBag(u, itemMap, cfg.size), 2)
+  assert.equal(u.bag[0].p, cod.price)
+  assert.equal(u.bag[1].p, 0)
+  assert.equal(u.bag[2].p, 3)
+  assert.equal(repriceBag(u, itemMap, cfg.size), 0)
+})
+
+test("鱼价梯度：各稀有度平均售价与经济设计一致，隐藏款高于神话", () => {
+  const avg = r => { const l = items.filter(i => i.rarity === r); return l.reduce((a, i) => a + i.price, 0) / l.length }
+  const target = { N: 12, R: 30, SR: 85, SSR: 280, UR: 950, EP: 2500, MR: 6500 }
+  for (const [r, v] of Object.entries(target)) assert.ok(Math.abs(avg(r) - v) / v < 0.03, `${r} 均价 ${avg(r)}`)
+  const mrMax = Math.max(...items.filter(i => i.rarity === "MR").map(i => i.price))
+  assert.ok(itemMap.get("ocean_heart").price > mrMax)
+  assert.ok(cfg.policeReward > mrMax)
 })
