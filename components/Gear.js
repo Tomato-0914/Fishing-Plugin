@@ -69,6 +69,20 @@ export function equipGear(user,slot,tier) {
   user.gearV2.equipped[slot]=tier
   return {ok:true}
 }
+/** 一键穿戴完整套装。先校验五个部位，避免部分切换。 */
+export function equipGearSet(user, tier) {
+  if (!Number.isInteger(tier) || tier < 1 || tier > TIER_NAMES.length)
+    return {ok:false,reason:"invalid"}
+  ensureGear(user)
+  if (tier > unlockedTier(user))
+    return {ok:false,reason:"locked",need:(tier-1)*5+1}
+  const missing = SLOTS.filter(slot => !ownedGear(user,slot,tier))
+  if (missing.length) return {ok:false,reason:"incomplete",missing}
+  const already = SLOTS.every(slot => gearLevel(user,slot) === tier)
+  if (already) return {ok:false,reason:"equipped"}
+  for (const slot of SLOTS) user.gearV2.equipped[slot] = tier
+  return {ok:true,slots:[...SLOTS]}
+}
 export const enhanceCost = (shop,tier,target) => Math.ceil((Number(shop?.gearV2?.enhanceCostFactor)||50)*tier*target)
 export const forgeCost = (shop,tier,target) => Math.ceil((Number(shop?.gearV2?.forgeCostFactor)||100)*tier*target)
 export const successRate = (shop,type,target,fails=0) => {
