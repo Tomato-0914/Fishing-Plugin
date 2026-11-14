@@ -14,7 +14,7 @@ export class FishingShop extends plugin {
   constructor() {
     super({name:"钓鱼-渔具工坊与商店",dsc:"渔具购买、穿戴、强化、锻造和鱼饵商店",event:"message",priority:500,rule:[
       {reg:/^#?(?:购买渔具|渔具商店)$/,fnc:"workshop"},
-      {reg:/^#?渔具工坊(?:\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护))?$/,fnc:"forgeWorkshop"},
+      {reg:/^#?渔具工坊(?:\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护))?$/,fnc:"forgeWorkshop"},
       {reg:/^#?购买渔具\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\s*(\d{1,2})$/,fnc:"purchase"},
       {reg:/^#?购买渔具\s*(新手|青竹|精铁|玄木|寒玉|流云|沧浪|星砂|月影|玄冰|烈阳|深渊|龙鳞|凤羽|天罡|星辰|太虚|混元|鸿蒙|创世)套装$/,fnc:"purchaseSet"},
       {reg:/^#?装备渔具\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\s*(\d{1,2})$/,fnc:"equip"},
@@ -110,7 +110,7 @@ export class FishingShop extends plugin {
   async forgeWorkshop(e) {
     if(!groupAllowed(e))return false
     const user=this.load(e)
-    const m=e.msg.match(/^#?渔具工坊(?:\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护))?$/)
+    const m=e.msg.match(/^#?渔具工坊(?:\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护))?$/)
     const slot=UPGRADE_NAMES[m?.[1]]||"rod"
     const data=this.workshopData(user,slot)
     const msg=await renderOrText(puppeteer,"forgeworkshop",data,()=>[
@@ -118,7 +118,7 @@ export class FishingShop extends plugin {
       `强化 +${data.enhance}/15 · 锻造 +${data.forge}/8`,
       `下次强化：${data.full?"已满级":`${data.chance}% · ${data.cost} 金币`}`,
       "使用下方按钮选择装备或强化/锻造"
-    ].join("\\n"))
+    ].join("\n"))
     if(!msg)return true
     return e.reply(withButtons(e,msg,...this.workshopButtons(slot,data.tier)))
   }
@@ -196,7 +196,7 @@ export class FishingShop extends plugin {
       `本次成功率 ${ret.chance}% · 消耗 ${ret.cost} 金币`,
       data.full?"已满级":`下次成功率 ${data.chance}%（失败补偿 +${data.bonus}%）`,
       `剩余金币 ${user.gold}`
-    ].join("\\n"))
+    ].join("\n"))
     if(!msg)return true
     return e.reply(withButtons(e,msg,
       [{text:`🔨 再次${data.typeName}`,callback:`#渔具${data.typeName} ${SLOT_NAMES[p.slot]} ${tier}`},
