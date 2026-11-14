@@ -113,7 +113,7 @@ export class FishingShop extends plugin {
     const cur = currentBait(user, shop)
     const gearLv = maxGearLevel(user)
     const baits = baitList(shop).map(b => ({
-      ...b, level: baitLevel(b), color: lvColor(baitLevel(b)), locked: !canUseBait(user, b),
+      ...b, level: baitLevel(b), color: levelColor(baitLevel(b)), locked: !canUseBait(user, b),
       price: baitPrice(shop, b.id, this.baitCfg), count: baitCount(user, b.id), current: b.id === cur.id, text: effectText(b.effects),
     }))
     const msg = await renderOrText(puppeteer, "shop", { name: displayName(user), gold: user.gold, gearLv, baits }, () => [
