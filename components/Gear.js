@@ -187,7 +187,7 @@ export function currentBait(user, shop) {
  * 抛竿消耗 1 个鱼饵
  * - 当前鱼饵等级超过渔具（reason: "locked"）：换成能用、有库存的最高级鱼饵
  * - 当前鱼饵用完（reason: "empty"）：换成能用、有库存的鱼饵，普通饵优先，其次按商店顺序
- * 能用的鱼饵都没有库存时返回 null（高级鱼饵仍保留在库存里，渔具升级后可用）
+ * 能用的鱼饵都没有库存时返回 null（高级鱼饵仍保留在库存里，穿戴更高阶渔具后可用）
  * @returns {{ bait, switched:boolean, from, reason? } | null}
  */
 export function consumeBait(user, shop) {

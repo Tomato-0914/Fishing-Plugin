@@ -956,3 +956,38 @@ test("鱼价梯度：各稀有度平均售价与经济设计一致，隐藏款�
   assert.ok(itemMap.get("ocean_heart").price > mrMax)
   assert.ok(cfg.policeReward > mrMax)
 })
+
+test("图鉴概率按玩家当前渔具、称号、运势和鱼饵计算，与实际抛竿一致", async () => {
+  const { itemChance } = await import("../components/Dex.js")
+  const { oddsPercent } = await import("../components/ItemPool.js")
+  const { playerEffects } = await import("../components/common.js")
+  const tuna = itemMap.get("tuna")
+  const ssr = items.filter(i => i.rarity === "SSR")
+  const weight = (tuna.chance ?? 1) / ssr.reduce((a, i) => a + (i.chance ?? 1), 0)
+  const chance = u => itemChance(tuna, items, cfg.probability, playerEffects(u), cfg.limits)
+  // 新玩家（1 阶渔具）钓不到神器
+  const fresh = newUser("10080")
+  assert.equal(chance(fresh), 0)
+  // 20 阶渔具：与抛竿使用的概率表一致
+  const pro = equip(newUser("10081"), 20)
+  assert.ok(chance(pro) > 0)
+  assert.ok(Math.abs(chance(pro) - oddsPercent(cfg.probability, playerEffects(pro), cfg.limits).SSR * weight) < 1e-9)
+  // 称号的空军 -9% 会让每种鱼都更常见
+  const ace = equip(newUser("10082"), 20)
+  ace.titleLv = { airforce: 3 }
+  assert.ok(chance(ace) > chance(pro))
+  // 所有物品 + 空军 = 100%
+  const sum = items.reduce((s, i) => s + itemChance(i, items, cfg.probability, playerEffects(ace), cfg.limits), 0)
+  const empty = oddsPercent(cfg.probability, playerEffects(ace), cfg.limits).empty
+  assert.ok(Math.abs(sum + empty - 100) < 1e-6)
+})
+
+test("提示文字不再引导已停用的“渔具升级”", async () => {
+  const { formatMulti } = await import("../components/Catch.js")
+  const snapped = { snapped: true, value: 0, reward: 0, result: { type: "item", item: itemMap.get("tuna"), rarity: "SSR", size: "large", price: 180 } }
+  assert.ok(!formatMulti([snapped]).includes("升级"))
+  for (const file of ["apps/Fishing.js", "apps/Shop.js", "components/Catch.js", "resources/shop/shop.html"]) {
+    const src = fs.readFileSync(path.join(import.meta.dirname, "..", file), "utf8")
+    assert.ok(!/升级(鱼竿|鱼线|鱼钩|浮漂|鱼护|渔具)(?!已停用)/.test(src.replace(/旧版渔具升级已停用/g, "")), file)
+  }
+})

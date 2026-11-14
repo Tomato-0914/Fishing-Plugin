@@ -9,7 +9,7 @@ import { withButtons, B } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
 import { itemChance, formatChance, sizeTable, findItems, dexNo } from "../components/Dex.js"
 import { dayKey } from "../components/Period.js"
-import { groupAllowed, itemMap, displayName, updateNickname, avatar } from "../components/common.js"
+import { groupAllowed, itemMap, displayName, updateNickname, avatar, playerEffects } from "../components/common.js"
 
 /** 鱼护展示顺序：隐藏 → 传说 → … → 普通 → 垃圾 */
 /** 鱼护 / 图鉴展示顺序：隐藏 → 神话 → 史诗 → 传说 → … → 普通 → 垃圾 → 保护动物 */
@@ -277,7 +277,8 @@ export class FishingBag extends plugin {
       no: dexNo(item, all), emoji: item.emoji, name: item.name, desc: item.desc || "",
       rarity: item.rarity, label: r.label, color: r.color,
       habitat: item.habitat || "未知", intro: item.intro || item.desc || "",
-      chance: formatChance(itemChance(item, all, cfg.probability)), price, sizes,
+      // 按玩家当前渔具、称号、运势和鱼饵计算，与实际抛竿一致
+      chance: formatChance(itemChance(item, all, cfg.probability, playerEffects(user), cfg.limits)), price, sizes,
       // 保护动物用于科普，不用钓到也能看介绍
       unlocked: count > 0 || item.rarity === "protected", count,
       first: rec.first ? dayKey(new Date(rec.first)) : "",
@@ -290,7 +291,7 @@ export class FishingBag extends plugin {
       item.desc ? `💬 ${item.desc}` : "",
       "━━━━━━━━━━━━",
       `🏞️ 栖息地：${data.habitat}`,
-      `🎲 出现概率：约 ${data.chance}`,
+      `🎲 出现概率：约 ${data.chance}（按你当前的渔具）`,
       ...(count ? [
         `💰 售价：${price}`,
         ...sizes.map(s => `   ${s.label}：${s.weight}，${s.price} 金币`),
