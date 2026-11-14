@@ -1,10 +1,7 @@
 /** 第二阶段：角色等级、角色总览与装备详情入口。 */
 import { plugin } from "../components/yunzai.js"
 import UserData from "../components/UserData.js"
-import Config from "../components/Config.js"
 import { characterProgress } from "../components/Progression.js"
-import { SLOTS, gearLevel, gearItem, gearEffects, currentBait, bagCapacity } from "../components/Gear.js"
-import { effectText } from "../components/Titles.js"
 import { groupAllowed, updateNickname, displayName } from "../components/common.js"
 
 export class FishingCharacter extends plugin {
