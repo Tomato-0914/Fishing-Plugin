@@ -1,6 +1,6 @@
 /** 存档上的游戏结算逻辑（纯函数，便于测试） */
 import { PERIODS, periodKey } from "./Period.js"
-import { isDexFish } from "./ItemPool.js"
+import { isDexFish, entryPrice } from "./ItemPool.js"
 import { addBait, totalBait } from "./Gear.js"
 
 /** 过期周期惰性清零 */
@@ -49,10 +49,10 @@ export function recordResult(user, result, { now = new Date(), policeReward = 0,
   let reward = 0
   let stored = true
 
-  // 保护动物：自动放生，禁渔并罚款（金币不足时扣到 0 为止），不计入排行
+  // 保护动物：自动放生，禁渔并罚款，不计入排行
   if (item.special === "protected") {
     s.protected = (s.protected || 0) + 1
-    const fine = Math.min(Math.max(0, user.gold), Math.max(0, Number(protectedPenalty.gold) || 0))
+    const fine = protectedFine(user.gold, protectedPenalty)
     user.gold -= fine
     const minutes = Math.max(0, Number(protectedPenalty.banMinutes) || 0)
     if (minutes) user.banUntil = Math.max(Number(user.banUntil) || 0, now.getTime() + minutes * 60000)
@@ -100,6 +100,30 @@ export function recordResult(user, result, { now = new Date(), policeReward = 0,
     user.period[type].count++
   }
   return { value, reward, stored }
+}
+
+/**
+ * 误钓保护动物的罚款
+ * - goldRate > 0：按当前金币的 goldRate% 罚款，gold 为上限
+ * - 未设置 goldRate：固定罚 gold
+ * 都不会超过当前金币（扣到 0 为止）
+ */
+export function protectedFine(gold, penalty = {}) {
+  const have = Math.max(0, Number(gold) || 0)
+  const cap = Math.max(0, Number(penalty.gold) || 0)
+  const rate = Math.max(0, Number(penalty.goldRate) || 0)
+  const fine = rate > 0 ? Math.min(cap, Math.floor(have * rate / 100)) : cap
+  return Math.min(have, fine)
+}
+
+/** 鱼护里的鱼按当前鱼价重新定价（调整 items.yaml 后旧鱼获同步生效），返回改动条数 */
+export function repriceBag(user, itemMap, size = {}) {
+  let changed = 0
+  for (const e of user.bag || []) {
+    const p = entryPrice(e, itemMap.get(e.id), size)
+    if (p != null && p !== e.p) { e.p = p; changed++ }
+  }
+  return changed
 }
 
 /** 出售：entries 为要卖出的鱼护条目，返回实际获得金币 */

@@ -166,6 +166,28 @@ export const SIZE_ORDER = ["xlarge", "large", "medium", "small"]
 
 const round2 = n => Math.round(n * 1000) / 1000
 
+/** 某体型下的售价：t 为体型区间内的位置（0~1），同体型内越重越值钱 ±5% */
+export function sizedPrice(item, sizeKey, t, size = {}) {
+  const mult = Number(size?.[sizeKey]?.price) || 1
+  return Math.max(1, Math.round((Number(item.price) || 0) * mult * (0.95 + 0.1 * t)))
+}
+
+/**
+ * 按当前物品配置重新计算鱼护条目的售价（由重量反推体型内位置）
+ * 调整鱼价后，旧鱼获也按新价格出售；无法计算时返回 null（保留原价）
+ */
+export function entryPrice(entry, item, size = {}) {
+  if (!entry || !item) return null
+  if (item.rarity === "junk") return 0
+  if (!Array.isArray(item.weight)) return Math.max(0, Number(item.price) || 0)
+  const range = SIZE_RANGE[entry.s]
+  if (!range || entry.w == null || !size?.[entry.s]) return null
+  const [wMin, wMax] = item.weight
+  const pos = wMax > wMin ? (Number(entry.w) - wMin) / (wMax - wMin) : range[0]
+  const t = Math.min(1, Math.max(0, (pos - range[0]) / (range[1] - range[0])))
+  return sizedPrice(item, entry.s, t, size)
+}
+
 /**
  * 钓一次
  * @returns {{type:"empty"}|{type:"item", item, rarity, size?, weight?, price}}
@@ -194,9 +216,7 @@ export function roll({ items, probability, size, limits }, effects = {}, rng = M
     const pos = lo + (hi - lo) * t
     result.size = sizeKey
     result.weight = round2(wMin + (wMax - wMin) * pos)
-    // 同体型内越重越值钱：±5%
-    const mult = Number(size[sizeKey]?.price) || 1
-    result.price = Math.max(1, Math.round(result.price * mult * (0.95 + 0.1 * t)))
+    result.price = sizedPrice(item, sizeKey, t, size)
   }
   return result
 }

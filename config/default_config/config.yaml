@@ -70,9 +70,12 @@ probability:
     roughskin_sculpin: 0.08 # 松江鲈
     hawksbill: 0.04         # 玳瑁
 
-# 误钓保护动物的惩罚：禁渔时长（分钟）与罚款（金币不足时扣到 0 为止）
+# 误钓保护动物的惩罚：禁渔时长（分钟）与罚款
+#   goldRate：按当前金币的百分比罚款（%），gold 为罚款上限；goldRate 为 0 时固定罚 gold
+#   金币不足时扣到 0 为止
 protectedPenalty:
   banMinutes: 60
+  goldRate: 5
   gold: 10000
 
 # 派蒙：第一次钓到获得称号「最好的伙伴」，之后每次钓到送的谢礼（金币）
@@ -127,7 +130,7 @@ checkin:
     - { min: 0,  name: 大凶, emoji: ⛈️, effects: { emptyReduce: -3, junkReduce: -2 } }
 
 # 钓到「人民碎片」后警局奖励的金币
-policeReward: 5000
+policeReward: 15000
 
 # 排行榜
 rank:
