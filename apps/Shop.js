@@ -5,7 +5,7 @@ import UserData from "../components/UserData.js"
 import { effectText, getEffects, mergeEffects } from "../components/Titles.js"
 import { oddsPercent } from "../components/ItemPool.js"
 import { luckEffects } from "../components/Game.js"
-import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait, baitLevel, canUseBait, maxGearLevel, unlockedTier, tierPrice, ownedGear, ensureGear, buyGear, buyGearSet, equipGear, cultivateGear, enhanceCost, forgeCost, successRate } from "../components/Gear.js"
+import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait, baitLevel, canUseBait, maxGearLevel, unlockedTier, tierPrice, ownedGear, ensureGear, buyGear, buyGearSet, equipGear, equipGearSet, cultivateGear, enhanceCost, forgeCost, successRate } from "../components/Gear.js"
 import { withButtons, B } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
 import { groupAllowed, updateNickname, displayName } from "../components/common.js"
@@ -17,6 +17,7 @@ export class FishingShop extends plugin {
       {reg:/^#?购买渔具\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\s*(\d{1,2})$/,fnc:"purchase"},
       {reg:/^#?购买渔具\s*(新手|青竹|精铁|玄木|寒玉|流云|沧浪|星砂|月影|玄冰|烈阳|深渊|龙鳞|凤羽|天罡|星辰|太虚|混元|鸿蒙|创世)套装$/,fnc:"purchaseSet"},
       {reg:/^#?装备渔具\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\s*(\d{1,2})$/,fnc:"equip"},
+      {reg:/^#?(?:使用|穿戴|装备)(?:渔具)?\s*(新手|青竹|精铁|玄木|寒玉|流云|沧浪|星砂|月影|玄冰|烈阳|深渊|龙鳞|凤羽|天罡|星辰|太虚|混元|鸿蒙|创世)套装$/,fnc:"equipSet"},
       {reg:/^#?渔具升级\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)$/,fnc:"upgrade"},
       {reg:/^#?渔具强化\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)(?:\s*(\d{1,2}))?$/,fnc:"enhance"},
       {reg:/^#?渔具锻造\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)(?:\s*(\d{1,2}))?$/,fnc:"forge"},
@@ -96,6 +97,21 @@ export class FishingShop extends plugin {
     if(!ret.ok)return e.reply({locked:`角色等级不足，需 Lv${ret.need} 才能购买`,owned:"已拥有该渔具",gold:`金币不足，需要 ${ret.cost} 金币`,invalid:"无效的装备阶位"}[ret.reason]||"购买失败")
     await UserData.save(user.user_id)
     return e.reply(`购买成功：${ret.item.name}，花费 ${ret.cost} 金币。发送 #装备渔具 ${SLOT_NAMES[p.slot]} ${p.tier} 穿戴`)
+  }
+  async equipSet(e) {
+    if (!groupAllowed(e)) return false
+    const user = this.load(e)
+    const match = e.msg.match(/^#?(?:使用|穿戴|装备)(?:渔具)?\s*(.+?)套装$/)
+    const tier = TIER_NAMES.indexOf(match?.[1]) + 1
+    const ret = equipGearSet(user,tier)
+    if (!ret.ok) {
+      if (ret.reason === "locked") return e.reply(`角色等级不足，需要 Lv${ret.need} 才能使用${TIER_NAMES[tier-1]}套装。`)
+      if (ret.reason === "incomplete") return e.reply(`无法使用${TIER_NAMES[tier-1]}套装，缺少：${ret.missing.map(slot=>TIER_NAMES[tier-1]+SLOT_NAMES[slot]).join("、")}。\n请先购买缺少的装备：#购买渔具${TIER_NAMES[tier-1]}套装`)
+      if (ret.reason === "equipped") return e.reply(`当前已穿戴完整的${TIER_NAMES[tier-1]}套装，无需重复切换。`)
+      return e.reply("无效的渔具套装名称，请查看 #渔具商店")
+    }
+    await UserData.save(user.user_id)
+    return e.reply(`已成功使用${TIER_NAMES[tier-1]}套装！\n鱼竿、鱼线、鱼钩、浮漂、鱼护已全部切换，原有强化和锻造等级保持不变，套装属性现已生效。`)
   }
   async equip(e) {
     if(!groupAllowed(e))return false
