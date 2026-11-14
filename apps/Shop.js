@@ -14,14 +14,14 @@ export class FishingShop extends plugin {
   constructor() {
     super({name:"钓鱼-渔具工坊与商店",dsc:"渔具购买、穿戴、强化、锻造和鱼饵商店",event:"message",priority:500,rule:[
       {reg:/^#?购买渔具$/,fnc:"workshop"},
-      {reg:/^#?购买渔具\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\\s*(\\d{1,2})$/,fnc:"purchase"},
-      {reg:/^#?装备渔具\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\\s*(\\d{1,2})$/,fnc:"equip"},
-      {reg:/^#?渔具升级\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)$/,fnc:"upgrade"},
-      {reg:/^#?渔具强化\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)(?:\\s*(\\d{1,2}))?$/,fnc:"enhance"},
-      {reg:/^#?渔具锻造\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)(?:\\s*(\\d{1,2}))?$/,fnc:"forge"},
+      {reg:/^#?购买渔具\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\s*(\d{1,2})$/,fnc:"purchase"},
+      {reg:/^#?装备渔具\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\s*(\d{1,2})$/,fnc:"equip"},
+      {reg:/^#?渔具升级\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)$/,fnc:"upgrade"},
+      {reg:/^#?渔具强化\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)(?:\s*(\d{1,2}))?$/,fnc:"enhance"},
+      {reg:/^#?渔具锻造\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)(?:\s*(\d{1,2}))?$/,fnc:"forge"},
       {reg:/^#?鱼饵商店$/,fnc:"shop"},
-      {reg:/^#?购买鱼饵\\s*(.*)$/,fnc:"buy"},
-      {reg:/^#?使用鱼饵\\s*(.+)$/,fnc:"use"},
+      {reg:/^#?购买鱼饵\s*(.*)$/,fnc:"buy"},
+      {reg:/^#?使用鱼饵\s*(.+)$/,fnc:"use"},
       {reg:/^#?我的鱼饵$/,fnc:"bait"},
       {reg:/^#?我的渔具$/,fnc:"gear"}
     ]})
@@ -41,7 +41,7 @@ export class FishingShop extends plugin {
       if(next)lines.push(`  可购买：${TIER_NAMES[next-1]}${SLOT_NAMES[slot]} ${tierPrice(shop,next)} 金币 · #购买渔具 ${SLOT_NAMES[slot]} ${next}`)
     }
     lines.push("━━━━━━━━━━━━","#我的渔具 查看持有装备","#购买渔具 鱼竿 9 · #装备渔具 鱼竿 9","#渔具强化 鱼竿 9 · #渔具锻造 鱼竿 9","省略阶位时，强化/锻造当前穿戴的装备")
-    return e.reply(withButtons(e,lines.join("\\n"),[B.myGear,B.shop]))
+    return e.reply(withButtons(e,lines.join("\n"),[B.myGear,B.shop]))
   }
   parseSlotTier(e,verb) {
     const m=e.msg.match(new RegExp(verb+"\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\\s*(\\d{1,2})?"))
@@ -80,7 +80,7 @@ export class FishingShop extends plugin {
     const name=type==="enhance"?"强化":"锻造",data=ownedGear(user,p.slot,tier),level=type==="enhance"?data.enhance:data.forge
     const next=level+1,max=type==="enhance"?15:8
     const chance=next<=max?successRate(this.shopCfg,type,next,type==="enhance"?data.enhanceFails:data.forgeFails):null
-    return e.reply(`${ret.success?"🎉":"💢"} ${item.name} ${name}${ret.success?"成功":"失败"}！\\n当前${name} +${level}/${max}\\n本次成功率 ${ret.chance}% · 消耗 ${ret.cost} 金币\\n${chance===null?"已满级":`下次成功率 ${chance}%`} · 剩余金币 ${user.gold}`)
+    return e.reply(`${ret.success?"🎉":"💢"} ${item.name} ${name}${ret.success?"成功":"失败"}！\n当前${name} +${level}/${max}\n本次成功率 ${ret.chance}% · 消耗 ${ret.cost} 金币\n${chance===null?"已满级":`下次成功率 ${chance}%`} · 剩余金币 ${user.gold}`)
   }
   async shop(e) {
     if (!groupAllowed(e)) return false
@@ -197,6 +197,6 @@ export class FishingShop extends plugin {
       }
     }
     lines.push("━━━━━━━━━━━━",`鱼护容量：${bagCapacity(user,shop,Config.config.fishing?.bagLimit)}`,`装备属性：${effectText(gearEffects(user,shop))}`)
-    return e.reply(withButtons(e,lines.join("\\n"),[B.workshop,B.shop,B.start]))
+    return e.reply(withButtons(e,lines.join("\n"),[B.workshop,B.shop,B.start]))
   }
 }
