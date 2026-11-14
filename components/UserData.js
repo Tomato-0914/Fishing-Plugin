@@ -20,7 +20,7 @@ export function newUser(id) {
     groups: [],
     bag: [],
     stats: {
-      casts: 0, catches: 0, junk: 0, empty: 0, escaped: 0, early: 0,
+      casts: 0, catches: 0, bonusXp: 0, junk: 0, empty: 0, escaped: 0, early: 0,
       junkCleaned: 0, police: 0, heart: 0, ur: 0, earned: 0, sold: 0,
       baitBought: 0, baitSpent: 0,
     },
