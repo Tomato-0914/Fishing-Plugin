@@ -1,96 +1,87 @@
-/** 渔具工坊（升级渔具）与鱼饵商店（购买 / 切换鱼饵），以及装备查看 */
+/** 渔具工坊 V2：按阶位购买、穿戴、强化和锻造；保留鱼饵商店。 */
 import { plugin, puppeteer } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { effectText, getEffects, mergeEffects } from "../components/Titles.js"
 import { oddsPercent } from "../components/ItemPool.js"
 import { luckEffects } from "../components/Game.js"
-import {
-  SLOTS, UPGRADE_NAMES, levelColor, levelLabel, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity,
-  upgradeGear, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait,
-  baitLevel, canUseBait, maxGearLevel, levelColor as lvColor,
-} from "../components/Gear.js"
+import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait, baitLevel, canUseBait, maxGearLevel, unlockedTier, tierPrice, ownedGear, ensureGear, buyGear, equipGear, cultivateGear, enhanceCost, forgeCost, successRate } from "../components/Gear.js"
 import { withButtons, B } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
 import { groupAllowed, updateNickname, displayName } from "../components/common.js"
 
-const UPGRADE_BUTTONS = [
-  [{ text: "🎣 升级鱼竿", callback: "#渔具升级 鱼竿" }, { text: "🧵 升级鱼线", callback: "#渔具升级 鱼线" }, { text: "🪝 升级鱼钩", callback: "#渔具升级 鱼钩" }],
-  [{ text: "🎈 升级浮漂", callback: "#渔具升级 浮漂" }, { text: "🧺 升级鱼护", callback: "#渔具升级 鱼护" }],
-]
-
 export class FishingShop extends plugin {
   constructor() {
-    super({
-      name: "钓鱼-渔具工坊与商店",
-      dsc: "渔具工坊升级渔具，鱼饵商店购买鱼饵",
-      event: "message",
-      priority: 500,
-      rule: [
-        { reg: /^#?购买渔具$/, fnc: "workshop" },
-        { reg: /^#?鱼饵商店$/, fnc: "shop" },
-        { reg: /^#?渔具升级\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)$/, fnc: "upgrade" },
-        { reg: /^#?购买鱼饵\s*(.*)$/, fnc: "buy" },
-        { reg: /^#?使用鱼饵\s*(.+)$/, fnc: "use" },
-        { reg: /^#?我的鱼饵$/, fnc: "bait" },
-        { reg: /^#?我的渔具$/, fnc: "gear" },
-      ],
-    })
+    super({name:"钓鱼-渔具工坊与商店",dsc:"渔具购买、穿戴、强化、锻造和鱼饵商店",event:"message",priority:500,rule:[
+      {reg:/^#?购买渔具$/,fnc:"workshop"},
+      {reg:/^#?购买渔具\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\\s*(\\d{1,2})$/,fnc:"purchase"},
+      {reg:/^#?装备渔具\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\\s*(\\d{1,2})$/,fnc:"equip"},
+      {reg:/^#?渔具升级\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)$/,fnc:"upgrade"},
+      {reg:/^#?渔具强化\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)(?:\\s*(\\d{1,2}))?$/,fnc:"enhance"},
+      {reg:/^#?渔具锻造\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)(?:\\s*(\\d{1,2}))?$/,fnc:"forge"},
+      {reg:/^#?鱼饵商店$/,fnc:"shop"},
+      {reg:/^#?购买鱼饵\\s*(.*)$/,fnc:"buy"},
+      {reg:/^#?使用鱼饵\\s*(.+)$/,fnc:"use"},
+      {reg:/^#?我的鱼饵$/,fnc:"bait"},
+      {reg:/^#?我的渔具$/,fnc:"gear"}
+    ]})
   }
-
-  get shopCfg() {
-    return Config.shop || {}
-  }
-
-  /** config.yaml 的鱼饵配置：普通饵单价 price，其他鱼饵单价 prices */
-  get baitCfg() {
-    return Config.config.bait || {}
-  }
-
-  load(e) {
-    const user = UserData.get(e.user_id)
-    updateNickname(user, e)
-    return user
-  }
-
-  /** 渔具的效果文字（鱼护附带容量） */
-  gearText(item, user) {
-    if (!item) return ""
-    const parts = []
-    if (item.slot === "net") parts.push(`容量 ${item.level === 1 ? bagCapacity({ gear: { net: 1 } }, this.shopCfg, Config.config.fishing?.bagLimit) : item.capacity}`)
-    const eff = effectText(item.effects)
-    if (eff !== "无") parts.push(eff)
-    return parts.join("，") || "无"
-  }
-
-  /** 渔具工坊：五类渔具的等级与升级 */
+  get shopCfg(){return Config.shop||{}}
+  get baitCfg(){return Config.config.bait||{}}
+  load(e){const user=UserData.get(e.user_id);updateNickname(user,e);ensureGear(user);return user}
+  gearText(item,user){if(!item)return "";const tier=item.level;const data=ownedGear(user,item.slot,tier);return `强化 +${data?.enhance||0}/15 · 锻造 +${data?.forge||0}/8`}
   async workshop(e) {
-    if (!groupAllowed(e)) return false
-    const user = this.load(e)
-    const shop = this.shopCfg
-    const slots = SLOTS.filter(s => shop.gear?.[s]).map(slot => {
-      const lv = gearLevel(user, slot)
-      const cur = gearItem(shop, slot, lv)
-      const next = gearItem(shop, slot, lv + 1)
-      return {
-        slot, emoji: cur.emoji, slotName: cur.slotName, max: maxLevel(shop, slot),
-        pips: Array.from({ length: maxLevel(shop, slot) }, (_, i) => i < lv),
-        cur: { ...cur, label: levelLabel(lv), color: levelColor(lv), text: this.gearText(cur, user) },
-        next: next && { ...next, label: levelLabel(lv + 1), color: levelColor(lv + 1), text: this.gearText(next, user), afford: user.gold >= next.price },
-      }
-    })
-    const msg = await renderOrText(puppeteer, "workshop", { name: displayName(user), gold: user.gold, slots }, () => [
-      `🔧 购买渔具 · 👛 ${user.gold} 金币`,
-      "━━━━━━━━━━━━",
-      ...slots.map(s => `${s.emoji} ${s.slotName} Lv${s.cur.level} ${s.cur.name}（${s.cur.text}）\n　${s.next ? `→ Lv${s.next.level} ${s.next.name} ${s.next.price} 金币：${s.next.text}` : "已满级"}`),
-      "━━━━━━━━━━━━",
-      "#渔具升级 鱼竿 / #渔具升级 鱼线 / #渔具升级 鱼钩 / #渔具升级 浮漂 / #渔具升级 鱼护",
-    ].join("\n"))
-    if (!msg) return true
-    return e.reply(withButtons(e, msg, ...UPGRADE_BUTTONS, [B.myGear, B.shop]))
+    if(!groupAllowed(e))return false
+    const user=this.load(e),top=unlockedTier(user),shop=this.shopCfg
+    const lines=[`🔧 渔具工坊 · 角色可购买最高第 ${top} 阶（${TIER_NAMES[top-1]}）`,`👛 金币：${user.gold}`,"━━━━━━━━━━━━"]
+    for(const slot of SLOTS) {
+      const tier=gearLevel(user,slot),item=gearItem(shop,slot,tier)
+      lines.push(`${item.emoji} ${item.name}（已装备）· ${this.gearText(item,user)}`)
+      const next=Array.from({length:top},(_,i)=>i+1).find(t=>!ownedGear(user,slot,t))
+      if(next)lines.push(`  可购买：${TIER_NAMES[next-1]}${SLOT_NAMES[slot]} ${tierPrice(shop,next)} 金币 · #购买渔具 ${SLOT_NAMES[slot]} ${next}`)
+    }
+    lines.push("━━━━━━━━━━━━","#我的渔具 查看持有装备","#购买渔具 鱼竿 9 · #装备渔具 鱼竿 9","#渔具强化 鱼竿 9 · #渔具锻造 鱼竿 9","省略阶位时，强化/锻造当前穿戴的装备")
+    return e.reply(withButtons(e,lines.join("\\n"),[B.myGear,B.shop]))
   }
-
-  /** 鱼饵商店：只卖鱼饵 */
+  parseSlotTier(e,verb) {
+    const m=e.msg.match(new RegExp(verb+"\\\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\\\\s*(\\\\d{1,2})?"))
+    if(!m)return null
+    return {slot:UPGRADE_NAMES[m[1]],tier:m[2]?Number(m[2]):null}
+  }
+  async purchase(e) {
+    if(!groupAllowed(e))return false
+    const user=this.load(e),p=this.parseSlotTier(e,"购买渔具")
+    if(!p?.tier)return e.reply("请指定装备阶位，例如 #购买渔具 鱼竿 9")
+    const ret=buyGear(user,this.shopCfg,p.slot,p.tier)
+    if(!ret.ok)return e.reply({locked:`角色等级不足，需 Lv${ret.need} 才能购买`,owned:"已拥有该渔具",gold:`金币不足，需要 ${ret.cost} 金币`,invalid:"无效的装备阶位"}[ret.reason]||"购买失败")
+    await UserData.save(user.user_id)
+    return e.reply(`购买成功：${ret.item.name}，花费 ${ret.cost} 金币。发送 #装备渔具 ${SLOT_NAMES[p.slot]} ${p.tier} 穿戴`)
+  }
+  async equip(e) {
+    if(!groupAllowed(e))return false
+    const user=this.load(e),p=this.parseSlotTier(e,"装备渔具")
+    if(!p?.tier)return e.reply("请指定装备阶位")
+    const ret=equipGear(user,p.slot,p.tier)
+    if(!ret.ok)return e.reply(ret.reason==="locked"?"角色等级不足，不能穿戴":"尚未购买该装备")
+    await UserData.save(user.user_id)
+    return e.reply(`已装备：${gearItem(this.shopCfg,p.slot,p.tier).name}，属性已生效`)
+  }
+  async upgrade(e){return e.reply("旧版渔具升级已停用，请使用 #购买渔具、#渔具强化 或 #渔具锻造")}
+  async enhance(e){return this.cultivate(e,"enhance")}
+  async forge(e){return this.cultivate(e,"forge")}
+  async cultivate(e,type){
+    if(!groupAllowed(e))return false
+    const user=this.load(e),p=this.parseSlotTier(e,type==="enhance"?"渔具强化":"渔具锻造")
+    if(!p)return false
+    const tier=p.tier||gearLevel(user,p.slot),item=gearItem(this.shopCfg,p.slot,tier)
+    const ret=cultivateGear(user,this.shopCfg,p.slot,tier,type)
+    if(!ret.ok)return e.reply({not_owned:"未拥有该阶位渔具",max:"已达到最高等级",gold:`金币不足，需要 ${ret.cost} 金币`,invalid:"参数无效"}[ret.reason]||"操作失败")
+    await UserData.save(user.user_id)
+    const name=type==="enhance"?"强化":"锻造",data=ownedGear(user,p.slot,tier),level=type==="enhance"?data.enhance:data.forge
+    const next=level+1,max=type==="enhance"?15:8
+    const chance=next<=max?successRate(this.shopCfg,type,next,type==="enhance"?data.enhanceFails:data.forgeFails):null
+    return e.reply(`${ret.success?"🎉":"💢"} ${item.name} ${name}${ret.success?"成功":"失败"}！\\n当前${name} +${level}/${max}\\n本次成功率 ${ret.chance}% · 消耗 ${ret.cost} 金币\\n${chance===null?"已满级":`下次成功率 ${chance}%`} · 剩余金币 ${user.gold}`)
+  }
   async shop(e) {
     if (!groupAllowed(e)) return false
     const user = this.load(e)
@@ -115,28 +106,6 @@ export class FishingShop extends plugin {
     const rows = []
     for (let i = 0; i < buy.length; i += 3) rows.push(buy.slice(i, i + 3))
     return e.reply(withButtons(e, msg, ...rows, [B.buyBaitInput, B.myBait, B.workshop]))
-  }
-
-  async upgrade(e) {
-    if (!groupAllowed(e)) return false
-    const user = this.load(e)
-    const slot = UPGRADE_NAMES[e.msg.match(/渔具升级\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)/)[1]]
-    const ret = upgradeGear(user, this.shopCfg, slot)
-    if (!ret.ok && ret.reason === "max")
-      return e.reply(withButtons(e, `✨ 你的${ret.current?.slotName}已经是最高级的【${ret.current?.name}】啦！`, [B.myGear, B.cast]))
-    if (!ret.ok)
-      return e.reply(withButtons(e, [
-        `👛 金币不足：【${ret.next.name}】需要 ${ret.cost} 金币，你只有 ${user.gold} 金币`,
-        `还差 ${ret.cost - user.gold} 金币，继续努力钓鱼吧~`,
-      ].join("\n"), [B.cast, B.sellAll]))
-    UserData.save(user.user_id)
-    const item = ret.item
-    return e.reply(withButtons(e, [
-      `🎉 升级成功！${item.emoji} ${item.slotName} → Lv${item.level}【${item.name}】`,
-      `💬 ${item.desc}`,
-      `✨ 效果：${this.gearText(item, user)}`,
-      `👛 花费 ${ret.cost} 金币，剩余 ${user.gold} 金币`,
-    ].join("\n"), [B.cast, B.workshop, B.myGear]))
   }
 
   async buy(e) {
@@ -214,32 +183,20 @@ export class FishingShop extends plugin {
       [B.buyBait, B.buyBaitInput, B.shop]))
   }
 
-  async gear(e) {
-    if (!groupAllowed(e)) return false
-    const user = this.load(e)
-    const shop = this.shopCfg
-    const cur = currentBait(user, shop)
-    const lines = [`🧰 ${displayName(user)} 的渔具`, "━━━━━━━━━━━━"]
-    for (const slot of SLOTS) {
-      const lv = gearLevel(user, slot)
-      const item = gearItem(shop, slot, lv)
-      if (!item) continue
-      lines.push(`${item.emoji} ${item.slotName}：Lv${lv}【${item.name}】${lv >= maxLevel(shop, slot) ? " · 满级" : ""}`)
-      lines.push(`　${this.gearText(item, user)}`)
+  async gear(e){
+    if(!groupAllowed(e))return false
+    const user=this.load(e),shop=this.shopCfg
+    const lines=[`🧰 ${displayName(user)} 的渔具 · 金币 ${user.gold}`,"━━━━━━━━━━━━"]
+    for(const slot of SLOTS){
+      const equipped=gearLevel(user,slot)
+      lines.push(`${SLOT_NAMES[slot]}（已装备：${TIER_NAMES[equipped-1]}）`)
+      for(let tier=1;tier<=20;tier++){
+        const item=ownedGear(user,slot,tier)
+        if(!item)continue
+        lines.push(` ${tier===equipped?"▶":" "} ${TIER_NAMES[tier-1]} · 强化+${item.enhance||0} 锻造+${item.forge||0} · 失败补偿 强化+${Math.min(50,(successRate(shop,"enhance",Math.min(15,(item.enhance||0)+1),item.enhanceFails||0)-successRate(shop,"enhance",Math.min(15,(item.enhance||0)+1),0))).toFixed(1)}% / 锻造+${Math.min(50,(successRate(shop,"forge",Math.min(8,(item.forge||0)+1),item.forgeFails||0)-successRate(shop,"forge",Math.min(8,(item.forge||0)+1),0))).toFixed(1)}%`)
+      }
     }
-    lines.push(`🪱 鱼饵：${cur.emoji}${cur.name} ×${baitCount(user, cur.id)} · ${effectText(cur.effects).replace(/^无$/, "无特殊效果")}`)
-    lines.push("━━━━━━━━━━━━", `✨ 渔具总加成：${effectText(gearEffects(user, shop))}`)
-    // 当前实际概率：称号 + 今日运势 + 渔具 + 当前鱼饵，和钓鱼时的计算完全一致
-    const cfg = Config.config
-    const effects = mergeEffects(getEffects(user, Config.titles, Config.items), luckEffects(user, cfg.checkin?.tiers), gearEffects(user, shop), cur.effects)
-    const p = oddsPercent(cfg.probability, effects, cfg.limits)
-    const f = v => `${Number(v.toFixed(1))}%`
-    lines.push(
-      "🎲 当前概率（含称号、今日运势、当前鱼饵）",
-      `　空军 ${f(p.empty)} · 垃圾 ${f(p.junk)} · 普通 ${f(p.N)}`,
-      `　高级 ${f(p.R)} · 稀有 ${f(p.SR)} · 神器 ${f(p.SSR)}`,
-      `　传说 ${f(p.UR)} · 史诗 ${f(p.EP)} · 神话 ${f(p.MR)}`,
-    )
-    return e.reply(withButtons(e, lines.join("\n"), [B.workshop, B.shop, B.start]))
+    lines.push("━━━━━━━━━━━━",`鱼护容量：${bagCapacity(user,shop,Config.config.fishing?.bagLimit)}`,`装备属性：${effectText(gearEffects(user,shop))}`)
+    return e.reply(withButtons(e,lines.join("\\n"),[B.workshop,B.shop,B.start]))
   }
 }
