@@ -4,7 +4,7 @@ import UserData from "../components/UserData.js"
 import { RARITY_INFO, isDexFish, formatWeight, SIZE_ORDER } from "../components/ItemPool.js"
 import { groupBag, sellEntries, discardJunk, todayLuck, luckTier } from "../components/Game.js"
 import { checkTitles, getEffects, effectText, progressText, mergeEffects, ownedTier, ownedTitles, titleName, titleUpText } from "../components/Titles.js"
-import { gearEffects, bagCapacity, totalBait, gearItem, gearLevel } from "../components/Gear.js"
+import { gearEffects, bagCapacity, totalBait, gearItem, gearLevel, SLOTS, ownedGear } from "../components/Gear.js"
 import { withButtons, B } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
 import { itemChance, formatChance, sizeTable, findItems, dexNo } from "../components/Dex.js"
@@ -165,20 +165,45 @@ export class FishingBag extends plugin {
     const s = user.stats
     const titles = ownedTitles(user, Config.titles, Config.items)
     const max = user.maxFish && itemMap().get(user.maxFish.id)
-    const msg = [
-      `👤 ${displayName(user)} 的个人信息`,
+    const luck = todayLuck(user)
+    const fortune = luckTier(luck, Config.config.checkin?.tiers)
+    const equipment = SLOTS.map(slot => {
+      const tier = gearLevel(user, slot)
+      const item = ownedGear(user, slot, tier)
+      return {slot, name:gearItem(Config.shop, slot, tier)?.name || slot,
+        tier, enhance:item?.enhance || 0, forge:item?.forge || 0}
+    })
+    const stats = [
+      {label:"抛竿次数",value:s.casts,unit:"次"},
+      {label:"钓到鱼",value:s.catches,unit:"条"},
+      {label:"钓到垃圾",value:s.junk,unit:"件"},
+      {label:"已清理垃圾",value:s.junkCleaned,unit:"件"},
+      {label:"空军次数",value:s.empty,unit:"次"},
+      {label:"跑鱼次数",value:s.escaped,unit:"次"},
+      {label:"累计钓获价值",value:s.earned,unit:"金币"},
+      {label:"累计出售",value:s.sold,unit:"金币"},
+      {label:"收杆过早",value:s.early,unit:"次"},
+      {label:"最大一条",value:max ? `${max.name} ${formatWeight(user.maxFish.w)}` : "暂无",unit:""},
+    ]
+    const data = {
+      name:displayName(user), avatar:avatar(user.user_id),
+      gold:user.gold, bait:totalBait(user), equipment, stats,
+      luck:fortune?.name || "尚未打卡", luckValue:luck,
+      checkedIn:!!fortune,
+      streak:user.checkin.streak, checkinTotal:user.checkin.total,
+      titles:titles.map(({title,tier})=>({name:titleName(title,tier)})),
+    }
+    const msg = await renderOrText(puppeteer, "profile", data, () => [
+      `👤 ${data.name} 的个人信息`,
       "━━━━━━━━━━━━",
-      `👛 金币：${user.gold} · 🪱 鱼饵：${totalBait(user)}`,
-      `🧰 ${["rod", "line", "hook", "float", "net"].map(k => gearItem(Config.shop, k, gearLevel(user, k))?.name).filter(Boolean).join(" · ")}`,
-      `🎣 抛竿 ${s.casts} 次 · 钓到鱼 ${s.catches} 条`,
-      `🗑️ 钓到垃圾 ${s.junk} 件 · 已清理 ${s.junkCleaned} 件`,
-      `🌊 空军 ${s.empty} · 跑鱼 ${s.escaped} · 收杆过早 ${s.early}`,
-      `💎 累计钓获价值 ${s.earned} · 累计出售 ${s.sold}`,
-      max ? `🏆 最大一条：${max.emoji}${max.name} ${formatWeight(user.maxFish.w)}` : "",
-      (() => { const l = todayLuck(user); const t = luckTier(l, Config.config.checkin?.tiers); return t ? `${t.emoji} 今日运势：${t.name}（幸运值 ${l}）` : "📅 今天还没打卡" })(),
-      `🔥 连续打卡 ${user.checkin.streak} 天 · 累计 ${user.checkin.total} 天`,
-      `🏅 称号：${titles.length ? titles.map(({ title, tier }) => `${title.emoji}${titleName(title, tier)}`).join(" ") : "暂无"}`,
-    ].filter(Boolean).join("\n")
+      `👛 金币：${data.gold} · 🪱 鱼饵：${data.bait}`,
+      `🧰 ${equipment.map(i=>i.name).join(" · ")}`,
+      ...stats.map(i=>`${i.label}：${i.value}${i.unit}`),
+      `今日运势：${data.luck}（幸运值 ${luck}）`,
+      `连续打卡 ${data.streak} 天 · 累计 ${data.checkinTotal} 天`,
+      `称号：${data.titles.map(i=>i.name).join("、") || "暂无"}`,
+    ].join("\\n"))
+    if (!msg) return true
     return e.reply(withButtons(e, msg, [B.bag, B.titles, B.dex], [B.checkin, B.myGear, B.myBait]))
   }
 
