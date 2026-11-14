@@ -44,6 +44,6 @@ export const B = {
   titles: { text: "🏅 我的称号", callback: "#我的称号" },
   dex: { text: "📚 图鉴", callback: "#钓鱼图鉴" },
   dexSearch: { text: "🔍 查图鉴…", input: "#钓鱼图鉴 " },
-  info: { text: "👤 个人信息", callback: "#个人信息" },
+  info: { text: "👤 钓鱼信息", callback: "#钓鱼信息" },
   repo: { text: "⭐ 项目地址", link: "https://github.com/Tomato-0914/Fishing-Plugin" },
 }
