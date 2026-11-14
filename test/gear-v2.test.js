@@ -34,8 +34,8 @@ test("失败补偿最多50个百分点且只穿戴装备生效",()=>{
   assert.equal(successRate(shop,"enhance",15,999),65)
   const u=player()
   buyGear(u,shop,"rod",9)
-  assert.equal(gearEffects(u,shop).boostR,0)
+  assert.equal(gearEffects(u,shop).rarityTier,1) // 买了不穿戴不生效
   equipGear(u,"rod",9)
-  assert.ok(gearEffects(u,shop).boostR>0)
+  assert.equal(gearEffects(u,shop).rarityTier,9)
   assert.equal(bagCapacity(u,shop,200),200)
 })

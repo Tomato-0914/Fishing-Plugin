@@ -105,7 +105,7 @@ export function formatMulti(rounds, { sizeLabels = {}, markdown = false, xpLine 
     sum.snapped ? `💥 断线 ${sum.snapped}` : "",
     sum.protected ? `🚫 保护动物 ${sum.protected}` : "",
     sum.banned ? `⛔ 禁渔作废 ${sum.banned}` : "",
-    sum.snapped ? "💡 升级鱼线可减少断线" : "",
+    sum.snapped ? "💡 更高阶或强化过的鱼线可减少断线" : "",
   ].filter(Boolean)
   if (!lines.length) return [...head, ...tail].join("\n")
   const detail = lines[0]?.startsWith("📦") ? lines : [markdown ? "**✨ 稀有鱼获 / 特殊事件**" : "✨ 稀有鱼获 / 特殊事件", ...lines]

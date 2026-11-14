@@ -247,7 +247,7 @@ export class FishingShop extends plugin {
     if (!ret.ok && ret.reason === "locked")
       return e.reply(withButtons(e, [
         `🔒 ${bait.emoji}${bait.name}是 Lv${ret.need} 鱼饵，需要至少一件渔具达到 Lv${ret.need} 才能购买`,
-        `🧰 你的渔具最高 Lv${maxGearLevel(user)}，先去 #购买渔具 升级吧`,
+        `🧰 你穿戴的渔具最高 ${maxGearLevel(user)} 阶，先去 #渔具商店 买更高阶的渔具吧`,
       ].join("\n"), [B.workshop, B.shop]))
     if (!ret.ok) {
       const lines = [`👛 金币不足：${num} 个${bait.name}需要 ${ret.cost} 金币，你只有 ${user.gold} 金币`]

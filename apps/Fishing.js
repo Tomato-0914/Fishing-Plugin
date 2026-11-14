@@ -2,13 +2,13 @@ import { plugin } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
-import { multiLeft, useMulti, grantMultiTicket, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier, luckEffects } from "../components/Game.js"
-import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, allEffects, holdsOnTimeout, maxLevel, multiTicketChance } from "../components/Gear.js"
+import { multiLeft, useMulti, grantMultiTicket, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier } from "../components/Game.js"
+import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, holdsOnTimeout, maxLevel, multiTicketChance } from "../components/Gear.js"
 import { resolveCast, summarize, formatMulti } from "../components/Catch.js"
 import { experience, levelThreshold, characterProgress } from "../components/Progression.js"
 import { checkTitles, getEffects, effectText, titleUpText } from "../components/Titles.js"
 import { withButtons, B } from "../components/Button.js"
-import { groupAllowed, displayName, updateNickname, pick, itemMap } from "../components/common.js"
+import { groupAllowed, displayName, updateNickname, pick, itemMap, playerEffects } from "../components/common.js"
 
 /** 进行中的钓鱼：user_id → { stage: "waiting" | "bite" | "multi", timer, castAt, biteAt } */
 const sessions = new Map()
@@ -68,12 +68,7 @@ export class Fishing extends plugin {
 
   /** 本竿的全部效果：称号 + 今日幸运 + 渔具 + 本竿鱼饵 */
   effectsFor(user, bait) {
-    return allEffects({
-      titles: getEffects(user, Config.titles, Config.items),
-      luck: luckEffects(user, this.cfg.checkin?.tiers),
-      gear: gearEffects(user, Config.shop),
-      bait: bait?.effects,
-    })
+    return playerEffects(user, bait ?? null)
   }
 
   /**
@@ -113,7 +108,7 @@ export class Fishing extends plugin {
         `🎉 欢迎 ${name} 加入钓鱼佬行列！`,
         `🎁 新手礼包：普通饵 ×${gift}`,
         `🪱 每次抛竿消耗 1 个鱼饵，用完可发送 #购买鱼饵 补充（${price} 金币/个）`,
-        "🏪 鱼饵在 #鱼饵商店 购买，攒了金币可以去 #渔具工坊 升级渔具",
+        "🏪 鱼饵在 #鱼饵商店 购买，攒了金币可以去 #渔具商店 买更高阶的渔具",
       ].join("\n"))
     }
 
@@ -140,7 +135,7 @@ export class Fishing extends plugin {
     const shop = Config.shop
     const limit = bagCapacity(user, shop, fcfg.bagLimit)
     if (user.bag.length >= limit) {
-      await this.send(e, withButtons(e, `🎒 鱼护已经装满啦（${user.bag.length}/${limit}）~\n先出售鱼护里的鱼或清理垃圾再来吧！也可以去 #渔具工坊 升级鱼护`, [B.sellAll, B.discard], [B.bag, B.workshop]))
+      await this.send(e, withButtons(e, `🎒 鱼护已经装满啦（${user.bag.length}/${limit}）~\n先出售鱼护里的鱼或清理垃圾再来吧！也可以去 #渔具商店 换更高阶的鱼护，或在 #渔具工坊 强化鱼护扩容`, [B.sellAll, B.discard], [B.bag, B.workshop]))
       return null
     }
 
@@ -157,7 +152,7 @@ export class Fishing extends plugin {
         const tips = [
           locked ? "🔒 库存里的鱼饵等级太高，你的渔具还用不了~" : "🪱 鱼饵用完啦~",
           `普通饵 ${price} 金币/个，发送 #购买鱼饵 [种类] [数量] 补充`,
-          locked ? "💡 把任意一件渔具升到鱼饵的等级就能用了（#渔具工坊）" : "",
+          locked ? "💡 穿戴任意一件达到鱼饵等级的渔具就能用了（#渔具商店）" : "",
           `👛 当前金币：${user.gold}`,
         ].filter(Boolean)
         if (user.gold < price && hasSellable) tips.push("💡 金币不够？先 #一键出售 卖掉鱼护里的鱼吧")
@@ -261,7 +256,7 @@ export class Fishing extends plugin {
       "💨 鱼儿挣脱鱼钩跑掉了~ 下次要眼疾手快哦！",
       "💨 浮漂浮了上来……鱼已经溜走了~",
       "💨 太慢啦！鱼儿叼着鱼饵扬长而去~",
-    ]), canUpgrade ? "💡 去 #渔具工坊 升级鱼钩，没及时收杆也不容易跑鱼" : ""].filter(Boolean).join("\n"), [B.cast, B.multi, B.help]))
+    ]), canUpgrade ? "💡 更高阶的鱼钩（#渔具商店）或强化鱼钩（#渔具工坊），没及时收杆也不容易跑鱼" : ""].filter(Boolean).join("\n"), [B.cast, B.multi, B.help]))
     await this.announceTitles(e, user)
   }
 
@@ -335,7 +330,7 @@ export class Fishing extends plugin {
         "💥 啪！鱼线断了！",
         `${result.item.emoji} 一条【${r.label}】${result.item.name}${sizeLabel ? `（${sizeLabel}）` : ""}拖着鱼钩消失在水里……`,
         `🧵 当前鱼线：${line?.name || "—"}（本次断线概率 ${Number(snap.toFixed(1))}%）`,
-        "💡 去 #渔具工坊 升级鱼线可以降低断线概率",
+        "💡 更高阶的鱼线（#渔具商店）或强化、锻造鱼线（#渔具工坊）可以降低断线概率",
       ].join("\n"), [B.cast, B.multi], [B.workshop])))
       return this.announceTitles(e, user)
     }
@@ -362,7 +357,7 @@ export class Fishing extends plugin {
       return this.send(e, withButtons(e, [
         `🎟️ 今天的 ${daily} 次十连已经用完啦~`,
         `🎣 单次钓鱼有 ${Number(chance.toFixed(2))}% 的概率额外获得 1 次十连机会`,
-        "💡 升级鱼钩可以提高这个概率，明天 0 点十连次数会重置",
+        "💡 更高阶的鱼钩或锻造鱼钩可以提高这个概率，明天 0 点十连次数会重置",
       ].join("\n"), [B.cast]))
     }
     useMulti(user, daily)

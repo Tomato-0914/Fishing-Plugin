@@ -1,9 +1,12 @@
 /** 图鉴：物品详情计算（纯函数） */
 import { buildOdds, SIZE_RANGE, isDexFish } from "./ItemPool.js"
 
-/** 物品单次出现概率（%），已按总和归一化 */
-export function itemChance(item, items, probability) {
-  const odds = buildOdds(probability)
+/**
+ * 物品单次出现概率（%），已按总和归一化
+ * @param effects 玩家效果（渔具决定品级时必须传入，否则按 1 阶渔具计算）
+ */
+export function itemChance(item, items, probability, effects = {}, limits = {}) {
+  const odds = buildOdds(probability, effects, limits)
   const total = Object.values(odds).reduce((s, v) => s + v, 0) || 1
   if (item.rarity === "hidden" || item.rarity === "protected") return (odds[`hidden:${item.id}`] || 0) / total * 100
   const pool = items.filter(i => i.rarity === item.rarity)
