@@ -1,7 +1,4 @@
-import fs from "node:fs"
-import path from "node:path"
 import { plugin } from "../components/yunzai.js"
-import { Plugin_Path } from "../components/Paths.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
@@ -48,25 +45,6 @@ function xpSettlement(user, beforeXp) {
     `✨ 本次获得经验：+${Math.max(0, xp - beforeXp)}（累计 ${xp}）`,
     ...(newLevel > oldLevel ? [`🎉 等级提升：Lv${oldLevel} → Lv${newLevel}`] : []),
   ].join("\n")
-}
-
-/** 抛竿配图：按路径缓存为 Buffer（各协议都支持），文件变化时重新读取 */
-const castImageCache = new Map()
-function castImage(file) {
-  if (!file || typeof segment?.image !== "function") return null
-  const abs = path.isAbsolute(file) ? file : path.join(Plugin_Path, file)
-  let stat
-  try { stat = fs.statSync(abs) } catch { return null }
-  const hit = castImageCache.get(abs)
-  if (!hit || hit.mtime !== stat.mtimeMs) {
-    try {
-      castImageCache.set(abs, { mtime: stat.mtimeMs, buf: fs.readFileSync(abs) })
-    } catch (err) {
-      logger.warn(`[Fishing-Plugin] 抛竿配图读取失败：${err.message}`)
-      return null
-    }
-  }
-  return segment.image(castImageCache.get(abs).buf)
 }
 
 export class Fishing extends plugin {
@@ -210,19 +188,9 @@ export class Fishing extends plugin {
     return tier ? `${tier.emoji} 今日运势：${tier.name}（幸运值 ${todayLuck(user)}）` : ""
   }
 
-  /**
-   * 发送抛竿消息：配图放在文字上面，和文字合成一条消息
-   * QQBot 需开启适配器的 markdownImage：图片转为 Markdown 图片才能按顺序排版；
-   * 未开启时 QQ 客户端会把文字排在图片上方，只能先单独发图片
-   */
-  async sendCast(e, text, file = this.cfg.fishing?.castImage) {
-    const img = castImage(file)
-    if (!img) return this.send(e, text)
-    if (e.bot?.adapter?.id === "QQBot" && e.bot.adapter.config?.markdownImage !== true) {
-      await e.reply(img)
-      return this.send(e, text)
-    }
-    return this.send(e, [img, "\n", text])
+  /** 抛竿与十连统一发送纯文字，不再附带场景图片。 */
+  async sendCast(e, text) {
+    return this.send(e, text)
   }
 
   async cast(e) {
@@ -434,7 +402,7 @@ export class Fishing extends plugin {
       this.luckLine(user),
       `🎟️ 今日十连剩余 ${after.free} 次${after.bonus ? `（另有额外机会 ${after.bonus} 次）` : ""}`,
       "⏳ 稍等片刻，收网后统一结算",
-    ].filter(Boolean).join("\n"), fcfg.multiImage)
+    ].filter(Boolean).join("\n"))
     await this.announceTitles(e, user)
     return true
   }
