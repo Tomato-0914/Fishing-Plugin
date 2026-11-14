@@ -65,7 +65,7 @@ export function roundLine(r, sizeLabels = {}) {
  * - 普通、高级只给数量和总价；垃圾、空军、断线只给数量
  * @param markdown true 时（QQBot）使用 Markdown 加粗标题与分区；否则为纯文本
  */
-export function formatMulti(rounds, { sizeLabels = {}, markdown = false } = {}) {
+export function formatMulti(rounds, { sizeLabels = {}, markdown = false, xpLine = "" } = {}) {
   const sum = summarize(rounds)
   const special = [], notable = new Map(), low = { N: [0, 0], R: [0, 0] }
   for (const r of rounds) {
@@ -97,7 +97,8 @@ export function formatMulti(rounds, { sizeLabels = {}, markdown = false } = {}) 
   // 保持两种协议相同的实际换行；QQBot 仅添加轻量 Markdown 样式。
   const head = [
     markdown ? "**🎣 十连收网**" : "🎣 十连收网",
-    markdown ? `💰 **收获金币：${sum.value}**` : `💰 收获金币：${sum.value}`,
+    ...(xpLine ? [xpLine] : []),
+    markdown ? `💰 **售出预计获得金币：${sum.value}**` : `💰 售出预计获得金币：${sum.value}`,
     `🐟 鱼获 ${sum.fish}｜垃圾 ${sum.junk}｜空军 ${sum.empty}`,
   ]
   const tail = [
