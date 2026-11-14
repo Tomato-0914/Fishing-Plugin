@@ -19,8 +19,8 @@ export class FishingRank extends plugin {
       event: "message",
       priority: 500,
       rule: [
-        { reg: /^#?钓鱼(今日|日|周|月)?排行榜?$/, fnc: "groupRank" },
-        { reg: /^#?钓鱼总(日|周|月)?(排行)?榜$/, fnc: "totalRank" },
+        { reg: /^#?钓鱼(周|月)?排行榜$/, fnc: "groupRank" },
+        { reg: /^#?钓鱼总榜$/, fnc: "totalRank" },
       ],
     })
   }
@@ -37,8 +37,7 @@ export class FishingRank extends plugin {
 
   async totalRank(e) {
     if (!groupAllowed(e)) return false
-    const t = e.msg.match(/钓鱼总(日|周|月)?/)[1]
-    const type = t ? TYPE[t] : "all"
+    const type = "all"
     const size = Number(Config.config.rank?.totalSize) || 30
     const title = type === "all" ? "钓鱼总榜（累计）" : `钓鱼总榜（${PERIODS[type].label}）`
     return this.reply(e, UserData.all(), type, size, title)
