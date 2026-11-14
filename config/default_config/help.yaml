@@ -36,7 +36,7 @@
   list:
     - { icon: 🍀, title: "#幸运值排行", desc: 查看本群今日幸运值排行 }
     - { icon: 🏆, title: "#钓鱼排行榜", desc: 查看本群今日钓鱼排行 }
-    - { icon: 🗓️, title: "#钓鱼周排行榜 / #钓鱼月排行榜", desc: 查看本群周榜和月榜 }
+    - { icon: 🗓️, title: "#钓鱼周排行 / #钓鱼月排行", desc: 查看本群周榜和月榜 }
     - { icon: 🌏, title: "#钓鱼总榜", desc: 查看全服累计排行 }
 - group: ⚙️ 管理
   list:
