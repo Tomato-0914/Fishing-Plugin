@@ -10,8 +10,8 @@ test("QQBot Markdown 使用真正换行与引用块明细", () => {
   const rounds = [fish("鲟鱼", "SSR", 149), fish("普通鱼", "N", 20), fish("高级鱼", "R", 36)]
   const msg = formatMulti(rounds, { markdown: true })
   assert.ok(msg.startsWith("**🎣 十连收网**" + String.fromCharCode(10)))
-  assert.ok(msg.includes("💰 **收获金币：205**"))
-  assert.ok(msg.includes("> ✨ 稀有鱼获 / 特殊事件"))
+  assert.ok(msg.includes("💰 **售出预计获得金币：205**"))
+  assert.ok(msg.includes("> **✨ 稀有鱼获 / 特殊事件**"))
   assert.ok(msg.includes("> 📦 其他鱼获"))
   assert.ok(msg.includes("合计 56 金币"))
   assert.ok(!msg.includes(String.fromCharCode(92, 110)))
