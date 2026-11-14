@@ -10,7 +10,7 @@ export class FishingHelp extends plugin {
       dsc: "钓鱼帮助图（6~18 点白版，其余黑版）",
       event: "message",
       priority: 500,
-      rule: [{ reg: /^#?钓鱼(帮助|菜单|说明)$/, fnc: "help" }],
+      rule: [{ reg: /^#?钓鱼帮助$/, fnc: "help" }],
     })
   }
 

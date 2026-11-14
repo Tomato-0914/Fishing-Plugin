@@ -23,13 +23,12 @@ export class FishingBag extends plugin {
       event: "message",
       priority: 500,
       rule: [
-        // #我的鱼获 为旧指令，保留兼容聊天记录里的旧按钮
-        { reg: /^#?(我的(鱼护|鱼获)|钓鱼背包)$/, fnc: "bag" },
-        { reg: /^#?一键出售(鱼获|鱼)?$/, fnc: "sellAll" },
+        { reg: /^#?我的鱼护$/, fnc: "bag" },
+        { reg: /^#?一键出售$/, fnc: "sellAll" },
         { reg: /^#?(出售)\s*(\S+?)\s*(\d+)?$/, fnc: "sell" },
-        // #回收垃圾 为别名；#丢弃垃圾 为旧指令，保留兼容聊天记录里的旧按钮
-        { reg: /^#?(清理|回收|丢弃)(全部)?垃圾$/, fnc: "discard" },
-        { reg: /^#?(我的金币|钓鱼信息|我的钓鱼)$/, fnc: "info" },
+        { reg: /^#?清理垃圾$/, fnc: "discard" },
+        { reg: /^#?个人信息$/, fnc: "info" },
+        { reg: /^#?我的金币$/, fnc: "gold" },
         { reg: /^#?钓鱼图鉴\s*(.*)$/, fnc: "dex" },
       ],
     })
@@ -154,6 +153,12 @@ export class FishingBag extends plugin {
     return e.reply(withButtons(e, lines.join("\n"), [B.cast, B.multi, B.bag]))
   }
 
+  async gold(e) {
+    if (!groupAllowed(e)) return false
+    const user = this.load(e)
+    return e.reply(`💰 ${displayName(user)} 当前金币：${user.gold}`)
+  }
+
   async info(e) {
     if (!groupAllowed(e)) return false
     const user = this.load(e)
@@ -161,7 +166,7 @@ export class FishingBag extends plugin {
     const titles = ownedTitles(user, Config.titles, Config.items)
     const max = user.maxFish && itemMap().get(user.maxFish.id)
     const msg = [
-      `👤 ${displayName(user)} 的钓鱼信息`,
+      `👤 ${displayName(user)} 的个人信息`,
       "━━━━━━━━━━━━",
       `👛 金币：${user.gold} · 🪱 鱼饵：${totalBait(user)}`,
       `🧰 ${["rod", "line", "hook", "float", "net"].map(k => gearItem(Config.shop, k, gearLevel(user, k))?.name).filter(Boolean).join(" · ")}`,

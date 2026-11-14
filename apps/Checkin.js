@@ -26,11 +26,9 @@ export class FishingCheckin extends plugin {
       event: "message",
       priority: 500,
       rule: [
-        { reg: /^#?(每日)?(打卡|签到)$/, fnc: "checkin" },
+        { reg: /^#?打卡$/, fnc: "checkin" },
         { reg: /^#?今日(欧皇|非酋)$/, fnc: "king" },
-        { reg: /^#?历史幸运值$/, fnc: "history" },
-        { reg: /^#?幸运值?排行榜?(欧皇|非酋)?榜?$/, fnc: "rank" },
-        { reg: /^#?让我看看你的卡/, fnc: "look" },
+        { reg: /^#?幸运值排行$/, fnc: "rank" },
       ],
     })
   }
@@ -115,21 +113,9 @@ export class FishingCheckin extends plugin {
       : `🌚 今天的首位非酋是【${displayName(first)}】\nta 的幸运值只有 ${first.checkin.luck}……`)
   }
 
-  async history(e) {
-    if (!groupAllowed(e)) return false
-    const user = UserData.get(e.user_id)
-    const h = user.checkin.history || []
-    if (!h.length) return e.reply(withButtons(e, "你似乎还没有打过卡呢~", [B.checkin]))
-    const avg = Math.round(h.reduce((s, x) => s + x.l, 0) / h.length)
-    return e.reply([
-      `📜 ${displayName(user)} 的历史幸运值（近 ${h.length} 次，平均 ${avg}）`,
-      ...h.map(x => `${x.d}  ${String(x.l).padStart(3, " ")}  ${luckTier(x.l, this.ccfg.tiers)?.emoji || ""}`),
-    ].join("\n"))
-  }
-
   async rank(e) {
     if (!groupAllowed(e)) return false
-    const unlucky = e.msg.includes("非酋")
+    const unlucky = false
     let users = UserData.all().filter(u => todayLuck(u) != null)
     if (e.isGroup) users = users.filter(u => u.groups?.includes(String(e.group_id)))
     if (!users.length) return e.reply(withButtons(e, "今天还没有人打卡呢~", [B.checkin]))
@@ -141,18 +127,7 @@ export class FishingCheckin extends plugin {
       lines.push(`${["🥇", "🥈", "🥉"][i] || `${i + 1}.`} ${displayName(u)}  ${u.checkin.luck} ${luckTier(u.checkin.luck, this.ccfg.tiers)?.emoji || ""}`)
     })
     lines.push("━━━━━━━━━━━━", myIdx >= 0 ? `📍 你排第 ${myIdx + 1} 名，幸运值 ${users[myIdx].checkin.luck}` : "📍 你今天还没打卡")
-    return e.reply(withButtons(e, lines.join("\n"),
-      [{ text: "👑 欧皇榜", callback: "#幸运值排行榜" }, { text: "🌚 非酋榜", callback: "#幸运值排行榜非酋" }], [B.checkin]))
+    return e.reply(withButtons(e, lines.join("\n"), [B.checkin]))
   }
 
-  async look(e) {
-    if (!groupAllowed(e)) return false
-    const target = e.at || e.message?.find(m => m.type === "at")?.qq
-    if (!target) return e.reply("要看谁的卡？请在指令后面 @ 一下 ta~")
-    if (String(target) === String(e.user_id)) return e.reply("你为什么不直接用 #打卡 看自己的幸运值，而是要 @ 一遍自己？？？")
-    const u = UserData.has(target) ? UserData.get(target) : null
-    const luck = u && todayLuck(u)
-    if (luck == null) return e.reply("ta 今天还没打卡~")
-    return e.reply(`🔍 铛铛铛，ta 今天的幸运值是 ${luck}\n${this.tierLine(luck)}`)
-  }
 }

@@ -17,26 +17,10 @@ export class FishingData extends plugin {
       event: "message",
       priority: -Infinity,
       rule: [
-        { reg: /^#?钓鱼(存储|存档|数据)状态$/, fnc: "status" },
-        { reg: /^#?钓鱼数据迁移\s*(覆盖)?$/, fnc: "migrate" },
+        { reg: /^#?钓鱼数据迁移$/, fnc: "migrate" },
         { reg: /^#?钓鱼数据导出$/, fnc: "export" },
       ],
     })
-  }
-
-  async status(e) {
-    if (!e.isMaster) return false
-    const pending = readYamlDir(Data_Path).length
-    const lines = [
-      "🗄️ 钓鱼存档状态",
-      `存储方式：${UserData.backend?.name || "未初始化"}`,
-      UserData.isDb ? `数据库：${rel(UserData.backend.file)}` : `目录：${rel(Data_Path)}`,
-      `存档数量：${await UserData.count()}`,
-    ]
-    if (Config.config.storage === "db" && !UserData.isDb) lines.push("⚠️ 配置为数据库，但 SQLite 驱动不可用，已退回 YAML")
-    if (UserData.isDb && pending) lines.push(`📦 data/ 下还有 ${pending} 份 YAML 存档未导入，可发送 #钓鱼数据迁移`)
-    return e.reply(withButtons(e, lines.join("\n"),
-      UserData.isDb ? [{ text: "🗄️ 数据迁移", callback: "#钓鱼数据迁移", permission: "master" }, { text: "📤 导出备份", callback: "#钓鱼数据导出", permission: "master" }] : []))
   }
 
   async migrate(e) {

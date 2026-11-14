@@ -19,7 +19,7 @@ export class FishingTitle extends plugin {
       dsc: "分级称号一览",
       event: "message",
       priority: 500,
-      rule: [{ reg: /^#?(我的称号|钓鱼称号|称号列表)$/, fnc: "titles" }],
+      rule: [{ reg: /^#?我的称号$/, fnc: "titles" }],
     })
   }
 

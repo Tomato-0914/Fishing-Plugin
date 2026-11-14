@@ -1,59 +1,46 @@
-# ===== 帮助图内容 =====
 - group: 🎣 钓鱼
   list:
-    - { icon: 🎣, title: "#钓鱼 / #抛竿 / 🎣", desc: 甩出鱼竿，等待鱼儿上钩 }
-    - { icon: 🪝, title: "#收杆", desc: 浮漂下沉后及时收杆，太早太晚都会空手 }
-    - { icon: 🔟, title: "#十连钓鱼", desc: 每天 10 次，单钓有概率送额外机会 }
-    - { icon: 🚫, title: 保护动物, desc: 误钓会被罚款并禁渔 1 小时 }
-    - { icon: 🧺, title: "#我的鱼饵", desc: 每竿消耗 1 个鱼饵，新人赠送 10 个普通饵 }
-- group: ⭐ 角色成长
+    - { icon: 🎣, title: "#钓鱼", desc: 抛竿等待鱼儿上钩 }
+    - { icon: 🔟, title: "#十连钓鱼", desc: 连续钓鱼十次 }
+    - { icon: 🪝, title: "#收杆", desc: 鱼儿上钩后收杆 }
+    - { icon: 📚, title: "#钓鱼图鉴", desc: 查看鱼类图鉴与详情 }
+- group: ⭐ 角色
   list:
-    - { icon: ⭐, title: "#钓鱼等级 / #我的等级", desc: 查看等级、经验和升级进度 }
-    - { icon: 👤, title: "#钓鱼角色", desc: 查看金币、渔具、称号、钓获和角色总览 }
-- group: 🛠️ 正式装备养成
-  list:
-    - { icon: 🛠️, title: "#装备工坊 / #装备商店", desc: 五部位、七品质、20级装备与强化规则 }
-    - { icon: 🧰, title: "#我的装备", desc: 查看正式装备与强化补偿 }
-    - { icon: 💰, title: "#购买装备 鱼竿 稀有 3", desc: 购买指定部位、品质和等级的装备，替换旧装备 }
-    - { icon: ⬆️, title: "#装备升级 鱼竿", desc: 将当前装备升级至最高20级 }
-    - { icon: 🔨, title: "#强化装备 鱼竿", desc: 最高+10，失败不退款，下次成功率+5% }
-- group: 📅 打卡
-  list:
-    - { icon: 📅, title: "#打卡 / #签到", desc: 每天一次，抽取幸运值并获赠鱼饵 }
-    - { icon: 🍀, title: 今日运势, desc: 幸运等级会轻微影响当天钓鱼概率 }
-    - { icon: 👑, title: "#今日欧皇 / #今日非酋", desc: 当天第一个超高 / 超低幸运值的人 }
-    - { icon: 📊, title: "#幸运值排行榜 [非酋]", desc: 本群今日幸运值排行 }
-    - { icon: 📜, title: "#历史幸运值", desc: 最近 30 次打卡记录 }
-    - { icon: 🔍, title: "#让我看看你的卡 @某人", desc: 偷看别人今天的幸运值 }
-- group: 🎒 鱼护
-  list:
-    - { icon: 🎒, title: "#我的鱼护", desc: 查看鱼护里的鱼和可卖金币 }
-    - { icon: 🏷️, title: "#出售 名称 [数量]", desc: 出售鱼护里指定的鱼，不写数量卖全部 }
-    - { icon: 💰, title: "#一键出售", desc: 出售鱼护里全部有价值的鱼 }
-    - { icon: ♻️, title: "#清理垃圾 / #回收垃圾", desc: 集中清理海洋垃圾，攒够数量有称号 }
-    - { icon: 👤, title: "#钓鱼信息", desc: 金币、统计与最大一条鱼 }
-    - { icon: 📚, title: "#钓鱼图鉴 [名称]", desc: 全部物品一览，带名称查看详细介绍 }
+    - { icon: ⭐, title: "#我的等级", desc: 查看等级、经验与进度 }
+    - { icon: 💰, title: "#我的金币", desc: 查看当前金币 }
+    - { icon: 👤, title: "#个人信息", desc: 查看钓鱼统计与角色信息 }
+    - { icon: 🏅, title: "#我的称号", desc: 查看称号及加成 }
 - group: 🔧 渔具工坊
   list:
-    - { icon: 🔧, title: "#渔具工坊", desc: 查看渔具等级与升级价格 }
-    - { icon: 🧰, title: "#我的渔具", desc: 装备与总加成一览 }
-    - { icon: 🎣, title: "#升级鱼竿 / 鱼线", desc: 鱼竿提升稀有与大鱼，鱼线防断线 }
-    - { icon: 🪝, title: "#升级鱼钩", desc: 不容易跑鱼，3 级起提高额外十连机会 }
-    - { icon: 🎈, title: "#升级浮漂 / 鱼护", desc: 浮漂减少空军，鱼护扩容加价 }
+    - { icon: 🛒, title: "#购买渔具", desc: 查看五类渔具和购买升级价格 }
+    - { icon: 🧰, title: "#我的渔具", desc: 查看渔具等级及属性 }
+    - { icon: ⬆️, title: "#渔具升级 鱼竿", desc: 升级指定渔具：鱼竿、鱼线、鱼钩、浮漂、鱼护 }
+    - { icon: 🔨, title: "#渔具锻造", desc: 暂未开放，后续开发 }
+- group: 📅 打卡
+  list:
+    - { icon: 📅, title: "#打卡", desc: 每日签到获取幸运值与奖励 }
+    - { icon: 👑, title: "#今日欧皇 / #今日非酋", desc: 查看当天首位欧皇或非酋 }
+- group: 🎒 鱼护
+  list:
+    - { icon: 🎒, title: "#我的鱼护", desc: 查看鱼获及鱼护容量 }
+    - { icon: 🏷️, title: "#出售 名称 数量", desc: 出售指定鱼获 }
+    - { icon: 💰, title: "#一键出售", desc: 出售全部可售鱼获 }
+    - { icon: ♻️, title: "#清理垃圾", desc: 回收鱼护中的垃圾 }
 - group: 🏪 鱼饵商店
   list:
-    - { icon: 🏪, title: "#鱼饵商店", desc: 出售各种鱼饵，效果各不相同 }
-    - { icon: 🪱, title: "#购买鱼饵 种类 数量", desc: 蚯蚓、腥香饵、活虾、金丝秘饵等 }
+    - { icon: 🏪, title: "#鱼饵商店", desc: 查看鱼饵种类与价格 }
+    - { icon: 🪱, title: "#购买鱼饵 种类 数量", desc: 购买指定鱼饵 }
     - { icon: 🔄, title: "#使用鱼饵 种类", desc: 切换当前使用的鱼饵 }
-- group: 🏆 排行与称号
+    - { icon: 🧺, title: "#我的鱼饵", desc: 查看鱼饵库存 }
+- group: 🏆 排行
   list:
-    - { icon: 📅, title: "#钓鱼排行榜", desc: 本群今日钓获价值排行 }
-    - { icon: 🗓️, title: "#钓鱼周/月排行榜", desc: 本群本周 / 本月排行 }
-    - { icon: 🌏, title: "#钓鱼总榜", desc: 所有群累计排行前 30 名 }
-    - { icon: 🏅, title: "#我的称号", desc: 称号进度，拥有即永久生效 }
+    - { icon: 🍀, title: "#幸运值排行", desc: 查看本群今日幸运值排行 }
+    - { icon: 🏆, title: "#钓鱼排行榜", desc: 查看本群今日钓鱼排行 }
+    - { icon: 🗓️, title: "#钓鱼周排行 / #钓鱼月排行", desc: 查看本群周榜和月榜 }
+    - { icon: 🌏, title: "#钓鱼总榜", desc: 查看全服累计排行 }
 - group: ⚙️ 管理
   list:
-    - { icon: 🔄, title: "#钓鱼更新", desc: 拉取最新版本（主人） }
-    - { icon: ⚠️, title: "#钓鱼强制更新", desc: 放弃本地修改并更新（主人） }
-    - { icon: 🗄️, title: "#钓鱼数据迁移", desc: YAML 存档导入数据库（主人） }
-    - { icon: 📤, title: "#钓鱼数据导出", desc: 数据库导出为 YAML 备份（主人） }
+    - { icon: 🔄, title: "#钓鱼更新", desc: 主人拉取插件更新 }
+    - { icon: ⚠️, title: "#钓鱼强制更新", desc: 主人强制覆盖本地修改并更新 }
+    - { icon: 🗄️, title: "#钓鱼数据迁移", desc: 主人迁移 YAML 存档 }
+    - { icon: 📤, title: "#钓鱼数据导出", desc: 主人导出数据库备份 }

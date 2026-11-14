@@ -12,12 +12,11 @@ import {
 } from "../components/Gear.js"
 import { withButtons, B } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
-import { equipmentBonus } from "../components/PlannedEquipment.js"
 import { groupAllowed, updateNickname, displayName } from "../components/common.js"
 
 const UPGRADE_BUTTONS = [
-  [{ text: "🎣 升级鱼竿", callback: "#升级鱼竿" }, { text: "🧵 升级鱼线", callback: "#升级鱼线" }, { text: "🪝 升级鱼钩", callback: "#升级鱼钩" }],
-  [{ text: "🎈 升级浮漂", callback: "#升级浮漂" }, { text: "🧺 升级鱼护", callback: "#升级鱼护" }],
+  [{ text: "🎣 升级鱼竿", callback: "#渔具升级 鱼竿" }, { text: "🧵 升级鱼线", callback: "#渔具升级 鱼线" }, { text: "🪝 升级鱼钩", callback: "#渔具升级 鱼钩" }],
+  [{ text: "🎈 升级浮漂", callback: "#渔具升级 浮漂" }, { text: "🧺 升级鱼护", callback: "#渔具升级 鱼护" }],
 ]
 
 export class FishingShop extends plugin {
@@ -28,13 +27,12 @@ export class FishingShop extends plugin {
       event: "message",
       priority: 500,
       rule: [
-        { reg: /^#?(渔具工坊|钓鱼工坊|工坊)$/, fnc: "workshop" },
-        // #渔具商店 为旧指令，保留兼容聊天记录里的旧按钮
-        { reg: /^#?(鱼饵商店|渔具商店|渔具店|钓鱼商店)$/, fnc: "shop" },
-        { reg: /^#?升级(鱼竿|鱼线|鱼钩|浮漂|鱼护)$/, fnc: "upgrade" },
-        { reg: /^#?(购买|买)鱼饵\s*(.*)$/, fnc: "buy" },
-        { reg: /^#?(使用|切换|换)鱼饵\s*(.+)$/, fnc: "use" },
-        { reg: /^#?(我的)?鱼饵$/, fnc: "bait" },
+        { reg: /^#?购买渔具$/, fnc: "workshop" },
+        { reg: /^#?鱼饵商店$/, fnc: "shop" },
+        { reg: /^#?渔具升级\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)$/, fnc: "upgrade" },
+        { reg: /^#?购买鱼饵\s*(.*)$/, fnc: "buy" },
+        { reg: /^#?使用鱼饵\s*(.+)$/, fnc: "use" },
+        { reg: /^#?我的鱼饵$/, fnc: "bait" },
         { reg: /^#?我的渔具$/, fnc: "gear" },
       ],
     })
@@ -82,11 +80,11 @@ export class FishingShop extends plugin {
       }
     })
     const msg = await renderOrText(puppeteer, "workshop", { name: displayName(user), gold: user.gold, slots }, () => [
-      `🔧 渔具工坊 · 👛 ${user.gold} 金币`,
+      `🔧 购买渔具 · 👛 ${user.gold} 金币`,
       "━━━━━━━━━━━━",
       ...slots.map(s => `${s.emoji} ${s.slotName} Lv${s.cur.level} ${s.cur.name}（${s.cur.text}）\n　${s.next ? `→ Lv${s.next.level} ${s.next.name} ${s.next.price} 金币：${s.next.text}` : "已满级"}`),
       "━━━━━━━━━━━━",
-      "#升级鱼竿 / 鱼线 / 鱼钩 / 浮漂 / 鱼护",
+      "#渔具升级 鱼竿 / #渔具升级 鱼线 / #渔具升级 鱼钩 / #渔具升级 浮漂 / #渔具升级 鱼护",
     ].join("\n"))
     if (!msg) return true
     return e.reply(withButtons(e, msg, ...UPGRADE_BUTTONS, [B.myGear, B.shop]))
@@ -122,7 +120,7 @@ export class FishingShop extends plugin {
   async upgrade(e) {
     if (!groupAllowed(e)) return false
     const user = this.load(e)
-    const slot = UPGRADE_NAMES[e.msg.match(/升级(鱼竿|鱼线|鱼钩|浮漂|鱼护)/)[1]]
+    const slot = UPGRADE_NAMES[e.msg.match(/渔具升级\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)/)[1]]
     const ret = upgradeGear(user, this.shopCfg, slot)
     if (!ret.ok && ret.reason === "max")
       return e.reply(withButtons(e, `✨ 你的${ret.current?.slotName}已经是最高级的【${ret.current?.name}】啦！`, [B.myGear, B.cast]))
@@ -145,7 +143,7 @@ export class FishingShop extends plugin {
     if (!groupAllowed(e)) return false
     const user = this.load(e)
     const shop = this.shopCfg
-    let rest = e.msg.replace(/^#?(购买|买)鱼饵/, "").trim()
+    let rest = e.msg.replace(/^#?购买鱼饵/, "").trim()
     const m = rest.match(/[×*xX]?\s*(\d+)\s*个?$/)
     const num = m ? Number(m[1]) : 10
     if (m) rest = rest.slice(0, m.index).trim()
@@ -159,7 +157,7 @@ export class FishingShop extends plugin {
     if (!ret.ok && ret.reason === "locked")
       return e.reply(withButtons(e, [
         `🔒 ${bait.emoji}${bait.name}是 Lv${ret.need} 鱼饵，需要至少一件渔具达到 Lv${ret.need} 才能购买`,
-        `🧰 你的渔具最高 Lv${maxGearLevel(user)}，先去 #渔具工坊 升级吧`,
+        `🧰 你的渔具最高 Lv${maxGearLevel(user)}，先去 #购买渔具 升级吧`,
       ].join("\n"), [B.workshop, B.shop]))
     if (!ret.ok) {
       const lines = [`👛 金币不足：${num} 个${bait.name}需要 ${ret.cost} 金币，你只有 ${user.gold} 金币`]
@@ -185,7 +183,7 @@ export class FishingShop extends plugin {
     if (!groupAllowed(e)) return false
     const user = this.load(e)
     const shop = this.shopCfg
-    const keyword = e.msg.replace(/^#?(使用|切换|换)鱼饵/, "").trim()
+    const keyword = e.msg.replace(/^#?使用鱼饵/, "").trim()
     const bait = findBait(shop, keyword)
     if (!bait) return e.reply(`❓ 没有「${keyword}」这种鱼饵\n可选：${baitList(shop).map(b => b.name).join("、")}`)
     const ret = useBait(user, shop, bait.id)
@@ -233,7 +231,7 @@ export class FishingShop extends plugin {
     lines.push("━━━━━━━━━━━━", `✨ 渔具总加成：${effectText(gearEffects(user, shop))}`)
     // 当前实际概率：称号 + 今日运势 + 渔具 + 当前鱼饵，和钓鱼时的计算完全一致
     const cfg = Config.config
-    const effects = mergeEffects(getEffects(user, Config.titles, Config.items), luckEffects(user, cfg.checkin?.tiers), gearEffects(user, shop), equipmentBonus(user), cur.effects)
+    const effects = mergeEffects(getEffects(user, Config.titles, Config.items), luckEffects(user, cfg.checkin?.tiers), gearEffects(user, shop), cur.effects)
     const p = oddsPercent(cfg.probability, effects, cfg.limits)
     const f = v => `${Number(v.toFixed(1))}%`
     lines.push(
