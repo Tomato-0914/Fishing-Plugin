@@ -26,10 +26,10 @@ export function addGroup(user, groupId) {
   if (!user.groups.includes(groupId)) user.groups.push(groupId)
 }
 
-/**
- * 记录一次收杆结果
- * @returns {{ value:number, reward:number, stored:boolean }}
- */
+/** 每条成功入护鱼的经验（抛竿经验另计）；旧存档每条 4 经验保持不变。 */
+export const FISH_XP = Object.freeze({ N: 4, R: 6, SR: 10, SSR: 16, UR: 25, EP: 40, MR: 60, hidden: 80 })
+
+/** 记录一次收杆结果；经验差额与鱼获统计一起写入存档。 */
 export function recordResult(user, result, { now = new Date(), policeReward = 0, protectedPenalty = {}, paimonGift = 0 } = {}) {
   touchPeriods(user, now)
   const s = user.stats
@@ -76,7 +76,11 @@ export function recordResult(user, result, { now = new Date(), policeReward = 0,
     stored = false
   } else {
     if (item.rarity === "junk") s.junk++
-    else s.catches++
+    else {
+      s.catches++
+      // 历史钓获按每条 4 经验保留；新钓获只累计高于基准的差额。
+      s.bonusXp = (s.bonusXp || 0) + Math.max(0, (FISH_XP[item.rarity] || 4) - 4)
+    }
     if (item.id === "ocean_heart") s.heart++
     // 传说猎人按传说及以上计数；史诗、神话另外单独记录
     if (["UR", "EP", "MR"].includes(item.rarity)) s.ur++
