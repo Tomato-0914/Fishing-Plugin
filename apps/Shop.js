@@ -80,11 +80,11 @@ export class FishingShop extends plugin {
       }
     })
     const msg = await renderOrText(puppeteer, "workshop", { name: displayName(user), gold: user.gold, slots }, () => [
-      `🔧 渔具工坊 · 👛 ${user.gold} 金币`,
+      `🔧 购买渔具 · 👛 ${user.gold} 金币`,
       "━━━━━━━━━━━━",
       ...slots.map(s => `${s.emoji} ${s.slotName} Lv${s.cur.level} ${s.cur.name}（${s.cur.text}）\n　${s.next ? `→ Lv${s.next.level} ${s.next.name} ${s.next.price} 金币：${s.next.text}` : "已满级"}`),
       "━━━━━━━━━━━━",
-      "#渔具升级 鱼竿 / 鱼线 / 鱼钩 / 浮漂 / 鱼护",
+      "#渔具升级 鱼竿 / #渔具升级 鱼线 / #渔具升级 鱼钩 / #渔具升级 浮漂 / #渔具升级 鱼护",
     ].join("\n"))
     if (!msg) return true
     return e.reply(withButtons(e, msg, ...UPGRADE_BUTTONS, [B.myGear, B.shop]))
