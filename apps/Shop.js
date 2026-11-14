@@ -307,17 +307,13 @@ export class FishingShop extends plugin {
   async gear(e){
     if(!groupAllowed(e))return false
     const user=this.load(e),shop=this.shopCfg
-    const lines=[`🧰 ${displayName(user)} 的渔具 · 金币 ${user.gold}`,"━━━━━━━━━━━━"]
+    const lines=[`🧰 ${displayName(user)} · 当前穿戴渔具`,`金币：${user.gold}`,"━━━━━━━━━━━━"]
     for(const slot of SLOTS){
-      const equipped=gearLevel(user,slot)
-      lines.push(`${SLOT_NAMES[slot]}（已装备：${TIER_NAMES[equipped-1]}）`)
-      for(let tier=1;tier<=20;tier++){
-        const item=ownedGear(user,slot,tier)
-        if(!item)continue
-        lines.push(` ${tier===equipped?"▶":" "} ${TIER_NAMES[tier-1]} · 强化+${item.enhance||0} 锻造+${item.forge||0} · 失败补偿 强化+${Math.min(50,(successRate(shop,"enhance",Math.min(15,(item.enhance||0)+1),item.enhanceFails||0)-successRate(shop,"enhance",Math.min(15,(item.enhance||0)+1),0))).toFixed(1)}% / 锻造+${Math.min(50,(successRate(shop,"forge",Math.min(8,(item.forge||0)+1),item.forgeFails||0)-successRate(shop,"forge",Math.min(8,(item.forge||0)+1),0))).toFixed(1)}%`)
-      }
+      const tier=gearLevel(user,slot)
+      const item=ownedGear(user,slot,tier)
+      lines.push(`${gearItem(shop,slot,tier).name}（第${tier}阶）`)
+      lines.push(`  强化 +${item?.enhance||0}/15 · 锻造 +${item?.forge||0}/8`)
     }
-    lines.push("━━━━━━━━━━━━",`鱼护容量：${bagCapacity(user,shop,Config.config.fishing?.bagLimit)}`,`装备属性：${effectText(gearEffects(user,shop))}`)
+    lines.push("━━━━━━━━━━━━",`鱼护容量：${bagCapacity(user,shop,Config.config.fishing?.bagLimit)}`,`当前生效属性：${effectText(gearEffects(user,shop))}`)
     return e.reply(withButtons(e,lines.join("\n"),[B.workshop,B.shop,B.start]))
-  }
-}
+  }}
