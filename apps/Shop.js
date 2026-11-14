@@ -13,7 +13,7 @@ import { groupAllowed, updateNickname, displayName } from "../components/common.
 export class FishingShop extends plugin {
   constructor() {
     super({name:"钓鱼-渔具工坊与商店",dsc:"渔具购买、穿戴、强化、锻造和鱼饵商店",event:"message",priority:500,rule:[
-      {reg:/^#?购买渔具$/,fnc:"workshop"},
+      {reg:/^#?(?:购买渔具|渔具商店)$/,fnc:"workshop"},
       {reg:/^#?购买渔具\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\s*(\d{1,2})$/,fnc:"purchase"},
       {reg:/^#?装备渔具\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\s*(\d{1,2})$/,fnc:"equip"},
       {reg:/^#?渔具升级\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)$/,fnc:"upgrade"},
@@ -30,18 +30,42 @@ export class FishingShop extends plugin {
   get baitCfg(){return Config.config.bait||{}}
   load(e){const user=UserData.get(e.user_id);updateNickname(user,e);ensureGear(user);return user}
   gearText(item,user){if(!item)return "";const tier=item.level;const data=ownedGear(user,item.slot,tier);return `强化 +${data?.enhance||0}/15 · 锻造 +${data?.forge||0}/8`}
+  /** 图鉴式渔具商店：20阶×5部位，展示全部100件及玩家拥有/穿戴状态。 */
   async workshop(e) {
-    if(!groupAllowed(e))return false
-    const user=this.load(e),top=unlockedTier(user),shop=this.shopCfg
-    const lines=[`🔧 渔具工坊 · 角色可购买最高第 ${top} 阶（${TIER_NAMES[top-1]}）`,`👛 金币：${user.gold}`,"━━━━━━━━━━━━"]
-    for(const slot of SLOTS) {
-      const tier=gearLevel(user,slot),item=gearItem(shop,slot,tier)
-      lines.push(`${item.emoji} ${item.name}（已装备）· ${this.gearText(item,user)}`)
-      const next=Array.from({length:top},(_,i)=>i+1).find(t=>!ownedGear(user,slot,t))
-      if(next)lines.push(`  可购买：${TIER_NAMES[next-1]}${SLOT_NAMES[slot]} ${tierPrice(shop,next)} 金币 · #购买渔具 ${SLOT_NAMES[slot]} ${next}`)
-    }
-    lines.push("━━━━━━━━━━━━","#我的渔具 查看持有装备","#购买渔具 鱼竿 9 · #装备渔具 鱼竿 9","#渔具强化 鱼竿 9 · #渔具锻造 鱼竿 9","省略阶位时，强化/锻造当前穿戴的装备")
-    return e.reply(withButtons(e,lines.join("\n"),[B.myGear,B.shop]))
+    if (!groupAllowed(e)) return false
+    const user = this.load(e)
+    const shop = this.shopCfg
+    const unlocked = unlockedTier(user)
+    const tiers = TIER_NAMES.map((name, index) => {
+      const tier = index + 1
+      return {
+        tier, name, needLevel: index * 5 + 1, price: tierPrice(shop, tier),
+        unlocked: tier <= unlocked,
+        items: SLOTS.map(slot => {
+          const item = gearItem(shop, slot, tier)
+          const owned = ownedGear(user, slot, tier)
+          return {
+            slot, name: item.name, shortName: SLOT_NAMES[slot], emoji: item.emoji,
+            owned: !!owned, equipped: gearLevel(user, slot) === tier,
+            enhance: owned?.enhance || 0, forge: owned?.forge || 0,
+            afford: user.gold >= item.price,
+          }
+        }),
+      }
+    })
+    const msg = await renderOrText(puppeteer, "workshop", {
+      name: displayName(user), gold: user.gold, unlocked, tiers,
+    }, () => [
+      `🔧 渔具商店 · ${displayName(user)} · 金币 ${user.gold}`,
+      `当前最高解锁第 ${unlocked} 阶 · 全部20阶、100件装备`,
+      ...tiers.map(t => [
+        `【第${t.tier}阶 · ${t.name}】Lv${t.needLevel} · ${t.price}金币/件 ${t.unlocked ? "" : "🔒未解锁"}`,
+        ...t.items.map(i => ` ${i.emoji}${i.shortName}：${i.equipped ? "已装备" : i.owned ? `已拥有 强化+${i.enhance} 锻造+${i.forge}` : t.unlocked ? "可购买" : "未解锁"}`),
+      ].join("\n")),
+      "购买：#购买渔具 鱼竿 9 · 装备：#装备渔具 鱼竿 9",
+    ].join("\n"))
+    if (!msg) return true
+    return e.reply(withButtons(e, msg, [B.myGear, B.shop]))
   }
   parseSlotTier(e,verb) {
     const m=e.msg.match(new RegExp(verb+"\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\\s*(\\d{1,2})?"))
@@ -89,7 +113,7 @@ export class FishingShop extends plugin {
     const cur = currentBait(user, shop)
     const gearLv = maxGearLevel(user)
     const baits = baitList(shop).map(b => ({
-      ...b, level: baitLevel(b), color: lvColor(baitLevel(b)), locked: !canUseBait(user, b),
+      ...b, level: baitLevel(b), color: levelColor(baitLevel(b)), locked: !canUseBait(user, b),
       price: baitPrice(shop, b.id, this.baitCfg), count: baitCount(user, b.id), current: b.id === cur.id, text: effectText(b.effects),
     }))
     const msg = await renderOrText(puppeteer, "shop", { name: displayName(user), gold: user.gold, gearLv, baits }, () => [

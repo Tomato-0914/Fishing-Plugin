@@ -1,44 +1,75 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <link rel="stylesheet" href="{{_res}}/common/common.css" />
-  <link rel="stylesheet" href="{{_res}}/common/tackle.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin:0; padding:24px; font-family:"Microsoft YaHei","Noto Sans CJK SC",sans-serif; }
+    .container { width:1120px; max-width:none; margin:0 auto; }
+    .catalog-head { display:flex; justify-content:space-between; align-items:center; padding:22px 28px; border-radius:20px; background:linear-gradient(110deg,#124b55,#167f83); color:#fff; margin-bottom:18px; }
+    .catalog-title { font-size:36px; font-weight:800; letter-spacing:2px; }
+    .catalog-sub { font-size:17px; opacity:.9; margin-top:6px; }
+    .coins { font-size:24px; font-weight:700; text-align:right; }
+    .catalog-guide { display:flex; gap:22px; padding:12px 20px; margin-bottom:15px; border-radius:12px; background:rgba(85,130,140,.12); font-size:17px; }
+    .tier { margin-bottom:12px; padding:15px 18px 18px; border:1px solid rgba(110,130,145,.24); border-radius:16px; background:var(--card-bg,rgba(150,160,175,.10)); break-inside:avoid; }
+    .tier.locked { opacity:.72; }
+    .tier-head { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+    .tier-number { padding:5px 11px; border-radius:8px; background:#167f83; color:white; font-size:15px; font-weight:800; }
+    .tier-name { font-size:22px; font-weight:800; }
+    .tier-meta { margin-left:auto; font-size:16px; opacity:.8; }
+    .tier-price { font-size:19px; font-weight:800; color:#d18b20; }
+    .gear-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
+    .gear-item { min-height:112px; padding:12px 10px; border-radius:12px; border:1px solid rgba(120,140,155,.2); background:rgba(130,150,165,.09); text-align:center; }
+    .gear-item.equipped { border:2px solid #23a58d; background:rgba(35,165,141,.13); }
+    .gear-item.owned:not(.equipped) { border-color:rgba(35,165,141,.55); }
+    .gear-icon { font-size:29px; line-height:35px; }
+    .gear-name { font-size:17px; font-weight:700; margin:4px 0 5px; }
+    .gear-status { font-size:14px; font-weight:700; color:#138b78; }
+    .gear-status.unavailable { color:#9a8c7e; }
+    .gear-status.poor { color:#ba7842; }
+    .gear-progress { font-size:13px; opacity:.75; margin-top:4px; }
+    .catalog-foot { text-align:center; padding:18px 8px 4px; font-size:16px; opacity:.8; }
+    body.dark .tier { background:#202b36; border-color:#394857; }
+    body.dark .gear-item { background:#293745; }
+    body.dark .tier-price { color:#f5bc59; }
+    body.dark .gear-status { color:#65d5b6; }
+    body.dark .gear-status.unavailable { color:#a9a8aa; }
+    body.dark .gear-status.poor { color:#e6a179; }
+  </style>
 </head>
 <body class="{{theme}}">
   <div class="container">
-    <div class="head">
-      <div class="logo">🔧</div>
-      <div>
-        <div class="title">渔具工坊</div>
-        <div class="sub">{{name}} · 👛 {{gold}} 金币 · 逐级升级，升级后自动装备</div>
-      </div>
+    <div class="catalog-head">
+      <div><div class="catalog-title">🎣 渔具商店 · 全阶图鉴</div><div class="catalog-sub">{{name}} · 20 阶 × 5 类 = 100 件渔具</div></div>
+      <div class="coins">👛 {{gold}} 金币<div class="catalog-sub">最高解锁：第 {{unlocked}} 阶</div></div>
     </div>
-
-    {{each slots s}}
-    <div class="card gear">
-      <div class="slot">
-        <div class="slot-emoji">{{s.emoji}}</div>
-        <div class="slot-name">{{s.slotName}}</div>
-        <div class="pips">{{each s.pips on}}<span class="{{on ? 'on' : ''}}"></span>{{/each}}</div>
+    <div class="catalog-guide"><span>🟢 已装备</span><span>✓ 已拥有</span><span>💰 可购买</span><span>🔒 等级未解锁</span></div>
+    {{each tiers t}}
+    <section class="tier {{t.unlocked ? '' : 'locked'}}">
+      <div class="tier-head">
+        <span class="tier-number">第 {{t.tier}} 阶</span>
+        <span class="tier-name">{{t.name}}系列</span>
+        <span class="tier-meta">需角色 Lv{{t.needLevel}} {{t.unlocked ? '✓ 已解锁' : '🔒 未解锁'}}</span>
+        <span class="tier-price">💰 {{t.price}} / 件</span>
       </div>
-      <div class="cur">
-        <div class="lv"><span class="tag" style="background: {{s.cur.color}}">Lv{{s.cur.level}}</span>{{s.cur.name}}</div>
-        <div class="muted small">{{s.cur.text}}</div>
+      <div class="gear-grid">
+        {{each t.items i}}
+        <div class="gear-item {{i.equipped ? 'equipped' : i.owned ? 'owned' : ''}}">
+          <div class="gear-icon">{{i.emoji}}</div>
+          <div class="gear-name">{{i.name}}</div>
+          {{if i.equipped}}<div class="gear-status">● 已装备</div>
+          {{else if i.owned}}<div class="gear-status">✓ 已拥有</div>
+          {{else if !t.unlocked}}<div class="gear-status unavailable">🔒 未解锁</div>
+          {{else if i.afford}}<div class="gear-status">💰 可购买</div>
+          {{else}}<div class="gear-status poor">金币不足</div>{{/if}}
+          {{if i.owned}}<div class="gear-progress">强化 +{{i.enhance}} · 锻造 +{{i.forge}}</div>{{/if}}
+        </div>
+        {{/each}}
       </div>
-      <div class="arrow">{{s.next ? '➜' : ''}}</div>
-      {{if s.next}}
-      <div class="next">
-        <div class="lv"><span class="tag" style="background: {{s.next.color}}">Lv{{s.next.level}}</span>{{s.next.name}}</div>
-        <div class="small">{{s.next.text}}</div>
-        <div class="price {{s.next.afford ? '' : 'poor'}}">💰 {{s.next.price}}</div>
-      </div>
-      {{else}}
-      <div class="next maxed">✨ 已满级</div>
-      {{/if}}
-    </div>
+    </section>
     {{/each}}
-    <div class="footer">#升级鱼竿 · #升级鱼线 · #升级鱼钩 · #升级浮漂 · #升级鱼护 · 鱼饵请到 #鱼饵商店</div>
+    <div class="catalog-foot">#购买渔具 鱼竿 9　·　#装备渔具 鱼竿 9　·　#渔具强化 鱼竿 9　·　#渔具锻造 鱼竿 9</div>
   </div>
   <script src="{{_res}}/common/twemoji.min.js"></script>
   <script src="{{_res}}/common/emoji.js"></script>

@@ -12,7 +12,7 @@
     - { icon: 🏅, title: "#我的称号", desc: 查看称号及加成 }
 - group: 🔧 渔具工坊
   list:
-    - { icon: 🛒, title: "#购买渔具", desc: 查看20阶渔具及购买价格 }
+    - { icon: 🏪, title: "#渔具商店", desc: 图片展示全部20阶100件渔具与解锁状态 }\n    - { icon: 🛒, title: "#购买渔具", desc: 同样可查看渔具商店图鉴 }
     - { icon: 🧰, title: "#我的渔具", desc: 查看已拥有、已穿戴渔具及强化锻造属性 }
     - { icon: 🛒, title: "#购买渔具 鱼竿 9", desc: 按角色等级购买指定阶位的渔具 }
     - { icon: 🎽, title: "#装备渔具 鱼竿 9", desc: 切换已拥有的渔具 }
