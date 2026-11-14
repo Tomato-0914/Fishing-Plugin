@@ -44,6 +44,24 @@ export function buyGear(user,shop,slot,tier) {
   user.stats.gearSpent=(user.stats.gearSpent||0)+cost
   return {ok:true,cost,item:gearItem(shop,slot,tier)}
 }
+/** 一次购买同阶五件；已拥有的部位跳过且不重复扣费。校验通过后统一扣款。 */
+export function buyGearSet(user, shop, tier) {
+  if (!Number.isInteger(tier) || tier < 1 || tier > TIER_NAMES.length)
+    return {ok:false,reason:"invalid"}
+  ensureGear(user)
+  if (tier > unlockedTier(user))
+    return {ok:false,reason:"locked",need:(tier-1)*5+1}
+  const missing = SLOTS.filter(slot => !ownedGear(user,slot,tier))
+  if (!missing.length) return {ok:false,reason:"owned"}
+  const cost = tierPrice(shop,tier) * missing.length
+  if (user.gold < cost) return {ok:false,reason:"gold",cost,have:user.gold,missing:missing.length}
+  user.gold -= cost
+  for (const slot of missing)
+    user.gearV2.items[gearKey(slot,tier)] = {enhance:0,forge:0,enhanceFails:0,forgeFails:0}
+  user.stats ||= {}
+  user.stats.gearSpent = (user.stats.gearSpent || 0) + cost
+  return {ok:true,cost,slots:missing,skipped:SLOTS.length-missing.length}
+}
 export function equipGear(user,slot,tier) {
   ensureGear(user)
   if (!SLOTS.includes(slot)||!ownedGear(user,slot,tier)) return {ok:false,reason:"not_owned"}
