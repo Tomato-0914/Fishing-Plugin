@@ -19,7 +19,7 @@ export class FishingRank extends plugin {
       event: "message",
       priority: 500,
       rule: [
-        { reg: /^#?钓鱼(周|月)?排行榜$/, fnc: "groupRank" },
+        { reg: /^#?钓鱼(?:排行榜|(?:周|月)排行)$/, fnc: "groupRank" },
         { reg: /^#?钓鱼总榜$/, fnc: "totalRank" },
       ],
     })
