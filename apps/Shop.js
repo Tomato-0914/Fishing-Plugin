@@ -314,6 +314,9 @@ export class FishingShop extends plugin {
       lines.push(`${gearItem(shop,slot,tier).name}（第${tier}阶）`)
       lines.push(`  强化 +${item?.enhance||0}/15 · 锻造 +${item?.forge||0}/8`)
     }
-    lines.push("━━━━━━━━━━━━",`鱼护容量：${bagCapacity(user,shop,Config.config.fishing?.bagLimit)}`,`当前生效属性：${effectText(gearEffects(user,shop))}`)
+    const effects = effectText(gearEffects(user,shop))
+      .split(/，|\s+(?=[^\s，]+[+-]\d)/)
+      .map(part => part.trim()).filter(Boolean)
+    lines.push("━━━━━━━━━━━━",`鱼护容量：${bagCapacity(user,shop,Config.config.fishing?.bagLimit)}`,"当前生效属性：",...effects.map(part => `> ${part}`))
     return e.reply(withButtons(e,lines.join("\n"),[B.workshop,B.shop,B.start]))
   }}
