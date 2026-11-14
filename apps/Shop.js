@@ -14,6 +14,7 @@ export class FishingShop extends plugin {
   constructor() {
     super({name:"钓鱼-渔具工坊与商店",dsc:"渔具购买、穿戴、强化、锻造和鱼饵商店",event:"message",priority:500,rule:[
       {reg:/^#?(?:购买渔具|渔具商店)$/,fnc:"workshop"},
+      {reg:/^#?渔具工坊(?:\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护))?$/,fnc:"forgeWorkshop"},
       {reg:/^#?购买渔具\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\s*(\d{1,2})$/,fnc:"purchase"},
       {reg:/^#?购买渔具\s*(新手|青竹|精铁|玄木|寒玉|流云|沧浪|星砂|月影|玄冰|烈阳|深渊|龙鳞|凤羽|天罡|星辰|太虚|混元|鸿蒙|创世)套装$/,fnc:"purchaseSet"},
       {reg:/^#?装备渔具\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\s*(\d{1,2})$/,fnc:"equip"},
@@ -68,6 +69,58 @@ export class FishingShop extends plugin {
     ].join("\n"))
     if (!msg) return true
     return e.reply(withButtons(e, msg, [B.myGear, B.shop]))
+  }
+  workshopButtons(slot="rod",tier=1) {
+    return [
+      [{text:"⬆️ 强化",callback:`#渔具强化 ${SLOT_NAMES[slot]} ${tier}`},{text:"🔨 锻造",callback:`#渔具锻造 ${SLOT_NAMES[slot]} ${tier}`}],
+      SLOTS.map(s=>({text:SLOT_NAMES[s],callback:`#渔具工坊 ${SLOT_NAMES[s]}`})),
+      [B.myGear,{text:"🏪 渔具商店",callback:"#渔具商店"},B.help]
+    ]
+  }
+  workshopData(user,slot="rod",type="enhance") {
+    const shop=this.shopCfg,tier=gearLevel(user,slot),item=ownedGear(user,slot,tier)
+    const level=Number(item?.[type])||0,max=type==="enhance"?15:8,target=level+1
+    const fails=Number(item?.[type==="enhance"?"enhanceFails":"forgeFails"])||0
+    const base=level<max?successRate(shop,type,target,0):null
+    const chance=level<max?successRate(shop,type,target,fails):null
+    const cost=level<max?(type==="enhance"?enhanceCost(shop,tier,target):forgeCost(shop,tier,target)):0
+    const equipment=SLOTS.map(s=>{
+      const t=gearLevel(user,s),d=ownedGear(user,s,t)
+      return {slot:s,name:TIER_NAMES[t-1]+SLOT_NAMES[s],emoji:gearItem(shop,s,t)?.emoji,
+        tier:t,enhance:Number(d?.enhance)||0,forge:Number(d?.forge)||0,selected:s===slot}
+    })
+    const descriptions={
+      rod:{enhance:"高级鱼出现概率",forge:"特殊鱼获取概率",enhanceStep:0.15,forgeStep:0.10,unit:"%"},
+      line:{enhance:"断线概率相对降低",forge:"大鱼断线概率相对降低",enhanceStep:1,forgeStep:1.5,unit:"%"},
+      hook:{enhance:"收杆成功率",forge:"额外钓鱼机会",enhanceStep:0.3,forgeStep:0.25,unit:"%"},
+      float:{enhance:"等待时间缩短",forge:"有效收杆时间延长",enhanceStep:0.3,forgeStep:0.5,unit:"%"},
+      net:{enhance:"鱼护容量",forge:"出售金币收益",enhanceStep:5,forgeStep:0.5,unit:type==="enhance"?"格":"%"}
+    }
+    const d=descriptions[slot],step=type==="enhance"?d.enhanceStep:d.forgeStep
+    return {name:displayName(user),gold:user.gold,equipment,slot,tier,
+      itemName:TIER_NAMES[tier-1]+SLOT_NAMES[slot],itemEmoji:gearItem(shop,slot,tier)?.emoji,
+      enhance:Number(item?.enhance)||0,forge:Number(item?.forge)||0,
+      type,typeName:type==="enhance"?"强化":"锻造",level,max,target,
+      effectName:d[type],effectStep:step,unit:slot==="net"&&type==="enhance"?"格":"%",
+      effectTotal:Number((step*level).toFixed(2)),
+      nextTotal:Number((step*(level+1)).toFixed(2)),
+      base,chance,bonus:chance===null?0:Number((chance-base).toFixed(2)),
+      cost,full:level>=max}
+  }
+  async forgeWorkshop(e) {
+    if(!groupAllowed(e))return false
+    const user=this.load(e)
+    const m=e.msg.match(/^#?渔具工坊(?:\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护))?$/)
+    const slot=UPGRADE_NAMES[m?.[1]]||"rod"
+    const data=this.workshopData(user,slot)
+    const msg=await renderOrText(puppeteer,"forgeworkshop",data,()=>[
+      `🔧 渔具工坊 · ${data.itemName}`,
+      `强化 +${data.enhance}/15 · 锻造 +${data.forge}/8`,
+      `下次强化：${data.full?"已满级":`${data.chance}% · ${data.cost} 金币`}`,
+      "使用下方按钮选择装备或强化/锻造"
+    ].join("\n"))
+    if(!msg)return true
+    return e.reply(withButtons(e,msg,...this.workshopButtons(slot,data.tier)))
   }
   parseSlotTier(e,verb) {
     const m=e.msg.match(new RegExp(verb+"\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\\s*(\\d{1,2})?"))
@@ -133,10 +186,22 @@ export class FishingShop extends plugin {
     const ret=cultivateGear(user,this.shopCfg,p.slot,tier,type)
     if(!ret.ok)return e.reply({not_owned:"未拥有该阶位渔具",max:"已达到最高等级",gold:`金币不足，需要 ${ret.cost} 金币`,invalid:"参数无效"}[ret.reason]||"操作失败")
     await UserData.save(user.user_id)
-    const name=type==="enhance"?"强化":"锻造",data=ownedGear(user,p.slot,tier),level=type==="enhance"?data.enhance:data.forge
-    const next=level+1,max=type==="enhance"?15:8
-    const chance=next<=max?successRate(this.shopCfg,type,next,type==="enhance"?data.enhanceFails:data.forgeFails):null
-    return e.reply(`${ret.success?"🎉":"💢"} ${item.name} ${name}${ret.success?"成功":"失败"}！\n当前${name} +${level}/${max}\n本次成功率 ${ret.chance}% · 消耗 ${ret.cost} 金币\n${chance===null?"已满级":`下次成功率 ${chance}%`} · 剩余金币 ${user.gold}`)
+    const data=this.workshopData(user,p.slot,type)
+    const resultData={...data,success:ret.success,spent:ret.cost,
+      attemptedChance:ret.chance,oldLevel:ret.success?data.level-1:data.level,
+      gained:ret.success?data.effectStep:0}
+    const msg=await renderOrText(puppeteer,"forgeresult",resultData,()=>[
+      `${ret.success?"🎉":"💢"} ${data.itemName} ${data.typeName}${ret.success?"成功":"失败"}！`,
+      `等级：+${resultData.oldLevel} → +${data.level}`,
+      `本次成功率 ${ret.chance}% · 消耗 ${ret.cost} 金币`,
+      data.full?"已满级":`下次成功率 ${data.chance}%（失败补偿 +${data.bonus}%）`,
+      `剩余金币 ${user.gold}`
+    ].join("\n"))
+    if(!msg)return true
+    return e.reply(withButtons(e,msg,
+      [{text:`🔨 再次${data.typeName}`,callback:`#渔具${data.typeName} ${SLOT_NAMES[p.slot]} ${tier}`},
+       {text:"🏠 返回工坊",callback:`#渔具工坊 ${SLOT_NAMES[p.slot]}`}],
+      [B.myGear,{text:"🔄 切换方式",callback:`#渔具${type==="enhance"?"锻造":"强化"} ${SLOT_NAMES[p.slot]} ${tier}`}]))
   }
   async shop(e) {
     if (!groupAllowed(e)) return false
