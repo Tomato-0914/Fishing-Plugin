@@ -6,7 +6,7 @@
 #            dex 图鉴中已收集的鱼类种数（need 写 all 表示集齐） / checkinDays 累计打卡天数
 # desc 中的 {n} 会替换成该级的 need
 # 垃圾、空军会随渔具变好而越来越少（下限 5% / 3%），所以海洋卫士、空军司令的门槛比钓鱼次数类的低很多
-# effects 写法与渔具相同：boostN ~ boostUR（分档加成，从低档扣除）、rareBoost、largeBoost、emptyReduce、junkReduce、
+# 称号不再直接影响鱼获品级；只保留空军、垃圾、体型、收益等非品级加成。
 #   biteReduce、cooldown（挂鱼饵 -N 秒）、reelWindow、sellBonus（出售金币 +N%，可以超过 100%）等
 
 - id: veteran
@@ -25,9 +25,9 @@
   stat: catches
   desc: 累计钓到 {n} 条鱼
   tiers:
-    - { need: 100,   effects: { boostR: 2, boostSR: 1 } }
-    - { need: 3000,  effects: { boostSR: 3, boostSSR: 1 } }
-    - { need: 50000, effects: { boostSSR: 3, boostUR: 1 } }
+    - { need: 100,   effects: { emptyReduce: 2 } }
+    - { need: 3000,  effects: { emptyReduce: 2 } }
+    - { need: 50000, effects: { emptyReduce: 2 } }
 
 - id: guardian
   name: 海洋卫士
@@ -36,8 +36,8 @@
   desc: 累计清理 {n} 件海洋垃圾
   tiers:
     - { need: 50,   effects: { junkReduce: 3 } }
-    - { need: 300,  effects: { junkReduce: 6, boostR: 1 } }
-    - { need: 1500, effects: { junkReduce: 10, boostSR: 2 } }
+    - { need: 300,  effects: { junkReduce: 6, emptyReduce: 1 } }
+    - { need: 1500, effects: { junkReduce: 10, emptyReduce: 1 } }
 
 - id: airforce
   name: 空军司令
@@ -65,9 +65,9 @@
   stat: checkinDays
   desc: 累计打卡 {n} 天
   tiers:
-    - { need: 7,   effects: { boostR: 1, boostSR: 1 } }
-    - { need: 30,  effects: { boostSR: 2, boostSSR: 1 } }
-    - { need: 365, effects: { boostSSR: 2, boostUR: 1 } }
+    - { need: 7,   effects: { emptyReduce: 2 } }
+    - { need: 30,  effects: { emptyReduce: 2 } }
+    - { need: 365, effects: { emptyReduce: 2 } }
 
 - id: master
   name: 图鉴大师
@@ -75,9 +75,9 @@
   stat: dex
   desc: 图鉴收集 {n} 种鱼类
   tiers:
-    - { need: 20,  effects: { rareBoost: 5 } }
-    - { need: 45,  effects: { rareBoost: 10, largeBoost: 5 } }
-    - { need: all, effects: { rareBoost: 20, largeBoost: 10 } }
+    - { need: 20,  effects: { emptyReduce: 1 } }
+    - { need: 45,  effects: { largeBoost: 5, emptyReduce: 1 } }
+    - { need: all, effects: { largeBoost: 10, emptyReduce: 1 } }
 
 - id: legend
   name: 传说猎人
@@ -86,8 +86,8 @@
   desc: 累计钓到 {n} 条传说鱼
   tiers:
     - { need: 5,    effects: { largeBoost: 5 } }
-    - { need: 100,  effects: { largeBoost: 10, boostUR: 0.5 } }
-    - { need: 1000, effects: { largeBoost: 20, boostUR: 1 } }
+    - { need: 100,  effects: { largeBoost: 10, emptyReduce: 1 } }
+    - { need: 1000, effects: { largeBoost: 20, emptyReduce: 1 } }
 
 - id: citizen
   name: 热心市民
@@ -105,9 +105,9 @@
   stat: heart
   desc: 钓到海洋之心 {n} 次
   tiers:
-    - { need: 1, effects: { boostUR: 0.5 } }
-    - { need: 3, effects: { boostSSR: 1, boostUR: 1 } }
-    - { need: 8, effects: { boostSSR: 2, boostUR: 2 } }
+    - { need: 1, effects: { emptyReduce: 1 } }
+    - { need: 3, effects: { emptyReduce: 2 } }
+    - { need: 8, effects: { emptyReduce: 2 } }
 
 # ---------- 特殊称号（只有一级） ----------
 - id: bestie
@@ -116,4 +116,4 @@
   stat: paimon
   desc: 钓到派蒙
   tiers:
-    - { need: 1, effects: { rareBoost: 5, sellBonus: 10 } }
+    - { need: 1, effects: { sellBonus: 10, emptyReduce: 1 } }
