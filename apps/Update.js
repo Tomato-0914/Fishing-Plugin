@@ -22,7 +22,7 @@ export class FishingUpdate extends plugin {
       dsc: "钓鱼插件更新",
       event: "message",
       priority: -Infinity,
-      rule: [{ reg: /^#?钓鱼(插件)?(强制)?更新$/, fnc: "update" }],
+      rule: [{ reg: /^#?钓鱼(强制)?更新$/, fnc: "update" }],
     })
     if (!FishingUpdate.checked) {
       FishingUpdate.checked = true
