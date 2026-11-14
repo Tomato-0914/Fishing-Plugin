@@ -8,6 +8,7 @@ import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js
 import { multiLeft, useMulti, grantMultiTicket, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier, luckEffects } from "../components/Game.js"
 import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, allEffects, holdsOnTimeout, maxLevel, multiTicketChance } from "../components/Gear.js"
 import { resolveCast, summarize, formatMulti } from "../components/Catch.js"
+import { experience, levelThreshold, characterProgress } from "../components/Progression.js"
 import { checkTitles, getEffects, effectText, titleUpText } from "../components/Titles.js"
 import { withButtons, B } from "../components/Button.js"
 import { groupAllowed, displayName, updateNickname, pick, itemMap } from "../components/common.js"
@@ -30,6 +31,24 @@ const WAITING_TEXT = [
 ]
 
 const sec = n => Math.max(0, Math.round(n))
+/** 经验由累计抛竿与钓获统计推导；此处仅展示，不重复发放。 */
+function levelAtXp(xp) {
+  let lo = 1, hi = 100
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2)
+    if (levelThreshold(mid) <= xp) lo = mid
+    else hi = mid - 1
+  }
+  return lo
+}
+function xpSettlement(user, beforeXp) {
+  const xp = experience(user), oldLevel = levelAtXp(beforeXp)
+  const newLevel = characterProgress(user).level
+  return [
+    `✨ 本次获得经验：+${Math.max(0, xp - beforeXp)}（累计 ${xp}）`,
+    ...(newLevel > oldLevel ? [`🎉 等级提升：Lv${oldLevel} → Lv${newLevel}`] : []),
+  ].join("\n")
+}
 
 /** 抛竿配图：按路径缓存为 Buffer（各协议都支持），文件变化时重新读取 */
 const castImageCache = new Map()
@@ -223,7 +242,7 @@ export class Fishing extends plugin {
     addGroup(user, e.group_id)
     UserData.save(id)
 
-    const s = { stage: "waiting", castAt: Date.now(), bait: bait.id }
+    const s = { stage: "waiting", castAt: Date.now(), bait: bait.id, xpBefore: experience(user) - 1 }
     s.timer = setTimeout(() => this.bite(e, id, effects).catch(err => logger.error(err)), delay)
     sessions.set(id, s)
 
@@ -302,12 +321,13 @@ export class Fishing extends plugin {
 
     if (s.stage === "waiting") {
       user.stats.early++
+      const xpLine = xpSettlement(user, s.xpBefore ?? experience(user) - 1)
       this.startCooldown(id, user)
       UserData.save(id)
       await this.send(e, withButtons(e, pick([
         "😅 收杆太早啦，鱼饵被白白浪费……什么都没钓到~",
         "😅 太心急了！水面一片平静，鱼钩上空空如也~",
-      ]), [B.cast, B.multi]))
+      ]) + "\n" + xpLine, [B.cast, B.multi]))
       return this.announceTitles(e, user)
     }
 
@@ -324,13 +344,14 @@ export class Fishing extends plugin {
     const effects = this.effectsFor(user, baitDef(shop, s.bait))
     const round = resolveCast(user, { items: Config.items, cfg, shop, effects })
     const { result, snapped, chance: snap, reward } = round
+    const xpLine = xpSettlement(user, s.xpBefore ?? experience(user) - 1)
     // 单次钓鱼有概率额外获得 1 次十连机会（鱼钩提高概率）；误钓保护动物时没有
     let suffix = ""
     const ticketChance = multiTicketChance(cfg.fishing?.multiTicketChance ?? 2, effects)
     if (!round.penalty && ticketChance > 0 && Math.random() * 100 < ticketChance && grantMultiTicket(user, cfg.fishing?.multiBonusMax ?? 50))
       suffix = `🎟️ 运气不错！获得 1 次额外十连机会（现有 ${user.multi.bonus} 次）`
     const withPrefix = msg => {
-      const wrap = t => [prefix, t, suffix].filter(Boolean).join("\n")
+      const wrap = t => [prefix, t, xpLine, suffix].filter(Boolean).join("\n")
       if (Array.isArray(msg)) return [wrap(msg[0]), ...msg.slice(1)]
       return wrap(msg)
     }
@@ -393,7 +414,7 @@ export class Fishing extends plugin {
     addGroup(user, e.group_id)
     UserData.save(id)
 
-    const s = { stage: "multi", castAt: Date.now() }
+    const s = { stage: "multi", castAt: Date.now(), xpBefore: experience(user) - baits.length }
     const delay = triangular(3, 8) * 1000
     s.timer = setTimeout(() => this.multiSettle(e, id, baits).catch(err => logger.error(err)), delay)
     sessions.set(id, s)
@@ -431,10 +452,12 @@ export class Fishing extends plugin {
     UserData.save(id)
 
     const sum = summarize(rounds)
+    const xpLine = xpSettlement(user, s.xpBefore ?? experience(user) - baits.length)
     const sizeLabels = Object.fromEntries(Object.entries(cfg.size || {}).map(([k, v]) => [k, v.label]))
     // QQBot 使用轻量 Markdown 加粗标题，其他协议保持纯文本；均不使用引用块
     const left = multiLeft(user, Number(cfg.fishing?.multiDaily ?? 10))
     const msg = formatMulti(rounds, { sizeLabels, markdown: e.bot?.adapter?.id === "QQBot" }) +
+      `\n${xpLine}` +
       `\n🎟️ 剩余十连：${left.free} 次${left.bonus ? `（额外 ${left.bonus} 次）` : ""}` +
       (cd ? `\n⏳ 冷却：${cd} 秒` : "")
     await this.send(e, withButtons(e, msg,
