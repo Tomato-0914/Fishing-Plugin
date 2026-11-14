@@ -118,10 +118,10 @@ export function gearEffects(user,shop) {
     const tier=gearLevel(user,slot),item=ownedGear(user,slot,tier)
     if (!item) continue
     const e=Number(item.enhance)||0,f=Number(item.forge)||0,t=tier-1
-    if(slot==="rod") out.push({boostR:0.25*t+0.15*e,boostSR:0.08*t,boostSSR:0.10*f})
+    if(slot==="rod") out.push({rarityTier:tier,rarityUR:0.20*e+0.25*f,rarityEP:0.10*e+0.25*f,rarityMR:0.125*f})
     if(slot==="line") out.push({lineGuard:Math.min(85,2*t+e+1.5*f)})
-    if(slot==="hook") out.push({holdChance:Math.min(85,2*t+0.3*e),multiTicket:Math.min(15,0.2*t+0.25*f)})
-    if(slot==="float") out.push({biteReduce:Math.min(8,0.10*t+0.03*e),reelWindow:Math.min(10,0.2*t+0.075*f)})
+    if(slot==="hook") out.push({holdChance:Math.min(85,2*t+0.3*e),multiTicket:Math.min(15,0.2*t+0.25*f),rarityUR:0.10*e,rarityEP:0.10*e,rarityMR:0.125*f})
+    if(slot==="float") out.push({biteReduce:Math.min(8,0.10*t+0.03*e),reelWindow:Math.min(10,0.2*t+0.075*f),rarityUR:0.10*e,rarityEP:0.05*e+0.09375*f,rarityMR:0.0625*f})
     if(slot==="net") out.push({sellBonus:Math.min(30,0.25*t+0.5*f)})
   }
   return mergeEffects(...out)
