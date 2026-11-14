@@ -312,7 +312,7 @@ export class FishingShop extends plugin {
       const tier=gearLevel(user,slot)
       const item=ownedGear(user,slot,tier)
       lines.push(`${gearItem(shop,slot,tier).name}（第${tier}阶）`)
-      lines.push(`  强化 +${item?.enhance||0}/15 · 锻造 +${item?.forge||0}/8`)
+      lines.push(`> 强化 +${item?.enhance||0}/15 · 锻造 +${item?.forge||0}/8`)
     }
     const effects = effectText(gearEffects(user,shop))
       .split(/，|\s+(?=[^\s，]+[+-]\d)/)
