@@ -1,4 +1,5 @@
 /** 物品池与抽取算法（纯函数，不依赖 Yunzai，便于测试） */
+import { gearRarityOdds } from "./GearOdds.js"
 
 /**
  * 稀有度（统一顺序：普通 → 高级 → 稀有 → 神器 → 传说 → 史诗 → 神话）
@@ -49,6 +50,24 @@ export function triangular(min, max, rng = Math.random) {
  * @param limits 概率下限 { empty, junk, N }，效果叠加后不会低于这些值
  */
 export function buildOdds(prob, effects = {}, limits = {}) {
+  if (prob?.mode === "gear") {
+    // 先独立判定空军、垃圾、隐藏款和保护动物；剩余权重按鱼竿品级分配。
+    // 忽略称号、鱼饵和运势的 boost* / rareBoost，避免突破装备毕业上限。
+    const special = { ...(prob.hidden || {}), ...(prob.protected || {}) }
+    const specialEntries = Object.entries(special).map(([id,v])=>[`hidden:${id}`,Math.max(0,Number(v)||0)])
+    const specialTotal=specialEntries.reduce((sum,[,v])=>sum+v,0)
+    let empty=Math.max(0,(Number(prob.empty)||0)-(Number(effects.emptyReduce)||0))
+    let junk=Math.max(0,(Number(prob.junk)||0)-(Number(effects.junkReduce)||0))
+    const available=Math.max(0,100-specialTotal)
+    if (empty+junk>available) {
+      const ratio=available/(empty+junk)
+      empty*=ratio
+      junk*=ratio
+    }
+    const fishTotal=Math.max(0,available-empty-junk)
+    const fish=gearRarityOdds(effects)
+    return {empty,junk,...Object.fromEntries(FISH_TIERS.map(k=>[k,fish[k]*fishTotal/100])),...Object.fromEntries(specialEntries)}
+  }
   const odds = {
     empty: Number(prob.empty) || 0,
     junk: Number(prob.junk) || 0,

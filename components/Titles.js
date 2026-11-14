@@ -111,6 +111,9 @@ const EFFECT_TEXT = {
   boostUR: ["传说概率", "%", false],
   boostEP: ["史诗概率", "%", false],
   boostMR: ["神话概率", "%", false],
+  rarityUR: ["传说概率", "%", false],
+  rarityEP: ["史诗概率", "%", false],
+  rarityMR: ["神话概率", "%", false],
 }
 
 const TIER_NAMES = { boostN: "普通", boostR: "高级", boostSR: "稀有", boostSSR: "神器", boostUR: "传说", boostEP: "史诗", boostMR: "神话" }
@@ -119,7 +122,7 @@ export function effectText(effects = {}) {
   // 分档加成合成一段：普通+4% 高级+7% 稀有+7%
   const tiers = Object.keys(TIER_NAMES).filter(k => Number(effects[k]))
     .map(k => `${TIER_NAMES[k]}+${Number(Number(effects[k]).toFixed(2))}%`).join(" ")
-  const parts = Object.entries(effects).filter(([k, v]) => Number(v) && !TIER_NAMES[k]).map(([k, v]) => {
+  const parts = Object.entries(effects).filter(([k, v]) => Number(v) && !TIER_NAMES[k] && k !== "rarityTier").map(([k, v]) => {
     const [name, unit, inverse] = EFFECT_TEXT[k] || [k, "", false]
     const up = inverse ? v < 0 : v > 0
     if (k === "lineGuard" && v >= 100) return `${name} -100%（不再断线）`
