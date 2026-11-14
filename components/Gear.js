@@ -134,7 +134,7 @@ export function baitPrice(shop, id, bait = 2) {
 export const baitLevel = bait => Math.max(1, Number(bait?.level) || 1)
 
 /** 能否使用 / 购买：至少有一件渔具达到鱼饵等级 */
-export const canUseBait = (user, bait) => baitLevel(bait) <= maxGearLevel(user)
+export const canUseBait = (user, bait) => baitLevel(bait) <= Math.ceil(maxGearLevel(user)/2)
 
 export const baitCount = (user, id) => Math.max(0, Number(user.baits?.[id]) || 0)
 
