@@ -44,17 +44,19 @@ fishing:
   # 十连钓鱼的配图，留空则不发送
   multiImage: resources/img/multi.jpg
 
-# 各结果的概率（%），总和建议为 100，不为 100 时按比例换算
+# 概率 V2：普通至神话的全局基础概率为 0，鱼竿及培养决定条件品级分布。
+# 空军、垃圾、隐藏款、保护动物单独计算；鱼获品级占剩余概率。
 probability:
+  mode: gear
   empty: 15     # 什么都没钓到
   junk: 20      # 海洋垃圾（售价 0）
-  N: 29.13      # 普通
-  R: 18         # 高级
-  SR: 10        # 稀有
-  SSR: 5        # 神器
-  UR: 1.94      # 传说
-  EP: 0.4       # 史诗
-  MR: 0.1       # 神话
+  N: 0         # 普通：由渔具决定
+  R: 0         # 高级：由渔具决定
+  SR: 0        # 稀有：由渔具决定
+  SSR: 0       # 神器：由渔具决定
+  UR: 0        # 传说：由渔具决定
+  EP: 0        # 史诗：由渔具决定
+  MR: 0        # 神话：由渔具决定
   # 隐藏款，单独设置概率（%），不受渔具和称号影响
   hidden:
     people_fragment: 0.05   # 人民碎片
@@ -76,7 +78,7 @@ protectedPenalty:
 # 派蒙：第一次钓到获得称号「最好的伙伴」，之后每次钓到送的谢礼（金币）
 paimonGift: 520
 
-# 概率下限（%）：称号、打卡、渔具叠加后不会低于这些值
+# 旧概率下限（仅旧版 mode 下有效；gear 模式不使用）
 limits:
   empty: 3
   junk: 5
@@ -109,6 +111,7 @@ bait:
 checkin:
   # 打卡奖励按幸运值决定（不再单独配置）：每 10 点一档，1~10 送 1 级鱼饵，11~20 送 2 级 … 91~100 送 10 级，
   # 数量为在本档的位置（1~10 个），幸运值 0 不送。例：7 → 1 级 ×7，54 → 6 级 ×4，100 → 10 级 ×10
+  # 运势不改变鱼获品级，只影响空军/垃圾与其他非品级效果
   # 当天首个幸运值 ≥ 此值的人成为「今日欧皇」
   luckyKing: 95
   # 当天首个幸运值 ≤ 此值的人成为「今日非酋」
@@ -117,8 +120,8 @@ checkin:
   confirmLow: 10
   # 幸运等级（按 min 从高到低匹配），effects 与称号效果写法相同，负数表示反向
   tiers:
-    - { min: 90, name: 大吉, emoji: 🌟, effects: { rareBoost: 10, emptyReduce: 2 } }
-    - { min: 70, name: 吉,   emoji: 🍀, effects: { rareBoost: 5 } }
+    - { min: 90, name: 大吉, emoji: 🌟, effects: { emptyReduce: 2 } }
+    - { min: 70, name: 吉,   emoji: 🍀, effects: { emptyReduce: 1 } }
     - { min: 30, name: 平,   emoji: 🌤️, effects: {} }
     - { min: 10, name: 凶,   emoji: 🌧️, effects: { emptyReduce: -2 } }
     - { min: 0,  name: 大凶, emoji: ⛈️, effects: { emptyReduce: -3, junkReduce: -2 } }
