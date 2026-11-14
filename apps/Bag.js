@@ -186,7 +186,7 @@ export class FishingBag extends plugin {
       {label:"最大一条",value:max ? `${max.name} ${formatWeight(user.maxFish.w)}` : "暂无",unit:""},
     ]
     const data = {
-      name:displayName(user), avatar:avatar(user.user_id),
+      name:displayName(user), avatar:avatar(user.user_id) || (typeof e.sender?.avatar === "string" && /^https:\/\//.test(e.sender.avatar) ? e.sender.avatar : ""),
       gold:user.gold, bait:totalBait(user), equipment, stats,
       luck:fortune?.name || "尚未打卡", luckValue:luck,
       checkedIn:!!fortune,
@@ -202,7 +202,7 @@ export class FishingBag extends plugin {
       `今日运势：${data.luck}（幸运值 ${luck}）`,
       `连续打卡 ${data.streak} 天 · 累计 ${data.checkinTotal} 天`,
       `称号：${data.titles.map(i=>i.name).join("、") || "暂无"}`,
-    ].join("\\n"))
+    ].join("\n"))
     if (!msg) return true
     return e.reply(withButtons(e, msg, [B.bag, B.titles, B.dex], [B.checkin, B.myGear, B.myBait]))
   }
