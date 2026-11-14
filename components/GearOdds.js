@@ -38,11 +38,13 @@ export function gearRarityOdds(effects = {}, rows = ROD_ODDS) {
   const scale = remaining>available ? available/remaining : 1
   remaining *= scale
   const shares = [4/17,5/17,8/17]
+  let deducted=0
   for (const i of source) {
     const take=Math.min(base[i],remaining*shares[i])
     base[i]-=take
+    deducted+=take
   }
-  let left=100-base.reduce((a,b)=>a+b,0)
+  let left=remaining-deducted
   // 分摊后的余量继续扣除，保证总概率严格守恒。
   for (const i of source) {
     const take=Math.min(base[i],Math.max(0,left))
