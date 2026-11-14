@@ -16,7 +16,7 @@ export function levelThreshold(level) {
 export function characterProgress(user) {
   const xp = experience(user)
   // 25 * (level - 1) * level <= xp
-  const level = Math.max(1, Math.floor((1 + Math.sqrt(1 + 4 * xp / 25)) / 2))
+  const level = Math.min(100, Math.max(1, Math.floor((1 + Math.sqrt(1 + 4 * xp / 25)) / 2)))
   const current = levelThreshold(level)
   const next = levelThreshold(level + 1)
   return {

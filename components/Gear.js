@@ -1,63 +1,104 @@
-/** 渔具与鱼饵（纯函数，便于测试） */
+/** 第二版渔具：20 阶、独立购买/穿戴、强化 +15、锻造 +8。 */
 import { mergeEffects } from "./Titles.js"
-
+import { characterProgress } from "./Progression.js"
 export const SLOTS = ["rod", "line", "hook", "float", "net"]
-export const UPGRADE_NAMES = { 鱼竿: "rod", 鱼线: "line", 鱼钩: "hook", 浮漂: "float", 鱼护: "net" }
-/** 渔具等级颜色（Lv1 ~ Lv10），超出时沿用最后一个 */
-export const LEVEL_COLORS = [
-  "#9aa5b1", "#3bb273", "#3a8dde", "#a259ff", "#f2a900",
-  "#fa8c16", "#f5222d", "#eb2f96", "#13c2c2",
-  "linear-gradient(90deg, #ff4d4f, #faad14, #52c41a, #1890ff, #722ed1)",
-]
-export const LEVEL_LABELS = ["普通", "高级", "稀有", "神器", "传说", "史诗", "神话", "至尊", "圣品", "永恒"]
-export const levelColor = lv => LEVEL_COLORS[Math.min(lv, LEVEL_COLORS.length) - 1]
-export const levelLabel = lv => LEVEL_LABELS[Math.min(lv, LEVEL_LABELS.length) - 1]
-
-/* ---------------- 渔具 ---------------- */
-
-/** 当前等级（1 起） */
-export function gearLevel(user, slot) {
-  return Math.max(1, Number(user.gear?.[slot]) || 1)
+export const UPGRADE_NAMES = { 鱼竿:"rod", 鱼线:"line", 鱼钩:"hook", 浮漂:"float", 鱼护:"net" }
+export const SLOT_NAMES = { rod:"鱼竿", line:"鱼线", hook:"鱼钩", float:"浮漂", net:"鱼护" }
+export const TIER_NAMES = ["新手","青竹","精铁","玄木","寒玉","流云","沧浪","星砂","月影","玄冰","烈阳","深渊","龙鳞","凤羽","天罡","星辰","太虚","混元","鸿蒙","创世"]
+export const LEVEL_COLORS = ["#9aa5b1","#3bb273","#3a8dde","#a259ff","#f2a900","#fa8c16","#f5222d","#eb2f96","#13c2c2","#722ed1"]
+export const LEVEL_LABELS = TIER_NAMES
+export const levelColor = lv => LEVEL_COLORS[Math.min(LEVEL_COLORS.length,Math.max(1,lv))-1]
+export const levelLabel = lv => TIER_NAMES[Math.min(20,Math.max(1,lv))-1]
+export const unlockedTier = user => Math.min(20,Math.max(1,Math.floor((Math.min(100,characterProgress(user).level)-1)/5)+1))
+export const tierPrice = (shop,tier) => Math.max(0,Number(shop?.gearV2?.prices?.[tier-1] ?? (200+100*(tier-1)+50*(tier-1)**2)))
+export const gearKey = (slot,tier) => `${slot}:${tier}`
+export const ownedGear = (user,slot,tier) => user.gearV2?.items?.[gearKey(slot,tier)] || null
+export const gearLevel = (user,slot) => Number(user.gearV2?.equipped?.[slot]) || 1
+export const maxLevel = () => 20
+export const maxGearLevel = user => Math.max(...SLOTS.map(s=>gearLevel(user,s)))
+export const gearItem = (shop,slot,tier) => {
+  if (!SLOTS.includes(slot)||tier<1||tier>20) return null
+  return {slot,slotName:SLOT_NAMES[slot],level:tier,name:`${TIER_NAMES[tier-1]}${SLOT_NAMES[slot]}`,price:tierPrice(shop,tier),emoji:{rod:"🎣",line:"🧵",hook:"🪝",float:"🎈",net:"🧺"}[slot]}
 }
-
-/** 某个等级的渔具信息，附带 level / slot */
-export function gearItem(shop, slot, level) {
-  const def = shop?.gear?.[slot]
-  const item = def?.levels?.[level - 1]
-  return item ? { ...item, level, slot, slotName: def.name, emoji: def.emoji } : null
+export function ensureGear(user) {
+  user.gearV2 ||= {items:{},equipped:{}}
+  user.gearV2.items ||= {}
+  user.gearV2.equipped ||= {}
+  for (const slot of SLOTS) {
+    const key=gearKey(slot,1)
+    user.gearV2.items[key] ||= {enhance:0,forge:0,enhanceFails:0,forgeFails:0}
+    user.gearV2.equipped[slot] ||= 1
+  }
+  return user.gearV2
 }
-
-export const maxLevel = (shop, slot) => shop?.gear?.[slot]?.levels?.length || 1
-
-/** 四件渔具里最高的等级（决定能用哪些鱼饵） */
-export const maxGearLevel = user => Math.max(...SLOTS.map(s => gearLevel(user, s)))
-
-/** 所有已装备渔具的效果之和 */
-export function gearEffects(user, shop) {
-  return mergeEffects(...SLOTS.map(s => gearItem(shop, s, gearLevel(user, s))?.effects))
+export function buyGear(user,shop,slot,tier) {
+  if (!SLOTS.includes(slot)||!Number.isInteger(tier)||tier<1||tier>20) return {ok:false,reason:"invalid"}
+  ensureGear(user)
+  if (tier>unlockedTier(user)) return {ok:false,reason:"locked",need:(tier-1)*5+1}
+  if (ownedGear(user,slot,tier)) return {ok:false,reason:"owned"}
+  const cost=tierPrice(shop,tier)
+  if (user.gold<cost) return {ok:false,reason:"gold",cost}
+  user.gold-=cost
+  user.gearV2.items[gearKey(slot,tier)]={enhance:0,forge:0,enhanceFails:0,forgeFails:0}
+  user.stats ||= {}
+  user.stats.gearSpent=(user.stats.gearSpent||0)+cost
+  return {ok:true,cost,item:gearItem(shop,slot,tier)}
 }
-
-/** 鱼护容量：Lv1 取 config 的 bagLimit，其余取 shop.yaml 的 capacity */
-export function bagCapacity(user, shop, baseLimit = 200) {
-  const lv = gearLevel(user, "net")
-  if (lv <= 1) return Number(baseLimit) || 200
-  return Number(gearItem(shop, "net", lv)?.capacity) || Number(baseLimit) || 200
+export function equipGear(user,slot,tier) {
+  ensureGear(user)
+  if (!SLOTS.includes(slot)||!ownedGear(user,slot,tier)) return {ok:false,reason:"not_owned"}
+  if (tier>unlockedTier(user)) return {ok:false,reason:"locked"}
+  user.gearV2.equipped[slot]=tier
+  return {ok:true}
 }
-
-/**
- * 升级到下一级
- * @returns {{ ok:true, item, cost } | { ok:false, reason:"max"|"gold", next?, cost? }}
- */
-export function upgradeGear(user, shop, slot) {
-  const lv = gearLevel(user, slot)
-  const next = gearItem(shop, slot, lv + 1)
-  if (!next) return { ok: false, reason: "max", current: gearItem(shop, slot, lv) }
-  const cost = Math.max(0, Number(next.price) || 0)
-  if (user.gold < cost) return { ok: false, reason: "gold", next, cost }
-  user.gold -= cost
-  user.gear = { ...(user.gear || {}), [slot]: lv + 1 }
-  user.stats.gearSpent = (user.stats.gearSpent || 0) + cost
-  return { ok: true, item: next, cost }
+export const enhanceCost = (shop,tier,target) => Math.ceil((Number(shop?.gearV2?.enhanceCostFactor)||50)*tier*target)
+export const forgeCost = (shop,tier,target) => Math.ceil((Number(shop?.gearV2?.forgeCostFactor)||100)*tier*target)
+export const successRate = (shop,type,target,fails=0) => {
+  const defaults=type==="enhance" ? [[3,95,2],[6,85,3],[9,70,5],[12,50,7],[14,30,10],[15,15,10]] : [[2,90,3],[4,75,5],[6,55,7],[7,35,10],[8,20,10]]
+  const rows=shop?.gearV2?.rates?.[type]||defaults
+  const row=rows.find(r=>target<=Number(r[0]))||rows.at(-1)
+  return Math.min(100,Number(row[1])+Math.min(50,Math.max(0,fails)*Number(row[2])))
+}
+export function cultivateGear(user,shop,slot,tier,type,rng=Math.random) {
+  ensureGear(user)
+  if (!["enhance","forge"].includes(type)||!SLOTS.includes(slot)||!Number.isInteger(tier)) return {ok:false,reason:"invalid"}
+  const item=ownedGear(user,slot,tier)
+  if (!item) return {ok:false,reason:"not_owned"}
+  const max=type==="enhance"?15:8
+  const current=Number(item[type])||0
+  if (current>=max) return {ok:false,reason:"max"}
+  const target=current+1, cost=type==="enhance"?enhanceCost(shop,tier,target):forgeCost(shop,tier,target)
+  if (user.gold<cost) return {ok:false,reason:"gold",cost}
+  const failKey=type==="enhance"?"enhanceFails":"forgeFails"
+  const chance=successRate(shop,type,target,Number(item[failKey])||0)
+  user.gold-=cost
+  user.stats ||= {}
+  user.stats.gearSpent=(user.stats.gearSpent||0)+cost
+  const success=rng()*100<chance
+  if (success) { item[type]=target;item[failKey]=0 } else item[failKey]=(Number(item[failKey])||0)+1
+  return {ok:true,success,chance,cost,target,failures:item[failKey]}
+}
+export function upgradeGear(user,shop,slot) { return {ok:false,reason:"obsolete"} }
+export function gearEffects(user,shop) {
+  ensureGear(user)
+  const out=[]
+  for (const slot of SLOTS) {
+    const tier=gearLevel(user,slot),item=ownedGear(user,slot,tier)
+    if (!item) continue
+    const e=Number(item.enhance)||0,f=Number(item.forge)||0,t=tier-1
+    if(slot==="rod") out.push({boostR:0.25*t+0.15*e,boostSR:0.08*t,boostSSR:0.10*f})
+    if(slot==="line") out.push({lineGuard:Math.min(85,2*t+e+1.5*f)})
+    if(slot==="hook") out.push({holdChance:Math.min(85,2*t+0.3*e),multiTicket:Math.min(15,0.2*t+0.25*f)})
+    if(slot==="float") out.push({biteReduce:Math.min(8,0.10*t+0.03*e),reelWindow:Math.min(10,0.2*t+0.075*f)})
+    if(slot==="net") out.push({sellBonus:Math.min(30,0.25*t+0.5*f)})
+  }
+  return mergeEffects(...out)
+}
+export function bagCapacity(user,shop,baseLimit=200) {
+  ensureGear(user)
+  const tier=gearLevel(user,"net")
+  const enhance=Number(ownedGear(user,"net",tier)?.enhance)||0
+  return Math.max(1,(Number(baseLimit)||200)+50*(tier-1)+5*enhance)
 }
 
 /* ---------------- 鱼饵 ---------------- */
@@ -93,7 +134,7 @@ export function baitPrice(shop, id, bait = 2) {
 export const baitLevel = bait => Math.max(1, Number(bait?.level) || 1)
 
 /** 能否使用 / 购买：至少有一件渔具达到鱼饵等级 */
-export const canUseBait = (user, bait) => baitLevel(bait) <= maxGearLevel(user)
+export const canUseBait = (user, bait) => baitLevel(bait) <= Math.ceil(maxGearLevel(user)/2)
 
 export const baitCount = (user, id) => Math.max(0, Number(user.baits?.[id]) || 0)
 

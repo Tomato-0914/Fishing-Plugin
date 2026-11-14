@@ -1,5 +1,6 @@
 /** 用户存档：默认存入 data/fishing.db（SQLite），也可配置为 data/Fishing_<user_id>.yaml；所有群共享 */
 import { Data_Path } from "./Paths.js"
+import Config from "./Config.js"
 import { YamlBackend, SqliteBackend, migrateYamlToDb, exportDbToYaml, readYamlDir, safeId } from "./Storage.js"
 
 export { safeId }
@@ -13,7 +14,7 @@ export function newUser(id) {
     gold: 0,
     baits: {},
     baitUse: "basic",
-    gear: { rod: 1, line: 1, hook: 1, float: 1, net: 1 },
+    gearV2: { items: {}, equipped: {} },
     welcomed: false,
     reliefDay: "",
     groups: [],
@@ -47,7 +48,27 @@ function normalize(data, id) {
     user.baits.basic = (Number(user.baits.basic) || 0) + (Number(data.bait) || 0)
     delete user.bait
   }
-  user.gear = { ...base.gear, ...(data?.gear || {}) }
+  // 旧版渔具一次性全额回收；保留旧快照，禁止重复补偿。
+  if (!data?.gearMigrationV2 && data?.gear && !data?.gearV2) {
+    const old = data.gear
+    const shop = Config.shop
+    let refund = 0
+    for (const slot of ["rod","line","hook","float","net"]) {
+      const levels = shop.gear?.[slot]?.levels || []
+      const level = Math.max(1,Math.min(levels.length,Math.floor(Number(old[slot])||1)))
+      for (let i=1;i<level;i++) refund += Math.max(0,Number(levels[i]?.price)||0)
+    }
+    user.gold = (Number(user.gold)||0)+refund
+    user.gearMigrationV2 = { refund, legacy: structuredClone(old), migratedAt:Date.now() }
+  }
+  user.gearV2 = data?.gearV2 && typeof data.gearV2==="object" ? data.gearV2 : {items:{},equipped:{}}
+  user.gearV2.items ||= {}
+  user.gearV2.equipped ||= {}
+  for (const slot of ["rod","line","hook","float","net"]) {
+    user.gearV2.items[`${slot}:1`] ||= {enhance:0,forge:0,enhanceFails:0,forgeFails:0}
+    user.gearV2.equipped[slot] ||= 1
+  }
+  delete user.gear
   user.checkin = { ...base.checkin, ...(data?.checkin || {}) }
   if (!Array.isArray(user.checkin.history)) user.checkin.history = []
   user.user_id = String(user.user_id || id)
@@ -95,7 +116,11 @@ class UserData {
       log("mark", `已将 ${m.migrated.length} 份 YAML 存档导入数据库（跳过 ${m.skipped.length}，失败 ${m.failed.length}），原文件备份在 ${m.backupDir}`)
     }
     this.cache.clear()
-    for (const { id, data } of await this.backend.loadAll()) this.cache.set(id, normalize(data, id))
+    for (const { id, data } of await this.backend.loadAll()) {
+      const user=normalize(data,id)
+      this.cache.set(id,user)
+      if (!data?.gearMigrationV2 && data?.gear && !data?.gearV2) await this.save(id)
+    }
     return { ...info, count: this.cache.size, backend: this.backend.name }
   }
 
