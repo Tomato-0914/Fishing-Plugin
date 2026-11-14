@@ -123,6 +123,17 @@ baits:
   - { id: phoenix, level: 9,  name: 凤凰火饵, emoji: 🪶, price: 27, effects: { boostUR: 2.5, rareBoost: 35, largeBoost: 12 }, desc: 裹着一根凤凰羽毛，入水不灭 }
   - { id: primal,  level: 10, name: 混元仙饵, emoji: 🔮, price: 30, effects: { boostUR: 5, rareBoost: 45, largeBoost: 25, biteReduce: 2 }, desc: 传说中仙人钓鱼用的饵，连龙王都会上钩 }
 
+  - { id: moon, level: 11, name: 月华饵, emoji: 🌙, price: 38, effects: { boostSSR: 3, boostUR: 1.2, rareBoost: 35 }, desc: 以月光露水调制，夜钓更显灵动 }
+  - { id: tide, level: 12, name: 潮汐饵, emoji: 🌊, price: 48, effects: { boostSSR: 3.5, boostUR: 1.5, largeBoost: 12 }, desc: 随潮汐散发香气，吸引深水鱼群 }
+  - { id: coral, level: 13, name: 珊瑚灵饵, emoji: 🪸, price: 60, effects: { boostSSR: 4, boostUR: 1.8, junkReduce: 8 }, desc: 珊瑚精华凝结，降低杂物干扰 }
+  - { id: dragon, level: 14, name: 龙鳞秘饵, emoji: 🐉, price: 75, effects: { boostSSR: 4.5, boostUR: 2.2, largeBoost: 16 }, desc: 龙鳞粉末入饵，大鱼难以抗拒 }
+  - { id: feather, level: 15, name: 凤羽灵饵, emoji: 🪶, price: 92, effects: { boostSSR: 5, boostUR: 2.6, rareBoost: 40 }, desc: 凤羽余温融入鱼饵，流光隐现 }
+  - { id: celestial, level: 16, name: 天罡星饵, emoji: ⭐, price: 112, effects: { boostSSR: 5.5, boostUR: 3, largeBoost: 20 }, desc: 星辰之力引来远方鱼群 }
+  - { id: nebula, level: 17, name: 星河幻饵, emoji: 🌌, price: 135, effects: { boostSSR: 6, boostUR: 3.4, rareBoost: 45 }, desc: 星河碎光汇聚，吸引珍稀鱼种 }
+  - { id: void, level: 18, name: 太虚玄饵, emoji: 🌀, price: 162, effects: { boostSSR: 6.5, boostUR: 3.8, biteReduce: 1 }, desc: 虚空灵气缠绕，鱼群更快咬钩 }
+  - { id: origin, level: 19, name: 鸿蒙道饵, emoji: ☯️, price: 194, effects: { boostSSR: 7, boostUR: 4.3, rareBoost: 50 }, desc: 鸿蒙初气炼成，水域异象频现 }
+  - { id: creation, level: 20, name: 创世神饵, emoji: 💠, price: 230, effects: { boostSSR: 8, boostUR: 5, rareBoost: 55, largeBoost: 25 }, desc: 传说级终极鱼饵，蕴含海洋本源 }
+
 # 断线：收杆时大鱼可能挣断鱼线跑掉（%），鱼线的 lineGuard 按比例降低
 lineBreak:
   SSR: 6        # 神器
