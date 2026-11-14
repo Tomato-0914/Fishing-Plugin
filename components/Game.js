@@ -26,13 +26,10 @@ export function addGroup(user, groupId) {
   if (!user.groups.includes(groupId)) user.groups.push(groupId)
 }
 
-/**
- * 记录一次收杆结果
- * @returns {{ value:number, reward:number, stored:boolean }}
- */
 /** 每条成功入护鱼的经验（抛竿经验另计）；旧存档每条 4 经验保持不变。 */
 export const FISH_XP = Object.freeze({ N: 4, R: 6, SR: 10, SSR: 16, UR: 25, EP: 40, MR: 60, hidden: 80 })
 
+/** 记录一次收杆结果；经验差额与鱼获统计一起写入存档。 */
 export function recordResult(user, result, { now = new Date(), policeReward = 0, protectedPenalty = {}, paimonGift = 0 } = {}) {
   touchPeriods(user, now)
   const s = user.stats
