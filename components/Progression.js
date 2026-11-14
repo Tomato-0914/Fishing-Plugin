@@ -4,7 +4,7 @@ const integer = value => Math.max(0, Math.floor(Number(value) || 0))
 /** 经验来源：每次抛竿 1 点，成功钓获额外 4 点；累计统计不会因出售鱼获而丢失。 */
 export function experience(user) {
   const stats = user?.stats || {}
-  return integer(stats.casts) + integer(stats.catches) * 4
+  return integer(stats.casts) + integer(stats.catches) * 4 + integer(stats.bonusXp)
 }
 
 /** 到达指定等级所需的总经验；Lv1 为 0，升级曲线逐级递增。 */
