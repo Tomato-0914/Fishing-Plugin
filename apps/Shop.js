@@ -44,7 +44,7 @@ export class FishingShop extends plugin {
     return e.reply(withButtons(e,lines.join("\\n"),[B.myGear,B.shop]))
   }
   parseSlotTier(e,verb) {
-    const m=e.msg.match(new RegExp(verb+"\\\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\\\\s*(\\\\d{1,2})?"))
+    const m=e.msg.match(new RegExp(verb+"\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\\s*(\\d{1,2})?"))
     if(!m)return null
     return {slot:UPGRADE_NAMES[m[1]],tier:m[2]?Number(m[2]):null}
   }
