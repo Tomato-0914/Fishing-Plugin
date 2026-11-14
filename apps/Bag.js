@@ -27,7 +27,7 @@ export class FishingBag extends plugin {
         { reg: /^#?一键出售$/, fnc: "sellAll" },
         { reg: /^#?(出售)\s*(\S+?)\s*(\d+)?$/, fnc: "sell" },
         { reg: /^#?清理垃圾$/, fnc: "discard" },
-        { reg: /^#?个人信息$/, fnc: "info" },
+        { reg: /^#?钓鱼信息$/, fnc: "info" },
         { reg: /^#?我的金币$/, fnc: "gold" },
         { reg: /^#?钓鱼图鉴\s*(.*)$/, fnc: "dex" },
       ],
@@ -194,7 +194,7 @@ export class FishingBag extends plugin {
       titles:titles.map(({title,tier})=>({name:titleName(title,tier)})),
     }
     const msg = await renderOrText(puppeteer, "profile", data, () => [
-      `👤 ${data.name} 的个人信息`,
+      `👤 ${data.name} 的钓鱼信息`,
       "━━━━━━━━━━━━",
       `👛 金币：${data.gold} · 🪱 鱼饵：${data.bait}`,
       `🧰 ${equipment.map(i=>i.name).join(" · ")}`,
