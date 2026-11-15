@@ -93,7 +93,7 @@ export class FishingShop extends plugin {
     const equipment=SLOTS.map(s=>{
       const t=gearLevel(user,s),d=ownedGear(user,s,t)
       return {slot:s,name:TIER_NAMES[t-1]+SLOT_NAMES[s],emoji:gearItem(shop,s,t)?.emoji,
-        tier:t,...tierBadge(t),icon:gearIcon(s),enhance:Number(d?.enhance)||0,forge:Number(d?.forge)||0,selected:s===slot}
+        tier:t,...tierBadge(t),icon:gearIcon(s,t),enhance:Number(d?.enhance)||0,forge:Number(d?.forge)||0,selected:s===slot}
     })
     // 本次养成类型的效果：另一种养成保持当前等级，按 slotEffects 实际计算差值
     const other=type==="enhance"?Number(item?.forge)||0:Number(item?.enhance)||0
@@ -104,7 +104,7 @@ export class FishingShop extends plugin {
     const stepLines=level<max?lines(at(level),at(target)):[]
     const totalLines=lines(at(0),at(level))
     return {name:displayName(user),gold:user.gold,equipment,slot,tier,
-      itemName:TIER_NAMES[tier-1]+SLOT_NAMES[slot],itemEmoji:gearItem(shop,slot,tier)?.emoji,item:tierBadge(tier),tierCn:cnNumber(tier),icon:gearIcon(slot),
+      itemName:TIER_NAMES[tier-1]+SLOT_NAMES[slot],itemEmoji:gearItem(shop,slot,tier)?.emoji,item:tierBadge(tier),tierCn:cnNumber(tier),icon:gearIcon(slot,tier),
       enhance:Number(item?.enhance)||0,forge:Number(item?.forge)||0,
       type,typeName:type==="enhance"?"强化":"锻造",level,max,target,equipped:gearLevel(user,slot)===tier,
       stepLines,totalLines:totalLines.length?totalLines:["暂无"],
@@ -327,7 +327,7 @@ export class FishingShop extends plugin {
     const items=SLOTS.map(slot=>{
       const tier=gearLevel(user,slot), d=ownedGear(user,slot,tier)||{}
       const eff=slotEffects(slot,tier,d.enhance,d.forge)
-      return {slot,slotName:SLOT_NAMES[slot],name:gearItem(shop,slot,tier).name,tier,tierName:TIER_NAMES[tier-1],needLevel:tierNeedLevel(tier),icon:gearIcon(slot),
+      return {slot,slotName:SLOT_NAMES[slot],name:gearItem(shop,slot,tier).name,tier,tierName:TIER_NAMES[tier-1],needLevel:tierNeedLevel(tier),icon:gearIcon(slot,tier),
         enhance:Number(d.enhance)||0,forge:Number(d.forge)||0,maxE:MAX_ENHANCE,maxF:MAX_FORGE,color:tierColor(tier),textColor:textOn(tierColor(tier)),
         lines:[...(slot==="rod"?[`基础品级：第 ${tier} 阶`]:[]),...lines({},eff)]}
     })

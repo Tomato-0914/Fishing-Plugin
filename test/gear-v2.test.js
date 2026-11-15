@@ -95,3 +95,18 @@ test("渔具图标：五个部位共用一套内联 SVG",async()=>{
   assert.equal(new Set(icons).size,5)
   for(const i of icons){ assert.match(i,/^<svg class="gear-art" viewBox="0 0 96 96"/); assert.ok(!i.includes("{{")) }
 })
+test("渔具图片：<阶位> 优先，其次 default，都没有用内置 SVG",async()=>{
+  const fs = await import("node:fs"), os = await import("node:os"), path = await import("node:path")
+  const { gearIcon, gearImage } = await import("../components/GearIcons.js")
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(),"gear-img-"))
+  for (const s of ["rod","line","hook","float","net"]) fs.mkdirSync(path.join(dir,s))
+  const opts = { dir, base: "RES" }
+  assert.match(gearIcon("rod",5,opts),/^<svg class="gear-art"/)
+  fs.writeFileSync(path.join(dir,"rod","default.webp"),"x")
+  assert.equal(gearIcon("rod",5,opts),'<img class="gear-art" src="RES/gear/rod/default.webp" alt="">')
+  fs.writeFileSync(path.join(dir,"rod","5.png"),"x")
+  assert.equal(gearImage("rod",5,dir),"rod/5.png")
+  assert.equal(gearImage("rod",6,dir),"rod/default.webp")
+  assert.equal(gearImage("line",5,dir),null)
+  fs.rmSync(dir,{recursive:true,force:true})
+})
