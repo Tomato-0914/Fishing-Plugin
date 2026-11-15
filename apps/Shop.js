@@ -5,7 +5,7 @@ import UserData from "../components/UserData.js"
 import { effectText, getEffects, mergeEffects } from "../components/Titles.js"
 import { oddsPercent } from "../components/ItemPool.js"
 import { luckEffects } from "../components/Game.js"
-import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, LEVEL_COLORS, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait, baitLevel, canUseBait, maxGearLevel, unlockedTier, tierPrice, ownedGear, ensureGear, buyGear, buyGearSet, equipGear, equipGearSet, cultivateGear, tierNeedLevel, enhanceCost, forgeCost, successRate, slotEffects, gearSet, setEffects, MAX_ENHANCE, MAX_FORGE } from "../components/Gear.js"
+import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, tierColor, textOn, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait, baitLevel, canUseBait, maxGearLevel, unlockedTier, tierPrice, ownedGear, ensureGear, buyGear, buyGearSet, equipGear, equipGearSet, cultivateGear, tierNeedLevel, enhanceCost, forgeCost, successRate, slotEffects, gearSet, setEffects, MAX_ENHANCE, MAX_FORGE } from "../components/Gear.js"
 import { rareTargets, FISH_RARITIES, gearRarityOdds } from "../components/GearOdds.js"
 import { characterProgress } from "../components/Progression.js"
 import { RARITY_INFO } from "../components/ItemPool.js"
@@ -322,7 +322,7 @@ export class FishingShop extends plugin {
       const tier=gearLevel(user,slot), d=ownedGear(user,slot,tier)||{}
       const eff=slotEffects(slot,tier,d.enhance,d.forge)
       return {slot,slotName:SLOT_NAMES[slot],name:gearItem(shop,slot,tier).name,tier,tierName:TIER_NAMES[tier-1],
-        enhance:Number(d.enhance)||0,forge:Number(d.forge)||0,maxE:MAX_ENHANCE,maxF:MAX_FORGE,color:tierColor(tier),
+        enhance:Number(d.enhance)||0,forge:Number(d.forge)||0,maxE:MAX_ENHANCE,maxF:MAX_FORGE,color:tierColor(tier),textColor:textOn(tierColor(tier)),
         lines:[...(slot==="rod"?[`第${tier}阶品级概率表`]:[]),...cultivationLines({},eff)]}
     })
     const s3=setEffects(set.tier,3), s5=setEffects(set.tier,5)
@@ -406,9 +406,4 @@ function inheritText(inh, withPrefix = true) {
   if (!inh || (!inh.enhance && !inh.forge)) return ""
   const parts = [inh.enhance ? `强化 +${inh.enhance}（来自第${inh.from.enhance}阶）` : "", inh.forge ? `锻造 +${inh.forge}（来自第${inh.from.forge}阶）` : ""].filter(Boolean)
   return withPrefix ? `\n🔁 继承旧装备：${parts.join("、")}` : parts.join("、")
-}
-
-/** 阶位颜色：每 2 阶一种颜色（灰、绿、蓝、紫、金、橙、红、粉、青、紫罗兰） */
-function tierColor(tier) {
-  return LEVEL_COLORS[Math.min(LEVEL_COLORS.length - 1, Math.floor((tier - 1) / 2))]
 }

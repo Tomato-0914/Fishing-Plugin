@@ -55,3 +55,11 @@ test("阶位解锁：Lv1~4 为 1 阶，之后每 5 级一阶，Lv95 解锁 20 �
   assert.deepEqual(buyGear(u,shop,"rod",3),{ok:false,reason:"locked",need:10})
   assert.equal(buyGear(u,shop,"rod",2).ok,true)
 })
+test("每一阶颜色都不同，浅色阶位用深色字",async()=>{
+  const { TIER_COLORS, tierColor, textOn } = await import("../components/Gear.js")
+  assert.equal(TIER_COLORS.length,20)
+  assert.equal(new Set(TIER_COLORS).size,20)
+  for(let t=1;t<=20;t++) assert.match(tierColor(t),/^#[0-9a-f]{6}$/)
+  assert.equal(textOn("#e0b000"),"#1d2a35") // 天罡金
+  assert.equal(textOn("#5a54c4"),"#ffffff") // 深渊靛
+})

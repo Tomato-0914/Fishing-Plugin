@@ -7,6 +7,19 @@ export const SLOT_NAMES = { rod:"鱼竿", line:"鱼线", hook:"鱼钩", float:"�
 export const TIER_NAMES = ["新手","青竹","精铁","玄木","寒玉","流云","沧浪","星砂","月影","玄冰","烈阳","深渊","龙鳞","凤羽","天罡","星辰","太虚","混元","鸿蒙","创世"]
 export const LEVEL_COLORS = ["#9aa5b1","#3bb273","#3a8dde","#a259ff","#f2a900","#fa8c16","#f5222d","#eb2f96","#13c2c2","#722ed1"]
 export const LEVEL_LABELS = TIER_NAMES
+/** 每一阶的专属颜色（按阶名取意），相邻两阶色相明显不同 */
+export const TIER_COLORS = [
+  "#8c99a6","#4caf50","#78909c","#8d6e63","#4fa3e0", // 新手 青竹 精铁 玄木 寒玉
+  "#26a69a","#1e5fbf","#c9a227","#7e57c2","#29b6d6", // 流云 沧浪 星砂 月影 玄冰
+  "#f57c00","#5a54c4","#388e3c","#e64a7a","#e0b000", // 烈阳 深渊 龙鳞 凤羽 天罡
+  "#5c6bc0","#9c4dcc","#c62828","#00897b","#ff4081", // 星辰 太虚 混元 鸿蒙 创世
+]
+export const tierColor = tier => TIER_COLORS[Math.min(20,Math.max(1,Number(tier)||1))-1]
+/** 颜色上的文字颜色：浅色背景用深色字，深色背景用白字 */
+export function textOn(hex) {
+  const [r,g,b] = [1,3,5].map(i => parseInt(hex.slice(i,i+2),16)/255).map(c => c<=0.03928 ? c/12.92 : ((c+0.055)/1.055)**2.4)
+  return 0.2126*r+0.7152*g+0.0722*b > 0.3 ? "#1d2a35" : "#ffffff"
+}
 export const levelColor = lv => LEVEL_COLORS[Math.min(LEVEL_COLORS.length,Math.max(1,lv))-1]
 export const levelLabel = lv => TIER_NAMES[Math.min(20,Math.max(1,lv))-1]
 /** 第 N 阶需要的角色等级：1 阶 Lv1，之后每 5 级一阶（2 阶 Lv5、3 阶 Lv10 … 20 阶 Lv95） */
