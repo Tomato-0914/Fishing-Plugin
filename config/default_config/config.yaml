@@ -36,7 +36,7 @@ fishing:
   multiDaily: 100
   multiCooldown: 30
   # 百连钓鱼：需要角色等级 hundredLevel（25 级 = 解锁第 6 阶渔具）
-  #   hundredProtectedScale：百连中保护动物出现概率的倍率（0.2 = 降到 1/5）；误钓后照常罚款、禁渔，剩下的竿作废，鱼饵不退
+  #   hundredProtectedScale：百连中保护鱼类出现概率的倍率（0.2 = 降到 1/5）；误钓后照常罚款、禁渔，剩下的竿作废，鱼饵不退
   hundredCount: 100
   hundredDaily: 10
   hundredCooldown: 60
@@ -44,7 +44,7 @@ fishing:
   hundredProtectedScale: 0.2
 
 # 概率 V2：普通至神话的全局基础概率为 0，鱼竿及培养决定条件品级分布。
-# 空军、垃圾、隐藏款、保护动物单独计算；鱼获品级占剩余概率。
+# 空军、垃圾、隐藏款、保护鱼类单独计算；鱼获品级占剩余概率。
 probability:
   mode: gear
   empty: 15     # 什么都没钓到
@@ -61,7 +61,7 @@ probability:
     people_fragment: 0.05   # 人民碎片
     ocean_heart: 0.01       # 海洋之心
     paimon: 0.02            # 派蒙
-  # 保护动物：误钓会受罚（见 protectedPenalty），单独设置概率（%），不受渔具和称号影响
+  # 保护鱼类：误钓会受罚（见 protectedPenalty），单独设置概率（%），不受渔具和称号影响
   protected:
     chinese_sturgeon: 0.1   # 中华鲟
     finless_porpoise: 0.05  # 长江江豚
@@ -69,10 +69,10 @@ probability:
     roughskin_sculpin: 0.08 # 松江鲈
     hawksbill: 0.04         # 玳瑁
 
-# 误钓保护动物的惩罚：禁渔时长（分钟）与罚款
+# 误钓保护鱼类的惩罚：禁渔时长（分钟）与罚款
 #   goldRate：按当前金币的百分比罚款（%），gold 为罚款上限；goldRate 为 0 时固定罚 gold
 #   金币不足时扣到 0 为止
-#   dailyMax：每人每天最多误钓几次，达到后当天不会再钓到保护动物（0 为不限制）
+#   dailyMax：每人每天最多误钓几次，达到后当天不会再钓到保护鱼类（0 为不限制）
 protectedPenalty:
   dailyMax: 3
   banMinutes: 60
