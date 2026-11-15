@@ -252,7 +252,7 @@ export class FishingShop extends plugin {
     ].join("\n"))
     if(!msg)return true
     return e.reply(withButtons(e,msg,
-      [{text:`🔨 再次${data.typeName}`,callback:`#渔具${data.typeName} ${SLOT_NAMES[p.slot]} ${tier}`},
+      [{text:`🔨 ${data.typeName}`,callback:`#渔具${data.typeName} ${SLOT_NAMES[p.slot]} ${tier}`},
        {text:"🏠 返回工坊",callback:`#渔具工坊 ${SLOT_NAMES[p.slot]}`}],
       [B.myGear,{text:"🔄 切换方式",callback:`#渔具${type==="enhance"?"锻造":"强化"} ${SLOT_NAMES[p.slot]} ${tier}`}]))
   }
