@@ -7,7 +7,7 @@ import { oddsPercent } from "../components/ItemPool.js"
 import { luckEffects } from "../components/Game.js"
 import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, tierColor, textOn, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait, baitLevel, canUseBait, maxGearLevel, unlockedTier, tierPrice, ownedGear, ensureGear, buyGear, buyGearSet, equipGear, equipGearSet, cultivateGear, tierNeedLevel, enhanceCost, forgeCost, successRate, slotEffects, gearSet, setEffects, MAX_ENHANCE, MAX_FORGE } from "../components/Gear.js"
 import { FISH_RARITIES, gearRarityOdds } from "../components/GearOdds.js"
-import { effectLines, rareTargetText } from "../components/GearText.js"
+import { effectLines, rareTargetText, wearTitle } from "../components/GearText.js"
 import { characterProgress } from "../components/Progression.js"
 import { RARITY_INFO } from "../components/ItemPool.js"
 import { withButtons, B } from "../components/Button.js"
@@ -326,7 +326,7 @@ export class FishingShop extends plugin {
     const items=SLOTS.map(slot=>{
       const tier=gearLevel(user,slot), d=ownedGear(user,slot,tier)||{}
       const eff=slotEffects(slot,tier,d.enhance,d.forge)
-      return {slot,slotName:SLOT_NAMES[slot],name:gearItem(shop,slot,tier).name,tier,tierName:TIER_NAMES[tier-1],
+      return {slot,slotName:SLOT_NAMES[slot],name:gearItem(shop,slot,tier).name,tier,tierName:TIER_NAMES[tier-1],needLevel:tierNeedLevel(tier),
         enhance:Number(d.enhance)||0,forge:Number(d.forge)||0,maxE:MAX_ENHANCE,maxF:MAX_FORGE,color:tierColor(tier),textColor:textOn(tierColor(tier)),
         lines:[...(slot==="rod"?[`基础品级：第 ${tier} 阶`]:[]),...lines({},eff)]}
     })
@@ -338,7 +338,7 @@ export class FishingShop extends plugin {
     const odds=gearRarityOdds(playerEffects(user))
     return {
       name:displayName(user),gold:user.gold,level:characterProgress(user).level,unlocked:unlockedTier(user),
-      capacity:bagCapacity(user,shop,Config.config.fishing?.bagLimit),items,
+      capacity:bagCapacity(user,shop,Config.config.fishing?.bagLimit),items,wearTitle:wearTitle(set,setName),
       suit:{name:setName,count:set.count,pieces:set.pieces,hint,rows:[
         {label:"3 件",on:set.pieces>=3,lines:lines({},s3)},
         {label:"5 件",on:set.pieces>=5,lines:["含 3 件效果",...lines({},extra)]},

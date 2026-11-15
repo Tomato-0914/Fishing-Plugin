@@ -76,3 +76,10 @@ test("渔具效果文字：按鱼竿阶位写出具体品级与下一阶",async(
   const { effectText } = await import("../components/Titles.js")
   assert.equal(effectText({rarePoints:0.3,rarityShift:0.1}),"高品级鱼 +0.3%，品级向下一阶提升 +10%")
 })
+test("我的渔具标题：当前穿戴 · 五阶 · 寒玉套装",async()=>{
+  const { cnNumber, wearTitle } = await import("../components/GearText.js")
+  assert.deepEqual([1,5,10,11,16,20].map(cnNumber),["一","五","十","十一","十六","二十"])
+  assert.equal(wearTitle({tier:5,count:5,pieces:5},"寒玉"),"当前穿戴 · 五阶 · 寒玉套装")
+  assert.equal(wearTitle({tier:6,count:3,pieces:3},"流云"),"当前穿戴 · 六阶 · 流云套装（3 件）")
+  assert.equal(wearTitle({tier:6,count:2,pieces:0},"流云"),"当前穿戴 · 未成套")
+})
