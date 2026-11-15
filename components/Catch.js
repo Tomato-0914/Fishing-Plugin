@@ -1,6 +1,6 @@
 /** 一竿的结算：抽取结果 → 断线判定 → 记入存档（纯函数，#收杆 与十连钓鱼共用） */
 import { roll } from "./ItemPool.js"
-import { recordResult } from "./Game.js"
+import { recordResult, protectedToday, protectedDailyMax } from "./Game.js"
 import { breakChance } from "./Gear.js"
 
 /**
@@ -11,6 +11,9 @@ import { breakChance } from "./Gear.js"
 export function resolveCast(user, { items, cfg, shop, effects = {}, rng = Math.random, now = new Date() }) {
   // 禁渔中（十连途中钓到保护动物）后面的竿不再结算
   if (Number(user.banUntil) > now.getTime()) return { result: { type: "banned" }, snapped: false, chance: 0, reward: 0, value: 0, banned: true }
+  // 每天最多误钓 dailyMax 次保护动物：达到后今天不会再出现（概率归还给其他结果）
+  const max = protectedDailyMax(cfg.protectedPenalty)
+  if (max && protectedToday(user, now) >= max) effects = { ...effects, protectedScale: 0 }
   const result = roll({ items, probability: cfg.probability, size: cfg.size, limits: cfg.limits }, effects, rng)
   const chance = breakChance(result, shop?.lineBreak, effects)
   if (chance > 0 && rng() * 100 < chance) {
