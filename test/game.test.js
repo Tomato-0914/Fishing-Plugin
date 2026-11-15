@@ -811,7 +811,7 @@ test("打卡奖励：鱼饵阶位跟渔具走，数量按幸运值，运气差�
   const Result = { ok: (_, msg) => ({ ok: true, msg }), error: (_, msg) => ({ ok: false, msg }) }
   configInfo.setConfigData({ "checkin.luckyKing": 95 }, { Result })
   Config.set = origSet; Config.get = origCfg
-  assert.equal(saved.config.checkin.baitReward, undefined)
+  assert.equal(saved.config.checkin?.baitReward, undefined)
 })
 
 test("分级称号：Ⅰ/Ⅱ/Ⅲ，只取最高一级，不同称号叠加，获得后不失去", async () => {
@@ -1162,4 +1162,24 @@ test("十连 / 百连结果里的保护动物显示今日误钓次数", async ()
   assert.ok(roundLine(r).endsWith("今日第 2 次"))
   assert.ok(formatMulti([r], { protectedMax: 3 }).includes("今日 2/3 次"))
   assert.ok(formatHundred([r], { protectedMax: 3 }).includes("今日 2/3 次"))
+})
+
+test("锅巴保存：只写入和默认值不同的项，已取消的配图选项被清掉", async () => {
+  const { supportGuoba, diffFromDefaults } = await import("../guoba/index.js")
+  assert.deepEqual(diffFromDefaults({ a: 1, b: { c: 2, d: [1, 2] }, e: 5 }, { a: 1, b: { c: 3, d: [1, 2] }, e: 5 }), { b: { c: 2 } })
+  assert.equal(diffFromDefaults({ a: [1] }, { a: [1] }), undefined)
+  assert.deepEqual(diffFromDefaults({ a: [1, 2] }, { a: [1] }), { a: [1, 2] })
+  const { configInfo } = supportGuoba()
+  const fields = configInfo.schemas.map(s => s.field).filter(Boolean)
+  for (const f of ["fishing.castImage", "fishing.multiImage", "probability.N", "probability.MR"]) assert.ok(!fields.includes(f), f)
+  const saved = {}
+  const origSet = Config.set.bind(Config), origGet = Config.get.bind(Config)
+  Config.set = (name, value) => { saved[name] = value }
+  Config.get = name => name === "config" ? { ...origGet("config"), fishing: { ...origGet("config").fishing, castImage: "x.jpg", autoReel: true } } : origGet(name)
+  const Result = { ok: (_, msg) => ({ ok: true, msg }), error: (_, msg) => ({ ok: false, msg }) }
+  const ret = configInfo.setConfigData({ "fishing.cooldown": 3, "rank.groupSize": cfg.rank.groupSize }, { Result })
+  Config.set = origSet; Config.get = origGet
+  assert.equal(ret.ok, true, ret.msg)
+  assert.ok(!ret.msg.includes("概率总和"), ret.msg) // 渔具模式不提示概率总和
+  assert.deepEqual(saved.config, { fishing: { cooldown: 3 } }) // 只写改过的项；没改的、已取消的都不写
 })

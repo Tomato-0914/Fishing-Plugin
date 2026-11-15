@@ -51,6 +51,11 @@ class Config {
     return data
   }
 
+  /** 只读取 default_config 下的默认值（不含用户修改） */
+  defaults(name) {
+    return readYaml(path.join(DEF_DIR, `${name}.yaml`))
+  }
+
   /** 写入用户配置（锅巴保存时调用） */
   set(name, data) {
     fs.mkdirSync(USER_DIR, { recursive: true })
