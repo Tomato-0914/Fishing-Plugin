@@ -12,8 +12,6 @@ body.light .hero{background:#246a9d}
 .hero h1{font-size:32px;letter-spacing:3px;margin:0;color:#d7f5ff;text-shadow:0 0 12px #4cbdff}
 .hero .sub{color:#b9daf0;font-size:14px;margin-top:7px}
 .hero .right{text-align:right}.hero .gold{color:#ffce69;font-weight:bold;font-size:20px}
-.set-badge{display:inline-block;margin-top:8px;padding:4px 12px;border-radius:20px;background:#564723;border:1px solid #c8a95a;color:#ffdf8b;font-size:14px;font-weight:700}
-.set-badge.off{background:#23384d;border-color:#4e6f8a;color:#a9c3d6}
 .panel{background:var(--panel);border:1px solid var(--panel-b);border-radius:17px;padding:16px 17px;margin-bottom:14px;box-shadow:0 8px 20px #0003}
 .panel-title{font-size:19px;font-weight:800;color:var(--title);margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline}
 .panel-title small{font-size:13px;font-weight:400;color:var(--sub)}
@@ -49,8 +47,7 @@ body.light .hero{background:#246a9d}
 /* Twemoji 替换后的图标与文字等高（同 common.css） */
 img.emoji{display:inline-block;width:1em;height:1em;margin:0 .05em;vertical-align:-0.12em}
 </style></head><body class="{{theme}}"><div class="wrap">
-<div class="hero"><div><h1>我的渔具</h1><div class="sub">{{name}} · Lv{{level}} · 可用最高 {{unlocked}} 阶</div>
-<span class="set-badge {{suit.pieces?'':'off'}}">{{if suit.pieces}}✨ {{suit.name}} {{suit.count}} 件 · {{suit.pieces}} 件套生效{{else}}套装未生效{{/if}}</span></div>
+<div class="hero"><div><h1>我的渔具</h1><div class="sub">{{name}} · Lv{{level}} · 可用最高 {{unlocked}} 阶</div></div>
 <div class="right"><div class="gold">金币 {{gold}}</div><div class="sub">鱼护容量 {{capacity}}</div></div></div>
 
 <div class="panel"><div class="panel-title">{{wearTitle}} <small>Lv 为装备需求等级</small></div>
