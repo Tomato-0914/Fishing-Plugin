@@ -105,14 +105,14 @@ export class Fishing extends plugin {
       return null
     }
 
-    // 误钓保护动物后禁渔
+    // 误钓保护鱼类后禁渔
     const ban = (Number(user.banUntil) || 0) - Date.now()
     if (ban > 0) {
       const until = new Date(user.banUntil)
       const hm = `${String(until.getHours()).padStart(2, "0")}:${String(until.getMinutes()).padStart(2, "0")}`
       const max = protectedDailyMax(this.cfg.protectedPenalty)
       await this.send(e, [
-        "🚫 你误钓了保护动物，正在禁渔中~",
+        "🚫 你误钓了保护鱼类，正在禁渔中~",
         `⏳ 还剩 ${Math.ceil(ban / 60000)} 分钟（${hm} 解禁）`,
         ...(max ? [`📅 今日已误钓 ${protectedToday(user)}/${max} 次`] : []),
       ].join("\n"))
@@ -424,7 +424,7 @@ export class Fishing extends plugin {
     const user = UserData.get(id)
     const cfg = this.cfg
     const shop = Config.shop
-    // 百连降低保护动物出现概率；误钓后禁渔，后面的竿作废（鱼饵不退）
+    // 百连降低保护鱼类出现概率；误钓后禁渔，后面的竿作废（鱼饵不退）
     const extra = c.protectedScale !== 1 ? { protectedScale: c.protectedScale } : {}
     const rounds = baits.map(bait => resolveCast(user, { items: Config.items, cfg, shop, effects: { ...this.effectsFor(user, bait), ...extra } }))
     // 两次之间的最短间隔（防刷屏）
@@ -458,18 +458,18 @@ export class Fishing extends plugin {
     const { item } = result
     const r = RARITY_INFO[item.rarity] || {}
 
-    // 保护动物：放生 + 处罚
+    // 保护鱼类：放生 + 处罚
     if (item.special === "protected") {
       const p = round.penalty || {}
       const until = p.banUntil ? new Date(p.banUntil) : null
       const hm = until ? `${String(until.getHours()).padStart(2, "0")}:${String(until.getMinutes()).padStart(2, "0")}` : ""
       return withButtons(e, [
-        `🚫 糟糕！钓上来的是国家保护动物——${item.emoji}【${r.label}】${item.name}`,
+        `🚫 糟糕！钓上来的是国家保护鱼类——${item.emoji}【${r.label}】${item.name}`,
         "━━━━━━━━━━━━",
         `💬 ${item.intro || item.desc}`,
         "🕊️ 已经小心地把它放回水里了",
         `⚖️ 处罚：罚款 ${p.fine ?? 0} 金币，禁渔 ${p.minutes ?? 0} 分钟${hm ? `（${hm} 解禁）` : ""}`,
-        ...(protectedDailyMax(this.cfg.protectedPenalty) ? [`📅 今日已误钓 ${p.today ?? 1}/${protectedDailyMax(this.cfg.protectedPenalty)} 次${(p.today ?? 1) >= protectedDailyMax(this.cfg.protectedPenalty) ? "，今天不会再钓到保护动物了" : ""}`] : []),
+        ...(protectedDailyMax(this.cfg.protectedPenalty) ? [`📅 今日已误钓 ${p.today ?? 1}/${protectedDailyMax(this.cfg.protectedPenalty)} 次${(p.today ?? 1) >= protectedDailyMax(this.cfg.protectedPenalty) ? "，今天不会再钓到保护鱼类了" : ""}`] : []),
         `👛 当前金币：${user.gold}`,
       ].join("\n"), [{ text: `📖 了解${item.name}`, callback: `#钓鱼图鉴 ${item.name}` }, B.bag])
     }

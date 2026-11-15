@@ -49,7 +49,7 @@ export function recordResult(user, result, { now = new Date(), policeReward = 0,
   let reward = 0
   let stored = true
 
-  // 保护动物：自动放生，禁渔并罚款，不计入排行
+  // 保护鱼类：自动放生，禁渔并罚款，不计入排行
   if (item.special === "protected") {
     s.protected = (s.protected || 0) + 1
     const today = protectedToday(user, now) + 1
@@ -105,18 +105,18 @@ export function recordResult(user, result, { now = new Date(), policeReward = 0,
 }
 
 /**
- * 误钓保护动物的罚款
+ * 误钓保护鱼类的罚款
  * - goldRate > 0：按当前金币的 goldRate% 罚款，gold 为上限
  * - 未设置 goldRate：固定罚 gold
  * 都不会超过当前金币（扣到 0 为止）
  */
-/** 今天误钓保护动物的次数（跨天视为 0） */
+/** 今天误钓保护鱼类的次数（跨天视为 0） */
 export function protectedToday(user, now = new Date()) {
   const p = user?.protectedDay
   return p && p.day === periodKey("day", now) ? Math.max(0, Number(p.count) || 0) : 0
 }
 
-/** 每天最多误钓保护动物的次数（protectedPenalty.dailyMax，默认 3；0 为不限制） */
+/** 每天最多误钓保护鱼类的次数（protectedPenalty.dailyMax，默认 3；0 为不限制） */
 export const protectedDailyMax = penalty => Math.max(0, Math.floor(Number(penalty?.dailyMax ?? 3) || 0))
 
 export function protectedFine(gold, penalty = {}) {

@@ -9,9 +9,9 @@ import { breakChance } from "./Gear.js"
  *   snapped 为 true 时鱼已断线跑掉，不入鱼护、不计价值
  */
 export function resolveCast(user, { items, cfg, shop, effects = {}, rng = Math.random, now = new Date() }) {
-  // 禁渔中（十连途中钓到保护动物）后面的竿不再结算
+  // 禁渔中（十连途中钓到保护鱼类）后面的竿不再结算
   if (Number(user.banUntil) > now.getTime()) return { result: { type: "banned" }, snapped: false, chance: 0, reward: 0, value: 0, banned: true }
-  // 每天最多误钓 dailyMax 次保护动物：达到后今天不会再出现（概率归还给其他结果）
+  // 每天最多误钓 dailyMax 次保护鱼类：达到后今天不会再出现（概率归还给其他结果）
   const max = protectedDailyMax(cfg.protectedPenalty)
   if (max && protectedToday(user, now) >= max) effects = { ...effects, protectedScale: 0 }
   const result = roll({ items, probability: cfg.probability, size: cfg.size, limits: cfg.limits }, effects, rng)
@@ -62,7 +62,7 @@ export function roundLine(r, sizeLabels = {}, protectedMax = 0) {
   if (item.special === "protected") {
     const today = r.penalty?.today
     const count = today ? ` · 今日${protectedMax ? ` ${today}/${protectedMax} 次` : `第 ${today} 次`}` : ""
-    return `🚫 ${item.emoji} ${item.name}（保护动物）已放生 · 罚款 ${r.penalty?.fine ?? 0} · 禁渔 ${r.penalty?.minutes ?? 0} 分钟${count}`
+    return `🚫 ${item.emoji} ${item.name}（保护鱼类）已放生 · 罚款 ${r.penalty?.fine ?? 0} · 禁渔 ${r.penalty?.minutes ?? 0} 分钟${count}`
   }
   if (item.special === "paimon") return `🧚 ${item.name}：才不是应急食品！${r.paimon?.gift ? ` +${r.paimon.gift}` : ""}`
   if (item.rarity === "junk") return `🗑️ ${item.emoji} ${item.name}`
@@ -89,7 +89,7 @@ export function formatMulti(rounds, { sizeLabels = {}, markdown = false, xpLine 
     notable.set(item.id, g)
   }
   const lines = []
-  // 特殊事件在最前：保护动物 → 报警 → 派蒙 → 断线
+  // 特殊事件在最前：保护鱼类 → 报警 → 派蒙 → 断线
   const order = r => r.snapped ? 3 : r.result.item.special === "protected" ? 0 : r.result.item.special === "police" ? 1 : 2
   for (const r of special.sort((a, b) => order(a) - order(b))) lines.push(roundLine(r, sizeLabels, protectedMax))
   // 高级鱼：稀有度高的在前，同稀有度按总价
@@ -113,7 +113,7 @@ export function formatMulti(rounds, { sizeLabels = {}, markdown = false, xpLine 
   ]
   const tail = [
     sum.snapped ? `💥 断线 ${sum.snapped}` : "",
-    sum.protected ? `🚫 保护动物 ${sum.protected}` : "",
+    sum.protected ? `🚫 保护鱼类 ${sum.protected}` : "",
     sum.banned ? `⛔ 禁渔作废 ${sum.banned}` : "",
     sum.snapped ? "💡 更高阶或强化过的鱼线可减少断线" : "",
   ].filter(Boolean)
@@ -131,7 +131,7 @@ const RARITY_LABEL = { MR: "神话", EP: "史诗", UR: "传说", SSR: "神器", 
 
 /**
  * 百连结果文字：只给各品级数量；空军、垃圾、断线照常统计；
- * 特殊事件（报警、派蒙、保护动物、隐藏款）逐条列出
+ * 特殊事件（报警、派蒙、保护鱼类、隐藏款）逐条列出
  */
 export function formatHundred(rounds, { markdown = false, xpLine = "", title = "💯 百连收网", protectedMax = 0 } = {}) {
   const sum = summarize(rounds)
@@ -155,7 +155,7 @@ export function formatHundred(rounds, { markdown = false, xpLine = "", title = "
   ]
   const tail = [
     sum.snapped ? `💥 断线 ${sum.snapped}` : "",
-    sum.protected ? `🚫 保护动物 ${sum.protected}` : "",
+    sum.protected ? `🚫 保护鱼类 ${sum.protected}` : "",
     sum.banned ? `⛔ 禁渔作废 ${sum.banned} 竿（鱼饵不退）` : "",
   ].filter(Boolean)
   if (!lines.length) return [...head, ...tail].join("\n")

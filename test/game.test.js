@@ -50,9 +50,9 @@ test("默认配置与物品池完整", () => {
   // 不放国家重点保护野生动物（以及容易引起争议的近似名称）
   const PROTECTED = ["鲟", "江豚", "白鱀豚", "海豚", "鲥", "松江鲈", "四鳃鲈", "胭脂鱼", "海马", "鲎", "苏眉", "老鼠斑",
     "黄唇鱼", "大鲵", "娃娃鱼", "龟", "玳瑁", "砗磲", "鹦鹉螺", "珊瑚", "鲸", "海豹", "哲罗鲑", "细鳞鲑", "唐鱼", "金线鲃", "河蚌", "锦绣龙虾"]
-  // 保护动物只能以 protected 出现（钓到会受罚），不能当普通鱼钓和卖
+  // 保护鱼类只能以 protected 出现（钓到会受罚），不能当普通鱼钓和卖
   for (const banned of PROTECTED) for (const i of items.filter(x => x.name.includes(banned)))
-    assert.equal(i.rarity, "protected", `${i.name} 必须是保护动物`)
+    assert.equal(i.rarity, "protected", `${i.name} 必须是保护鱼类`)
   // 每件物品都有介绍、栖息地；名称不重复
   assert.equal(new Set(items.map(i => i.name)).size, items.length)
   assert.equal(cfg.policeReward, 15000)
@@ -572,7 +572,7 @@ test("一竿结算：断线不入鱼护，十连汇总", async () => {
   assert.equal(u.bag.length, 1)
   assert.equal(r2.value, r2.result.price)
 
-  // 十连：200 次模拟（不含保护动物），汇总数字自洽
+  // 十连：200 次模拟（不含保护鱼类），汇总数字自洽
   const v = newUser("10022")
   const rng = seeded(9)
   const noProt = { ...cfg, probability: { ...cfg.probability, protected: {} } }
@@ -862,7 +862,7 @@ test("分级称号：Ⅰ/Ⅱ/Ⅲ，只取最高一级，不同称号叠加，获
   assert.equal(checkTitles(u, titles, items).find(x => x.title.id === "diligent").tier, 2)
 })
 
-test("保护动物：放生、罚款（不扣成负数）、禁渔，十连后面的竿作废", async () => {
+test("保护鱼类：放生、罚款（不扣成负数）、禁渔，十连后面的竿作废", async () => {
   const { recordResult } = await import("../components/Game.js")
   const { resolveCast, summarize } = await import("../components/Catch.js")
   const sturgeon = itemMap.get("chinese_sturgeon")
@@ -1076,7 +1076,7 @@ test("强化 / 锻造成功率：前 3 级必定成功，之后逐级递减；�
   assert.equal(cultivateGear(u, shop, "rod", 3, "forge", () => 0.9999).success, false)
 })
 
-test("百连：保护动物出现概率降低；结果只显示品级数量，空军垃圾断线照常", async () => {
+test("百连：保护鱼类出现概率降低；结果只显示品级数量，空军垃圾断线照常", async () => {
   const { formatHundred } = await import("../components/Catch.js")
   const base = buildOdds(cfg.probability, { rarityTier: 10 })
   const low = buildOdds(cfg.probability, { rarityTier: 10, protectedScale: 0.2 })
@@ -1126,11 +1126,11 @@ test("抛竿提示的渔具：成套显示“阶名（件数）”，其余部�
   assert.equal(gearSummary(equip(newUser("10103"), { rod: 6, line: 6, hook: 5, float: 5 }), shop), "流云鱼竿 · 流云鱼线 · 寒玉鱼钩 · 寒玉浮漂 · 新手鱼护")
 })
 
-test("保护动物：每人每天最多误钓 3 次，达到后当天不再出现，跨天重置", async () => {
+test("保护鱼类：每人每天最多误钓 3 次，达到后当天不再出现，跨天重置", async () => {
   const { resolveCast } = await import("../components/Catch.js")
   const { protectedToday, protectedDailyMax } = await import("../components/Game.js")
   assert.equal(protectedDailyMax(cfg.protectedPenalty), 3)
-  // 只会钓到保护动物的配置
+  // 只会钓到保护鱼类的配置
   const only = { ...cfg, probability: { mode: "gear", empty: 0, junk: 0, hidden: {}, protected: { chinese_sturgeon: 100 } } }
   const u = newUser("10110"); u.gold = 100000
   const day = new Date(2026, 10, 15, 10, 0)
@@ -1141,7 +1141,7 @@ test("保护动物：每人每天最多误钓 3 次，达到后当天不再出�
     assert.equal(r.penalty.today, i)
   }
   assert.equal(protectedToday(u, day), 3)
-  // 第 4 次起当天不再出现保护动物
+  // 第 4 次起当天不再出现保护鱼类
   for (let i = 0; i < 20; i++) assert.notEqual(cast(new Date(day.getTime() + 600000)).result.item?.special, "protected")
   assert.equal(u.stats.protected, 3)
   // 第二天重置
@@ -1154,11 +1154,11 @@ test("保护动物：每人每天最多误钓 3 次，达到后当天不再出�
   for (let i = 0; i < 5; i++) { v.banUntil = 0; assert.equal(resolveCast(v, { items, cfg: free, shop: Config.shop, rng: seeded(4), now: day }).result.item?.special, "protected") }
 })
 
-test("十连 / 百连结果里的保护动物显示今日误钓次数", async () => {
+test("十连 / 百连结果里的保护鱼类显示今日误钓次数", async () => {
   const { roundLine, formatMulti, formatHundred } = await import("../components/Catch.js")
   const it = itemMap.get("chinese_sturgeon")
   const r = { snapped: false, value: 0, reward: 0, penalty: { fine: 10000, minutes: 60, today: 2 }, result: { type: "item", item: it, rarity: "protected" } }
-  assert.equal(roundLine(r, {}, 3), `🚫 ${it.emoji} 中华鲟（保护动物）已放生 · 罚款 10000 · 禁渔 60 分钟 · 今日 2/3 次`)
+  assert.equal(roundLine(r, {}, 3), `🚫 ${it.emoji} 中华鲟（保护鱼类）已放生 · 罚款 10000 · 禁渔 60 分钟 · 今日 2/3 次`)
   assert.ok(roundLine(r).endsWith("今日第 2 次"))
   assert.ok(formatMulti([r], { protectedMax: 3 }).includes("今日 2/3 次"))
   assert.ok(formatHundred([r], { protectedMax: 3 }).includes("今日 2/3 次"))

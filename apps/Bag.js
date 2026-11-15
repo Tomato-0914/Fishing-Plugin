@@ -13,7 +13,7 @@ import { dayKey } from "../components/Period.js"
 import { groupAllowed, itemMap, displayName, updateNickname, avatar, playerEffects } from "../components/common.js"
 
 /** 鱼护展示顺序：隐藏 → 传说 → … → 普通 → 垃圾 */
-/** 鱼护 / 图鉴展示顺序：隐藏 → 神话 → 史诗 → 传说 → … → 普通 → 垃圾 → 保护动物 */
+/** 鱼护 / 图鉴展示顺序：隐藏 → 神话 → 史诗 → 传说 → … → 普通 → 垃圾 → 保护鱼类 */
 const ORDER = ["hidden", "MR", "EP", "UR", "SSR", "SR", "R", "N", "junk", "protected"]
 
 export class FishingBag extends plugin {
@@ -280,7 +280,7 @@ export class FishingBag extends plugin {
       habitat: item.habitat || "未知", intro: item.intro || item.desc || "",
       // 按玩家当前渔具、称号、运势和鱼饵计算，与实际抛竿一致
       chance: formatChance(itemChance(item, all, cfg.probability, playerEffects(user), cfg.limits)), price, sizes,
-      // 保护动物用于科普，不用钓到也能看介绍
+      // 保护鱼类用于科普，不用钓到也能看介绍
       unlocked: count > 0 || item.rarity === "protected", count,
       first: rec.first ? dayKey(new Date(rec.first)) : "",
       maxW: rec.maxW != null ? `${formatWeight(rec.maxW)}${rec.maxS ? `（${cfg.size?.[rec.maxS]?.label || ""}）` : ""}` : "",

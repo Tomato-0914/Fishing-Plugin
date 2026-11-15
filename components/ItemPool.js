@@ -4,7 +4,7 @@ import { gearRarityOdds } from "./GearOdds.js"
 /**
  * 稀有度（统一顺序：普通 → 高级 → 稀有 → 神器 → 传说 → 史诗 → 神话）
  * 内部 id 沿用旧值以兼容存档：N 普通、R 高级、SR 稀有、SSR 神器、UR 传说、EP 史诗、MR 神话
- * hidden 隐藏款、protected 保护动物（误钓会受罚）、junk 垃圾
+ * hidden 隐藏款、protected 保护鱼类（误钓会受罚）、junk 垃圾
  */
 export const RARITIES = ["junk", "N", "R", "SR", "SSR", "UR", "EP", "MR", "hidden", "protected"]
 export const RARITY_INFO = {
@@ -17,7 +17,7 @@ export const RARITY_INFO = {
   EP: { label: "史诗", color: "#fa6e1e", icon: "🟠" },
   MR: { label: "神话", color: "#e5242b", icon: "🔴" },
   hidden: { label: "隐藏", color: "linear-gradient(90deg, #ff4d4f, #faad14, #52c41a, #1890ff, #722ed1)", icon: "🌈" },
-  protected: { label: "保护动物", color: "#0e9f6e", icon: "🚫" },
+  protected: { label: "保护鱼类", color: "#0e9f6e", icon: "🚫" },
 }
 /** 稀有及以上（rareBoost 作用的档位） */
 const RARE = new Set(["SR", "SSR", "UR", "EP", "MR"])
@@ -51,7 +51,7 @@ export function triangular(min, max, rng = Math.random) {
  */
 export function buildOdds(prob, effects = {}, limits = {}) {
   if (prob?.mode === "gear") {
-    // 先独立判定空军、垃圾、隐藏款和保护动物；剩余权重按渔具决定的品级分布分配。
+    // 先独立判定空军、垃圾、隐藏款和保护鱼类；剩余权重按渔具决定的品级分布分配。
     // 品级只认 rarityTier / rarityShift / rarePoints（渔具、套装、称号），旧版 boost* / rareBoost 不生效。
     const specialEntries = specialOdds(prob, effects)
     const specialTotal=specialEntries.reduce((sum,[,v])=>sum+v,0)
@@ -124,14 +124,14 @@ export function buildOdds(prob, effects = {}, limits = {}) {
       odds.N += cut
     }
   }
-  // 隐藏款、保护动物：单独设置的固定概率，不受渔具和称号影响
+  // 隐藏款、保护鱼类：单独设置的固定概率，不受渔具和称号影响
   for (const [k, v] of specialOdds(prob, effects)) odds[k] = v
   return odds
 }
 
 /**
- * 隐藏款与保护动物的概率：[["hidden:<id>", %], ...]
- * effects.protectedScale：保护动物概率倍率（百连钓鱼降低出现概率），默认 1
+ * 隐藏款与保护鱼类的概率：[["hidden:<id>", %], ...]
+ * effects.protectedScale：保护鱼类概率倍率（百连钓鱼降低出现概率），默认 1
  */
 function specialOdds(prob, effects = {}) {
   const scale = effects.protectedScale == null ? 1 : Math.max(0, Number(effects.protectedScale) || 0)
