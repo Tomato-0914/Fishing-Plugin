@@ -2,7 +2,7 @@ import { plugin } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
-import { multiLeft, useMulti, hundredLeft, useHundred, protectedDailyMax, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier } from "../components/Game.js"
+import { multiLeft, useMulti, hundredLeft, useHundred, protectedDailyMax, protectedToday, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier } from "../components/Game.js"
 import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, holdsOnTimeout, maxLevel, gearSummary } from "../components/Gear.js"
 import { resolveCast, summarize, formatMulti, formatHundred } from "../components/Catch.js"
 import { experience, characterProgress, xpGainText } from "../components/Progression.js"
@@ -110,7 +110,12 @@ export class Fishing extends plugin {
     if (ban > 0) {
       const until = new Date(user.banUntil)
       const hm = `${String(until.getHours()).padStart(2, "0")}:${String(until.getMinutes()).padStart(2, "0")}`
-      await this.send(e, `🚫 你误钓了保护动物，正在禁渔中~\n⏳ 还剩 ${Math.ceil(ban / 60000)} 分钟（${hm} 解禁）`)
+      const max = protectedDailyMax(this.cfg.protectedPenalty)
+      await this.send(e, [
+        "🚫 你误钓了保护动物，正在禁渔中~",
+        `⏳ 还剩 ${Math.ceil(ban / 60000)} 分钟（${hm} 解禁）`,
+        ...(max ? [`📅 今日已误钓 ${protectedToday(user)}/${max} 次`] : []),
+      ].join("\n"))
       return null
     }
 
@@ -430,9 +435,10 @@ export class Fishing extends plugin {
     const xpLine = xpSettlement(user, s.xpBefore ?? experience(user) - baits.length)
     const markdown = e.bot?.adapter?.id === "QQBot"
     const sizeLabels = Object.fromEntries(Object.entries(cfg.size || {}).map(([k, v]) => [k, v.label]))
+    const protectedMax = protectedDailyMax(cfg.protectedPenalty)
     const body = c.kind === "hundred"
-      ? formatHundred(rounds, { markdown, xpLine })
-      : formatMulti(rounds, { sizeLabels, markdown, xpLine })
+      ? formatHundred(rounds, { markdown, xpLine, protectedMax })
+      : formatMulti(rounds, { sizeLabels, markdown, xpLine, protectedMax })
     const msg = body + `\n🎟️ 剩余${c.label}：${this.batchLeftText(user, c)}` + (cd ? `\n⏳ 冷却：${cd} 秒` : "")
     const hundredOpen = characterProgress(user).level >= this.batchCfg("hundred").level
     await this.send(e, withButtons(e, msg,

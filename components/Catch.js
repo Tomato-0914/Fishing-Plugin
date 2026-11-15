@@ -48,7 +48,10 @@ const TIER_RANK = { hidden: 9, MR: 8, EP: 7, UR: 6, SSR: 5, SR: 4, R: 3, N: 2 }
 const FLASH = new Set(["UR", "EP", "MR", "hidden"])
 
 /** 一竿的短格式：🟡🐠 石斑鱼王·中 341 */
-export function roundLine(r, sizeLabels = {}) {
+/**
+ * @param protectedMax 每日误钓上限（显示“今日 2/3 次”；0 或不传时显示“今日第 2 次”）
+ */
+export function roundLine(r, sizeLabels = {}, protectedMax = 0) {
   if (r.banned) return "🚫 禁渔中，未钓"
   if (r.result.type === "empty") return "🌊 空军"
   const { item, size } = r.result
@@ -56,7 +59,11 @@ export function roundLine(r, sizeLabels = {}) {
   const dot = RARITY_DOT[item.rarity] || ""
   if (r.snapped) return `💥 ${dot}${item.emoji} ${name} 断线跑了`
   if (item.special === "police") return `🚨 ${item.emoji} ${item.name} 已报警 +${r.reward}`
-  if (item.special === "protected") return `🚫 ${item.emoji} ${item.name}（保护动物）已放生 · 罚款 ${r.penalty?.fine ?? 0} · 禁渔 ${r.penalty?.minutes ?? 0} 分钟`
+  if (item.special === "protected") {
+    const today = r.penalty?.today
+    const count = today ? ` · 今日${protectedMax ? ` ${today}/${protectedMax} 次` : `第 ${today} 次`}` : ""
+    return `🚫 ${item.emoji} ${item.name}（保护动物）已放生 · 罚款 ${r.penalty?.fine ?? 0} · 禁渔 ${r.penalty?.minutes ?? 0} 分钟${count}`
+  }
   if (item.special === "paimon") return `🧚 ${item.name}：才不是应急食品！${r.paimon?.gift ? ` +${r.paimon.gift}` : ""}`
   if (item.rarity === "junk") return `🗑️ ${item.emoji} ${item.name}`
   return `${dot}${item.emoji} ${name} ${r.value}${FLASH.has(item.rarity) ? " ✨" : ""}`
@@ -68,7 +75,7 @@ export function roundLine(r, sizeLabels = {}) {
  * - 普通、高级只给数量和总价；垃圾、空军、断线只给数量
  * @param markdown true 时（QQBot）使用 Markdown 加粗标题与分区；否则为纯文本
  */
-export function formatMulti(rounds, { sizeLabels = {}, markdown = false, xpLine = "" } = {}) {
+export function formatMulti(rounds, { sizeLabels = {}, markdown = false, xpLine = "", protectedMax = 0 } = {}) {
   const sum = summarize(rounds)
   const special = [], notable = new Map(), low = { N: [0, 0], R: [0, 0] }
   for (const r of rounds) {
@@ -84,7 +91,7 @@ export function formatMulti(rounds, { sizeLabels = {}, markdown = false, xpLine 
   const lines = []
   // 特殊事件在最前：保护动物 → 报警 → 派蒙 → 断线
   const order = r => r.snapped ? 3 : r.result.item.special === "protected" ? 0 : r.result.item.special === "police" ? 1 : 2
-  for (const r of special.sort((a, b) => order(a) - order(b))) lines.push(roundLine(r, sizeLabels))
+  for (const r of special.sort((a, b) => order(a) - order(b))) lines.push(roundLine(r, sizeLabels, protectedMax))
   // 高级鱼：稀有度高的在前，同稀有度按总价
   const groups = [...notable.values()].sort((a, b) =>
     (TIER_RANK[b.r.result.rarity] || 0) - (TIER_RANK[a.r.result.rarity] || 0) || b.value - a.value)
@@ -126,7 +133,7 @@ const RARITY_LABEL = { MR: "神话", EP: "史诗", UR: "传说", SSR: "神器", 
  * 百连结果文字：只给各品级数量；空军、垃圾、断线照常统计；
  * 特殊事件（报警、派蒙、保护动物、隐藏款）逐条列出
  */
-export function formatHundred(rounds, { markdown = false, xpLine = "", title = "💯 百连收网" } = {}) {
+export function formatHundred(rounds, { markdown = false, xpLine = "", title = "💯 百连收网", protectedMax = 0 } = {}) {
   const sum = summarize(rounds)
   const counts = {}, special = []
   for (const r of rounds) {
@@ -137,7 +144,7 @@ export function formatHundred(rounds, { markdown = false, xpLine = "", title = "
   }
   const order = r => r.result.item.special === "protected" ? 0 : r.result.item.special === "police" ? 1 : r.result.item.special === "paimon" ? 3 : 2
   const lines = [
-    ...special.sort((a, b) => order(a) - order(b)).map(r => roundLine(r)),
+    ...special.sort((a, b) => order(a) - order(b)).map(r => roundLine(r, {}, protectedMax)),
     ...Object.keys(RARITY_LABEL).filter(k => counts[k]).map(k => `${RARITY_DOT[k]} ${RARITY_LABEL[k]} ×${counts[k]}${FLASH.has(k) ? " ✨" : ""}`),
   ]
   const head = [
