@@ -148,56 +148,85 @@ export class FishingShop extends plugin {
     const user = this.load(e)
     const match = e.msg.match(/^#?购买渔具\s*(.+?)套装$/)
     const tier = TIER_NAMES.indexOf(match?.[1]) + 1
+    const name = TIER_NAMES[tier-1]
     const ret = buyGearSet(user,this.shopCfg,tier)
     if (!ret.ok) {
-      if (ret.reason === "locked") return e.reply(`角色等级不足，需要 Lv${ret.need} 才能购买${TIER_NAMES[tier-1]}套装`)
-      if (ret.reason === "gold") return e.reply(`金币不足！购买${TIER_NAMES[tier-1]}套装剩余 ${ret.missing} 件需要 ${ret.cost} 金币，当前只有 ${ret.have} 金币，还差 ${ret.cost-ret.have} 金币。`)
-      if (ret.reason === "owned") return e.reply(`你已拥有完整的${TIER_NAMES[tier-1]}套装，无需重复购买。`)
-      return e.reply("无效的渔具套装名称，请查看 #渔具商店")
+      if (ret.reason === "locked") return e.reply(`🔒 角色等级不足：${name}套装需要 Lv${ret.need}`)
+      if (ret.reason === "gold") return e.reply([`👛 金币不足：${name}套装还差 ${ret.missing} 件，需要 ${ret.cost} 金币`, `当前 ${ret.have} 金币，还差 ${ret.cost-ret.have} 金币`].join("\n"))
+      if (ret.reason === "owned") return e.reply(withButtons(e, `✅ 你已拥有完整的${name}套装，无需重复购买`, [{ text: `✅ 使用${name}套装`, callback: `#使用${name}套装`, permission: e.user_id }]))
+      return e.reply("❓ 没有这个套装，请查看 #渔具商店")
     }
     await UserData.save(user.user_id)
-    // 继承相同的部位合并成一行：“鱼竿、鱼线 强化 +7、锻造 +4（来自第5阶）”
+    // 继承相同的部位合并成一行：“全部 5 件 强化 +7、锻造 +4（来自第 5 阶）”
     const groups = new Map()
     for (const slot of ret.slots) {
       const t = inheritText(ret.inherited?.[slot], false)
       if (t) groups.set(t, [...(groups.get(t) || []), slot])
     }
-    const inh = [...groups].map(([t, slots]) => [slots.length === SLOTS.length ? "全部 5 件" : slots.map(x => SLOT_NAMES[x]).join("、"), t])
-    return e.reply(`购买成功！获得${TIER_NAMES[tier-1]}套装中的 ${ret.slots.length} 件渔具：${ret.slots.map(slot=>SLOT_NAMES[slot]).join("、")}。\n花费 ${ret.cost} 金币，剩余 ${user.gold} 金币。${ret.skipped ? `\n已有 ${ret.skipped} 件已自动跳过，未重复收费。` : ""}${inh.length ? `\n🔁 继承：${inh.map(([who,t])=>`${who} ${t}`).join("；")}` : ""}\n装备不会自动切换，可使用 #使用${TIER_NAMES[tier-1]}套装 一键穿戴（5 件套属性：${setText(tier,5)}）。`)
+    const inh = [...groups].map(([t, slots]) => `${slots.length === SLOTS.length ? "全部 5 件" : slots.map(x => SLOT_NAMES[x]).join("、")} ${t}`)
+    const lines = [
+      `🛒 购买成功：${name}套装`,
+      `📦 获得 ${ret.slots.length} 件：${ret.slots.map(slot => SLOT_NAMES[slot]).join("、")}${ret.skipped ? `（已有 ${ret.skipped} 件，跳过不收费）` : ""}`,
+      `💰 花费 ${ret.cost} 金币 · 剩余 ${user.gold}`,
+      ...inh.map(t => `🔁 继承：${t}`),
+      LINE,
+      "✨ 5 件套属性（穿上后生效）",
+      ...setLines(tier, 5),
+    ]
+    return e.reply(withButtons(e, lines.join("\n"), [{ text: `✅ 使用${name}套装`, callback: `#使用${name}套装`, permission: e.user_id }, B.myGear]))
   }
   async purchase(e) {
     if(!groupAllowed(e))return false
     const user=this.load(e),p=this.parseSlotTier(e,"购买渔具")
     if(!p?.tier)return e.reply("请指定装备阶位，例如 #购买渔具 鱼竿 9")
     const ret=buyGear(user,this.shopCfg,p.slot,p.tier)
-    if(!ret.ok)return e.reply({locked:`角色等级不足，需 Lv${ret.need} 才能购买`,owned:"已拥有该渔具",gold:`金币不足，需要 ${ret.cost} 金币`,invalid:"无效的装备阶位"}[ret.reason]||"购买失败")
+    if(!ret.ok)return e.reply({locked:`🔒 角色等级不足：需要 Lv${ret.need}`,owned:"✅ 你已拥有这件渔具",gold:`👛 金币不足：需要 ${ret.cost} 金币`,invalid:"❓ 没有这个阶位的渔具"}[ret.reason]||"购买失败")
     await UserData.save(user.user_id)
-    return e.reply(`购买成功：${ret.item.name}，花费 ${ret.cost} 金币。${inheritText(ret.inherited)}\n发送 #装备渔具 ${SLOT_NAMES[p.slot]} ${p.tier} 穿戴`)
+    const equipCmd=`#装备渔具 ${SLOT_NAMES[p.slot]} ${p.tier}`
+    const lines=[
+      `🛒 购买成功：Lv.${tierNeedLevel(p.tier)} ${ret.item.name}`,
+      `💰 花费 ${ret.cost} 金币 · 剩余 ${user.gold}`,
+      ...(inheritText(ret.inherited,false)?[`🔁 继承：${inheritText(ret.inherited,false)}`]:[]),
+      `💡 发送 ${equipCmd} 穿戴`,
+    ]
+    return e.reply(withButtons(e,lines.join("\n"),[{text:`✅ 装备${ret.item.name}`,callback:equipCmd,permission:e.user_id},B.myGear]))
   }
   async equipSet(e) {
     if (!groupAllowed(e)) return false
     const user = this.load(e)
     const match = e.msg.match(/^#?(?:使用|穿戴|装备)(?:渔具)?\s*(.+?)套装$/)
     const tier = TIER_NAMES.indexOf(match?.[1]) + 1
+    const name = TIER_NAMES[tier-1]
     const ret = equipGearSet(user,tier)
     if (!ret.ok) {
-      if (ret.reason === "locked") return e.reply(`角色等级不足，需要 Lv${ret.need} 才能使用${TIER_NAMES[tier-1]}套装。`)
-      if (ret.reason === "incomplete") return e.reply(`无法使用${TIER_NAMES[tier-1]}套装，缺少：${ret.missing.map(slot=>TIER_NAMES[tier-1]+SLOT_NAMES[slot]).join("、")}。\n请先购买缺少的装备：#购买渔具${TIER_NAMES[tier-1]}套装`)
-      if (ret.reason === "equipped") return e.reply(`当前已穿戴完整的${TIER_NAMES[tier-1]}套装，无需重复切换。`)
-      return e.reply("无效的渔具套装名称，请查看 #渔具商店")
+      if (ret.reason === "locked") return e.reply(`🔒 角色等级不足：${name}套装需要 Lv${ret.need}`)
+      if (ret.reason === "incomplete") return e.reply(withButtons(e, [`❌ ${name}套装还没买齐`, `缺少：${ret.missing.map(slot => name + SLOT_NAMES[slot]).join("、")}`].join("\n"), [{ text: `🛒 购买${name}套装`, callback: `#购买渔具${name}套装`, permission: e.user_id }]))
+      if (ret.reason === "equipped") return e.reply(`✅ 你已经穿着${name}套装（5）了`)
+      return e.reply("❓ 没有这个套装，请查看 #渔具商店")
     }
     await UserData.save(user.user_id)
-    return e.reply(`已成功使用${TIER_NAMES[tier-1]}套装！\n鱼竿、鱼线、鱼钩、浮漂、鱼护已全部切换，原有强化和锻造等级保持不变。\n✨ 5 件套属性已生效：${setText(tier,5)}`)
+    const lines = [
+      `✅ 已穿戴：${name}套装（5）`,
+      "🎣 5 件渔具已全部换上，强化和锻造等级不变",
+      LINE,
+      "✨ 5 件套属性已生效",
+      ...setLines(tier, 5),
+    ]
+    return e.reply(withButtons(e, lines.join("\n"), [B.myGear, { text: "🔨 渔具工坊", callback: "#渔具工坊" }]))
   }
   async equip(e) {
     if(!groupAllowed(e))return false
     const user=this.load(e),p=this.parseSlotTier(e,"装备渔具")
-    if(!p?.tier)return e.reply("请指定装备阶位")
+    if(!p?.tier)return e.reply("请指定装备阶位，例如 #装备渔具 鱼竿 9")
     const ret=equipGear(user,p.slot,p.tier)
-    if(!ret.ok)return e.reply(ret.reason==="locked"?"角色等级不足，不能穿戴":"尚未购买该装备")
+    if(!ret.ok)return e.reply(ret.reason==="locked"?"🔒 角色等级不足，还不能穿戴":"❌ 还没有这件渔具，先去 #渔具商店 购买")
     await UserData.save(user.user_id)
     const set=gearSet(user)
-    return e.reply(`已装备：${gearItem(this.shopCfg,p.slot,p.tier).name}，属性已生效${set.pieces?`\n✨ ${TIER_NAMES[set.tier-1]}${set.pieces} 件套：${setText(set.tier,set.pieces)}`:""}`)
+    const lines=[
+      `✅ 已装备：Lv.${tierNeedLevel(p.tier)} ${gearItem(this.shopCfg,p.slot,p.tier).name}`,
+      set.pieces?`✨ 当前套装：${TIER_NAMES[set.tier-1]}套装（${set.count}）· ${set.pieces} 件套生效`:"✨ 当前未成套（同一阶穿 3 件触发套装）",
+    ]
+    return e.reply(withButtons(e,lines.join("\n"),[B.myGear]))
   }
   async upgrade(e){return e.reply("旧版渔具升级已停用，请使用 #购买渔具、#渔具强化 或 #渔具锻造")}
   async enhance(e){return this.cultivate(e,"enhance")}
@@ -381,18 +410,24 @@ export class FishingShop extends plugin {
       .map(part => part.trim()).filter(Boolean)
     const set=gearSet(user)
     lines.push("━━━━━━━━━━━━",
-      set.pieces?`✨ 套装：${TIER_NAMES[set.tier-1]} ${set.count} 件（${set.pieces} 件套生效）`:`✨ 套装：未生效（穿戴同一阶 3 件 / 5 件触发）`,
+      set.pieces?`✨ 套装：${TIER_NAMES[set.tier-1]}套装（${set.count}）· ${set.pieces} 件套生效`:`✨ 套装：未生效（穿戴同一阶 3 件 / 5 件触发）`,
       `高品级加成分配：${rareTargetText(gearLevel(user,"rod"))}`,
       `鱼护容量：${bagCapacity(user,shop,Config.config.fishing?.bagLimit)}`,"当前生效属性（含套装）：",...effects.map(part => `> ${part}`))
     return lines.join("\n")
   }}
 
-function setText(tier, pieces) {
-  return effectText(setEffects(tier, pieces))
+const LINE = "━━━━━━━━━━━━"
+/** 套装属性逐行：“· 空军 -1.2%”，按这一阶鱼竿写出具体品级 */
+function setLines(tier, pieces) {
+  return effectLines({}, setEffects(tier, pieces), tier).map(l => `· ${l}`)
 }
 /** 继承提示：“强化 +7、锻造 +3” */
 function inheritText(inh, withPrefix = true) {
   if (!inh || (!inh.enhance && !inh.forge)) return ""
-  const parts = [inh.enhance ? `强化 +${inh.enhance}（来自第${inh.from.enhance}阶）` : "", inh.forge ? `锻造 +${inh.forge}（来自第${inh.from.forge}阶）` : ""].filter(Boolean)
-  return withPrefix ? `\n🔁 继承旧装备：${parts.join("、")}` : parts.join("、")
+  const e = inh.enhance ? `强化 +${inh.enhance}` : "", f = inh.forge ? `锻造 +${inh.forge}` : ""
+  // 两项来自同一阶时只写一次来源：“强化 +7、锻造 +4（来自第 5 阶）”
+  const text = !e || !f || inh.from.enhance === inh.from.forge
+    ? `${[e, f].filter(Boolean).join("、")}（来自第 ${inh.from.enhance || inh.from.forge} 阶）`
+    : `${e}（来自第 ${inh.from.enhance} 阶）、${f}（来自第 ${inh.from.forge} 阶）`
+  return withPrefix ? `\n🔁 继承旧装备：${text}` : text
 }
