@@ -178,6 +178,16 @@ export function gearSet(user) {
   return { tier, count:n, pieces, effects:setEffects(tier,pieces) }
 }
 
+/**
+ * 抛竿提示里的渔具一行：成套时显示“寒玉（5）”，其余部位逐件列出
+ * 例：“寒玉（5）”、“流云（3） · 寒玉浮漂 · 寒玉鱼护”、“新手鱼竿 · 青竹鱼线 · …”
+ */
+export function gearSummary(user,shop) {
+  const set=gearSet(user)
+  const rest=SLOTS.filter(slot=>!set.pieces||gearLevel(user,slot)!==set.tier).map(slot=>gearItem(shop,slot,gearLevel(user,slot))?.name).filter(Boolean)
+  return [...(set.pieces?[`${TIER_NAMES[set.tier-1]}（${set.count}）`]:[]),...rest].join(" · ")
+}
+
 export function setEffects(tier,pieces) {
   if (pieces<3) return {}
   const out={emptyReduce:1+0.1*tier,junkReduce:1+0.1*tier,largeBoost:2+0.2*tier}

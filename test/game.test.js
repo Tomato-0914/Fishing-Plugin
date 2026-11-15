@@ -622,7 +622,7 @@ test("十连结果：简洁格式，高级鱼逐条、低级鱼合并", async ()
   ]
   const sizeLabels = { small: "小", medium: "中", large: "大", xlarge: "超大" }
   assert.equal(roundLine(rounds[2], sizeLabels), "🟡🐠 石斑鱼王·中 341 ✨")
-  const xpLine = "✨ 本次获得经验：+46（累计 11567）"
+  const xpLine = "✨ 获得经验：+46（距离 Lv22 还需 83）"
   const md = formatMulti(rounds, { sizeLabels, markdown: true, xpLine }).split("\n")
   // 顶部统计：经验在预计金币上方
   assert.deepEqual(md.slice(0, 5), [
@@ -1092,12 +1092,32 @@ test("百连：保护动物出现概率降低；结果只显示品级数量，�
     fish("can", 0),
     ...Array(5).fill(0).map(() => ({ snapped: false, value: 0, reward: 0, result: { type: "empty" } })),
   ]
-  const msg = formatHundred(rounds, { markdown: true, xpLine: "✨ 本次获得经验：+300（累计 20000）" }).split("\n")
+  const msg = formatHundred(rounds, { markdown: true, xpLine: "✨ 获得经验：+300（距离 Lv29 还需 300）" }).split("\n")
   assert.equal(msg[0], `**💯 百连收网** · ${rounds.length} 竿`)
-  assert.equal(msg[1], "✨ 本次获得经验：+300（累计 20000）")
+  assert.equal(msg[1], "✨ 获得经验：+300（距离 Lv29 还需 300）")
   assert.equal(msg[2], `💰 **售出预计获得金币：${30 * 10 + 20 * 30 + 280 + 900 + 18888}**`)
   assert.equal(msg[3], "🐟 鱼获 53｜垃圾 1｜空军 5")
   assert.ok(msg.includes("> 🌈💎 海洋之心 18888 ✨"))
   for (const line of ["> 🟡 传说 ×1 ✨", "> 🟣 神器 ×1", "> 🟢 高级 ×20", "> ⚪ 普通 ×30", "💥 断线 1"]) assert.ok(msg.includes(line), line)
   assert.ok(!msg.some(l => l.includes("鲫鱼") || l.includes("金枪鱼")), "不逐条列出鱼名")
+})
+
+test("收网经验提示：显示获得经验与距离下一级还需多少，升级时提示", async () => {
+  const { xpGainText, levelThreshold } = await import("../components/Progression.js")
+  const at = xp => ({ stats: { casts: xp, catches: 0 } })
+  // Lv21 需要 10500，Lv22 需要 11550
+  assert.equal(xpGainText(at(11000), 10966), "✨ 获得经验：+34（距离 Lv22 还需 550）")
+  assert.equal(xpGainText(at(11560), 11500), "✨ 获得经验：+60（距离 Lv23 还需 1,090）\n🎉 等级提升：Lv21 → Lv22")
+  assert.equal(levelThreshold(23) - 11560, 1090)
+  assert.ok(!xpGainText(at(11000), 10966).includes("累计"))
+  assert.equal(xpGainText(at(levelThreshold(100) + 5), levelThreshold(100)), "✨ 获得经验：+5（已满级）")
+})
+
+test("抛竿提示的渔具：成套显示“阶名（件数）”，其余部位逐件列出", async () => {
+  const { gearSummary } = await import("../components/Gear.js")
+  const shop = Config.shop
+  assert.equal(gearSummary(equip(newUser("10100"), 5), shop), "寒玉（5）")
+  assert.equal(gearSummary(newUser("10101"), shop), "新手（5）")
+  assert.equal(gearSummary(equip(newUser("10102"), { rod: 6, line: 6, hook: 6, float: 5 }), shop), "流云（3） · 寒玉浮漂 · 新手鱼护")
+  assert.equal(gearSummary(equip(newUser("10103"), { rod: 6, line: 6, hook: 5, float: 5 }), shop), "流云鱼竿 · 流云鱼线 · 寒玉鱼钩 · 寒玉浮漂 · 新手鱼护")
 })
