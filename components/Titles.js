@@ -102,8 +102,8 @@ const EFFECT_TEXT = {
   sellBonus: ["出售金币", "%", false],
   lineGuard: ["断线概率", "%", true],
   holdChance: ["没及时收杆时不跑鱼", "%", false],
-  rarePoints: ["高品级", "点", false],
-  rarityShift: ["概率表向下一阶靠拢", "%", false],
+  rarePoints: ["高品级鱼", "%", false],
+  rarityShift: ["品级向下一阶提升", "%", false],
   capacity: ["鱼护容量", "格", false],
   xlBoost: ["超大体型概率", "%", false],
   boostN: ["普通概率", "%", false],
@@ -132,7 +132,7 @@ export function effectText(effects = {}) {
     const up = inverse ? v < 0 : v > 0
     if (k === "lineGuard" && v >= 100) return `${name} -100%（不再断线）`
     if (k === "holdChance") return `${name} ${num(v)}%`
-    if (k === "rarityShift") return `${name} ${num(v * 100)}%`
+    if (k === "rarityShift") return `${name} +${num(v * 100)}%`
     return `${name} ${up ? "+" : "-"}${num(Math.abs(v))}${unit}`
   })
   if (tiers) parts.unshift(tiers)

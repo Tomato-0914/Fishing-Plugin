@@ -63,3 +63,16 @@ test("每一阶颜色都不同，浅色阶位用深色字",async()=>{
   assert.equal(textOn("#e0b000"),"#1d2a35") // 天罡金
   assert.equal(textOn("#5a54c4"),"#ffffff") // 深渊靛
 })
+test("渔具效果文字：按鱼竿阶位写出具体品级与下一阶",async()=>{
+  const { effectLines, rareTargetText, shiftName } = await import("../components/GearText.js")
+  const { slotEffects } = await import("../components/Gear.js")
+  assert.deepEqual(effectLines({},slotEffects("rod",5,15,8),5),["稀有/神器 +5.05%","品级向第 6 阶提升 +50%"])
+  assert.deepEqual(effectLines({},{rarePoints:2},20),["传说/史诗/神话 +2%"])
+  assert.equal(shiftName(20),"品级继续提升")
+  assert.equal(rareTargetText(5),"稀有 67% · 神器 33%")
+  assert.equal(rareTargetText(20),"传说 50% · 史诗 33% · 神话 17%")
+  assert.deepEqual(effectLines({},slotEffects("line",5,15,8),5),["稀有/神器 +0.8%","断线 -35%"])
+  assert.deepEqual(effectLines(slotEffects("rod",5,7,0),slotEffects("rod",5,8,0),5),["品级向第 6 阶提升 +6.25%"])
+  const { effectText } = await import("../components/Titles.js")
+  assert.equal(effectText({rarePoints:0.3,rarityShift:0.1}),"高品级鱼 +0.3%，品级向下一阶提升 +10%")
+})
