@@ -1120,9 +1120,9 @@ test("收网经验提示：显示获得经验与距离下一级还需多少，�
 test("抛竿提示的渔具：成套显示“阶名（件数）”，其余部位逐件列出", async () => {
   const { gearSummary } = await import("../components/Gear.js")
   const shop = Config.shop
-  assert.equal(gearSummary(equip(newUser("10100"), 5), shop), "寒玉（5）")
-  assert.equal(gearSummary(newUser("10101"), shop), "新手（5）")
-  assert.equal(gearSummary(equip(newUser("10102"), { rod: 6, line: 6, hook: 6, float: 5 }), shop), "流云（3） · 寒玉浮漂 · 新手鱼护")
+  assert.equal(gearSummary(equip(newUser("10100"), 5), shop), "寒玉套装（5）")
+  assert.equal(gearSummary(newUser("10101"), shop), "新手套装（5）")
+  assert.equal(gearSummary(equip(newUser("10102"), { rod: 6, line: 6, hook: 6, float: 5 }), shop), "流云套装（3） · 寒玉浮漂 · 新手鱼护")
   assert.equal(gearSummary(equip(newUser("10103"), { rod: 6, line: 6, hook: 5, float: 5 }), shop), "流云鱼竿 · 流云鱼线 · 寒玉鱼钩 · 寒玉浮漂 · 新手鱼护")
 })
 
