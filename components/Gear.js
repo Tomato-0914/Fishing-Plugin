@@ -15,6 +15,9 @@ export const TIER_COLORS = [
   "#5c6bc0","#9c4dcc","#c62828","#00897b","#ff4081", // 星辰 太虚 混元 鸿蒙 创世
 ]
 export const tierColor = tier => TIER_COLORS[Math.min(20,Math.max(1,Number(tier)||1))-1]
+/** 图片里装备名前的等级徽章：{ needLevel, color, textColor } */
+export const tierBadge = tier => ({ needLevel: tierNeedLevel(tier), color: tierColor(tier), textColor: textOn(tierColor(tier)) })
+
 /** 颜色上的文字颜色：浅色背景用深色字，深色背景用白字 */
 export function textOn(hex) {
   const [r,g,b] = [1,3,5].map(i => parseInt(hex.slice(i,i+2),16)/255).map(c => c<=0.03928 ? c/12.92 : ((c+0.055)/1.055)**2.4)

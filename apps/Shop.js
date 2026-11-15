@@ -5,9 +5,9 @@ import UserData from "../components/UserData.js"
 import { effectText, getEffects, mergeEffects } from "../components/Titles.js"
 import { oddsPercent } from "../components/ItemPool.js"
 import { luckEffects } from "../components/Game.js"
-import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, tierColor, textOn, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait, baitLevel, canUseBait, maxGearLevel, unlockedTier, tierPrice, ownedGear, ensureGear, buyGear, buyGearSet, equipGear, equipGearSet, cultivateGear, tierNeedLevel, enhanceCost, forgeCost, successRate, slotEffects, gearSet, setEffects, MAX_ENHANCE, MAX_FORGE } from "../components/Gear.js"
+import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, tierColor, textOn, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait, baitLevel, canUseBait, maxGearLevel, unlockedTier, tierPrice, ownedGear, ensureGear, buyGear, buyGearSet, equipGear, equipGearSet, cultivateGear, tierNeedLevel, tierBadge, enhanceCost, forgeCost, successRate, slotEffects, gearSet, setEffects, MAX_ENHANCE, MAX_FORGE } from "../components/Gear.js"
 import { FISH_RARITIES, gearRarityOdds } from "../components/GearOdds.js"
-import { effectLines, rareTargetText, wearTitle } from "../components/GearText.js"
+import { effectLines, rareTargetText, wearTitle, cnNumber } from "../components/GearText.js"
 import { characterProgress } from "../components/Progression.js"
 import { RARITY_INFO } from "../components/ItemPool.js"
 import { withButtons, B } from "../components/Button.js"
@@ -46,7 +46,7 @@ export class FishingShop extends plugin {
     const tiers = TIER_NAMES.map((name, index) => {
       const tier = index + 1
       return {
-        tier, name, needLevel: tierNeedLevel(tier), price: tierPrice(shop, tier),
+        tier, name, ...tierBadge(tier), tierCn: cnNumber(tier), price: tierPrice(shop, tier),
         unlocked: tier <= unlocked,
         items: SLOTS.map(slot => {
           const item = gearItem(shop, slot, tier)
@@ -92,7 +92,7 @@ export class FishingShop extends plugin {
     const equipment=SLOTS.map(s=>{
       const t=gearLevel(user,s),d=ownedGear(user,s,t)
       return {slot:s,name:TIER_NAMES[t-1]+SLOT_NAMES[s],emoji:gearItem(shop,s,t)?.emoji,
-        tier:t,enhance:Number(d?.enhance)||0,forge:Number(d?.forge)||0,selected:s===slot}
+        tier:t,...tierBadge(t),enhance:Number(d?.enhance)||0,forge:Number(d?.forge)||0,selected:s===slot}
     })
     // 本次养成类型的效果：另一种养成保持当前等级，按 slotEffects 实际计算差值
     const other=type==="enhance"?Number(item?.forge)||0:Number(item?.enhance)||0
@@ -103,7 +103,7 @@ export class FishingShop extends plugin {
     const stepLines=level<max?lines(at(level),at(target)):[]
     const totalLines=lines(at(0),at(level))
     return {name:displayName(user),gold:user.gold,equipment,slot,tier,
-      itemName:TIER_NAMES[tier-1]+SLOT_NAMES[slot],itemEmoji:gearItem(shop,slot,tier)?.emoji,
+      itemName:TIER_NAMES[tier-1]+SLOT_NAMES[slot],itemEmoji:gearItem(shop,slot,tier)?.emoji,item:tierBadge(tier),tierCn:cnNumber(tier),
       enhance:Number(item?.enhance)||0,forge:Number(item?.forge)||0,
       type,typeName:type==="enhance"?"强化":"锻造",level,max,target,equipped:gearLevel(user,slot)===tier,
       stepLines,totalLines:totalLines.length?totalLines:["暂无"],
