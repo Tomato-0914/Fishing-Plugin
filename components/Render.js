@@ -1,6 +1,6 @@
 import Config from "./Config.js"
 import Version from "./Version.js"
-import { Plugin_Name, Res_Path } from "./Paths.js"
+import { Res_Path, Res_Url } from "./Paths.js"
 
 /** 白版：6:00 ~ 17:59；黑版：其余时间（时间写死） */
 export function theme(date = new Date()) {
@@ -19,8 +19,7 @@ export async function render(puppeteer, name, data = {}) {
       saveId: name,
       imgType: "jpeg",
       quality: 90,
-      // 模板被复制到 {data|temp}/html/Fishing-Plugin/<name>/ 下渲染，用相对路径兼容 Windows
-      _res: `../../../../plugins/${Plugin_Name}/resources`,
+      _res: Res_Url,
       theme: theme(),
       version: Version.ver,
       ...data,

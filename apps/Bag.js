@@ -174,7 +174,7 @@ export class FishingBag extends plugin {
       const tier = gearLevel(user, slot)
       const item = ownedGear(user, slot, tier)
       return {slot, name:gearItem(Config.shop, slot, tier)?.name || slot,
-        tier, ...tierBadge(tier), icon:gearIcon(slot), enhance:item?.enhance || 0, forge:item?.forge || 0}
+        tier, ...tierBadge(tier), icon:gearIcon(slot, tier), enhance:item?.enhance || 0, forge:item?.forge || 0}
     })
     const stats = [
       {label:"抛竿次数",value:s.casts,unit:"次"},
