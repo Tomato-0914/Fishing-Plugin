@@ -1149,3 +1149,13 @@ test("保护动物：每人每天最多误钓 3 次，达到后当天不再出�
   const v = newUser("10111")
   for (let i = 0; i < 5; i++) { v.banUntil = 0; assert.equal(resolveCast(v, { items, cfg: free, shop: Config.shop, rng: seeded(4), now: day }).result.item?.special, "protected") }
 })
+
+test("十连 / 百连结果里的保护动物显示今日误钓次数", async () => {
+  const { roundLine, formatMulti, formatHundred } = await import("../components/Catch.js")
+  const it = itemMap.get("chinese_sturgeon")
+  const r = { snapped: false, value: 0, reward: 0, penalty: { fine: 10000, minutes: 60, today: 2 }, result: { type: "item", item: it, rarity: "protected" } }
+  assert.equal(roundLine(r, {}, 3), `🚫 ${it.emoji} 中华鲟（保护动物）已放生 · 罚款 10000 · 禁渔 60 分钟 · 今日 2/3 次`)
+  assert.ok(roundLine(r).endsWith("今日第 2 次"))
+  assert.ok(formatMulti([r], { protectedMax: 3 }).includes("今日 2/3 次"))
+  assert.ok(formatHundred([r], { protectedMax: 3 }).includes("今日 2/3 次"))
+})

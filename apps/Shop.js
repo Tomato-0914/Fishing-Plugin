@@ -53,7 +53,7 @@ export class FishingShop extends plugin {
           const item = gearItem(shop, slot, tier)
           const owned = ownedGear(user, slot, tier)
           return {
-            slot, name: item.name, shortName: SLOT_NAMES[slot], emoji: item.emoji,
+            slot, name: item.name, shortName: SLOT_NAMES[slot], emoji: item.emoji, icon: gearIcon(slot, tier),
             owned: !!owned, equipped: gearLevel(user, slot) === tier,
             enhance: owned?.enhance || 0, forge: owned?.forge || 0,
             afford: user.gold >= item.price,
