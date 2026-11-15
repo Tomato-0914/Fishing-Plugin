@@ -3,9 +3,9 @@ import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
 import { multiLeft, useMulti, hundredLeft, useHundred, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier } from "../components/Game.js"
-import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, holdsOnTimeout, maxLevel } from "../components/Gear.js"
+import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, holdsOnTimeout, maxLevel, gearSummary } from "../components/Gear.js"
 import { resolveCast, summarize, formatMulti, formatHundred } from "../components/Catch.js"
-import { experience, levelThreshold, characterProgress } from "../components/Progression.js"
+import { experience, characterProgress, xpGainText } from "../components/Progression.js"
 import { checkTitles, getEffects, effectText, titleUpText } from "../components/Titles.js"
 import { withButtons, B } from "../components/Button.js"
 import { groupAllowed, displayName, updateNickname, pick, itemMap, playerEffects } from "../components/common.js"
@@ -29,23 +29,7 @@ const WAITING_TEXT = [
 
 const sec = n => Math.max(0, Math.round(n))
 /** 经验由累计抛竿与钓获统计推导；此处仅展示，不重复发放。 */
-function levelAtXp(xp) {
-  let lo = 1, hi = 100
-  while (lo < hi) {
-    const mid = Math.ceil((lo + hi) / 2)
-    if (levelThreshold(mid) <= xp) lo = mid
-    else hi = mid - 1
-  }
-  return lo
-}
-function xpSettlement(user, beforeXp) {
-  const xp = experience(user), oldLevel = levelAtXp(beforeXp)
-  const newLevel = characterProgress(user).level
-  return [
-    `✨ 本次获得经验：+${Math.max(0, xp - beforeXp)}（累计 ${xp}）`,
-    ...(newLevel > oldLevel ? [`🎉 等级提升：Lv${oldLevel} → Lv${newLevel}`] : []),
-  ].join("\n")
-}
+const xpSettlement = xpGainText
 
 export class Fishing extends plugin {
   constructor() {
@@ -175,7 +159,7 @@ export class Fishing extends plugin {
 
   /** 装备、运势两行 */
   gearLine(user, shop) {
-    const line = ["rod", "line", "hook", "float"].map(k => gearItem(shop, k, gearLevel(user, k))?.name).filter(Boolean).join(" · ")
+    const line = gearSummary(user, shop)
     return line ? `🧰 ${line}` : ""
   }
 
