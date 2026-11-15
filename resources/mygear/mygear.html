@@ -46,13 +46,13 @@ body.light .hero{background:#246a9d}
 .footer{text-align:center;color:var(--sub);font-size:13px;margin:16px 0 2px}
 /* Twemoji 替换后的图标与文字等高（同 common.css） */
 img.emoji{display:inline-block;width:1em;height:1em;margin:0 .05em;vertical-align:-0.12em}
-</style></head><body class="{{theme}}"><div class="wrap">
+.gear-art{display:block;width:100%;height:100%;filter:drop-shadow(0 0 4px #48baff66)}.icon .svg .gear-art{width:64px;height:58px}</style></head><body class="{{theme}}"><div class="wrap">
 <div class="hero"><div><h1>我的渔具</h1><div class="sub">{{name}} · Lv{{level}} · 可用最高 {{unlocked}} 阶</div></div>
 <div class="right"><div class="gold">金币 {{gold}}</div><div class="sub">鱼护容量 {{capacity}}</div></div></div>
 
 <div class="panel"><div class="panel-title">{{wearTitle}} <small>Lv 为装备需求等级</small></div>
 {{each items i}}<div class="gear" style="--tc:{{i.color}};--tt:{{i.textColor}}">
-<div class="icon"><div class="svg">{{if i.slot=='rod'}}<svg class="gear-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 43 Q21 6 46 8 M46 8 L52 16 M46 8 Q58 22 48 34 M48 34 q-7 8 0 13 q7 5 12-3"/><path d="M8 43 l-3 11 M12 43 l-3 11"/></svg>{{else if i.slot=='line'}}<svg class="gear-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="22"/><circle cx="32" cy="32" r="12"/><path d="M32 10v44 M10 32h44 M17 17l30 30 M47 17L17 47"/></svg>{{else if i.slot=='hook'}}<svg class="gear-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M31 6v36 q0 15 14 15 q12 0 12-12 q0-6-6-10 M51 35l-8 4 M31 6l-5 7"/></svg>{{else if i.slot=='float'}}<svg class="gear-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M32 6c-13 12-17 25-17 34a17 17 0 0 0 34 0c0-9-4-22-17-34z"/><path d="M16 38h32 M32 6v-4 M32 57v5"/></svg>{{else}}<svg class="gear-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 25h44l-6 30H16z M8 25l8-10h32l8 10 M20 25l5 30 M32 25v30 M44 25l-5 30 M12 38h40"/></svg>{{/if}}</div><div class="slot">{{i.slotName}}</div></div>
+<div class="icon"><div class="svg">{{@i.icon}}</div><div class="slot">{{i.slotName}}</div></div>
 <div class="info"><div class="gname"><span class="lvtag">Lv.{{i.needLevel}}</span>{{i.name}}</div>
 <div class="lv">强化 <b>+{{i.enhance}}</b>/{{i.maxE}}<div class="bar"><i style="width:{{i.enhance/i.maxE*100}}%"></i></div></div>
 <div class="lv">锻造 <b>+{{i.forge}}</b>/{{i.maxF}}<div class="bar"><i style="width:{{i.forge/i.maxF*100}}%"></i></div></div></div>

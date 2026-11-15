@@ -89,3 +89,9 @@ test("装备等级徽章：需求等级与阶位颜色",async()=>{
   assert.equal(tierBadge(1).needLevel,1)
   assert.equal(tierBadge(20).needLevel,95)
 })
+test("渔具图标：五个部位共用一套内联 SVG",async()=>{
+  const { gearIcon } = await import("../components/GearIcons.js")
+  const icons=["rod","line","hook","float","net"].map(gearIcon)
+  assert.equal(new Set(icons).size,5)
+  for(const i of icons){ assert.match(i,/^<svg class="gear-art" viewBox="0 0 96 96"/); assert.ok(!i.includes("{{")) }
+})
