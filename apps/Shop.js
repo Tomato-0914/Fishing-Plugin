@@ -78,7 +78,8 @@ export class FishingShop extends plugin {
     const quick = [
       ...(buyTier ? [{ text: `🛒 购买${TIER_NAMES[buyTier - 1]}套装`, callback: `#购买渔具${TIER_NAMES[buyTier - 1]}套装`, permission: e.user_id }] : []),
       ...(equipTier ? [{ text: `✅ 使用${TIER_NAMES[equipTier - 1]}套装`, callback: `#使用${TIER_NAMES[equipTier - 1]}套装`, permission: e.user_id }] : []),
-      { text: "🛒 购买单件…", input: "#购买渔具 " },
+      // 没有更高阶可买（例如满级穿着创世套装）时，换成去工坊强化锻造
+      buyTier ? { text: "🛒 购买单件…", input: "#购买渔具 " } : { text: "🔨 渔具工坊", callback: "#渔具工坊" },
     ]
     return e.reply(withButtons(e, msg, quick, [B.myGear, B.shop]))
   }
