@@ -46,6 +46,8 @@ body.light .hero{background:#246a9d}
 .legend b{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 .totals{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .footer{text-align:center;color:var(--sub);font-size:13px;margin:16px 0 2px}
+/* Twemoji 替换后的图标与文字等高（同 common.css） */
+img.emoji{display:inline-block;width:1em;height:1em;margin:0 .05em;vertical-align:-0.12em}
 </style></head><body class="{{theme}}"><div class="wrap">
 <div class="hero"><div><h1>我的渔具</h1><div class="sub">{{name}} · Lv{{level}} · 可用最高 {{unlocked}} 阶</div>
 <span class="set-badge {{suit.pieces?'':'off'}}">{{if suit.pieces}}✨ {{suit.name}} {{suit.count}} 件 · {{suit.pieces}} 件套生效{{else}}套装未生效{{/if}}</span></div>
@@ -67,8 +69,11 @@ body.light .hero{background:#246a9d}
 <div class="panel"><div class="panel-title">钓到鱼时的品级分布 <small>含渔具、套装、称号</small></div>
 <div class="odds">{{each odds o}}<span style="width:{{o.pct}}%;background:{{o.color}}"></span>{{/each}}</div>
 <div class="legend">{{each odds o}}<span><b style="background:{{o.color}}"></b>{{o.label}} {{o.text}}</span>{{/each}}</div>
-<div class="hint">🎯 高品级点数加到：{{rareTargetText}}</div>
+<div class="hint">高品级加成分配：{{rareTargetText}}（由鱼竿阶位决定）</div>
 <div class="hint" style="margin-top:12px">渔具合计（含套装）</div><div class="totals" style="margin-top:6px">{{each totals t}}<span class="chip">{{t}}</span>{{/each}}</div></div>
 
 <div class="footer">#渔具商店 购买 · #渔具工坊 强化锻造 · #使用{{suit.name}}套装 一键穿戴</div>
-</div></body></html>
+</div>
+<script src="{{_res}}/common/twemoji.min.js"></script>
+<script src="{{_res}}/common/emoji.js"></script>
+</body></html>

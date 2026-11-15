@@ -6,7 +6,8 @@ import { effectText, getEffects, mergeEffects } from "../components/Titles.js"
 import { oddsPercent } from "../components/ItemPool.js"
 import { luckEffects } from "../components/Game.js"
 import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, tierColor, textOn, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait, baitLevel, canUseBait, maxGearLevel, unlockedTier, tierPrice, ownedGear, ensureGear, buyGear, buyGearSet, equipGear, equipGearSet, cultivateGear, tierNeedLevel, enhanceCost, forgeCost, successRate, slotEffects, gearSet, setEffects, MAX_ENHANCE, MAX_FORGE } from "../components/Gear.js"
-import { rareTargets, FISH_RARITIES, gearRarityOdds } from "../components/GearOdds.js"
+import { FISH_RARITIES, gearRarityOdds } from "../components/GearOdds.js"
+import { effectLines, rareTargetText } from "../components/GearText.js"
 import { characterProgress } from "../components/Progression.js"
 import { RARITY_INFO } from "../components/ItemPool.js"
 import { withButtons, B } from "../components/Button.js"
@@ -96,16 +97,19 @@ export class FishingShop extends plugin {
     // 本次养成类型的效果：另一种养成保持当前等级，按 slotEffects 实际计算差值
     const other=type==="enhance"?Number(item?.forge)||0:Number(item?.enhance)||0
     const at=lv=>type==="enhance"?slotEffects(slot,tier,lv,other):slotEffects(slot,tier,other,lv)
-    const stepLines=level<max?cultivationLines(at(level),at(target)):[]
-    const totalLines=cultivationLines(at(0),at(level))
+    // “高品级 / 品级提升”按鱼竿阶位说明：工坊看的是鱼竿时用这根鱼竿的阶位，其他部位用穿戴中的鱼竿
+    const rodTier=slot==="rod"?tier:gearLevel(user,"rod")
+    const lines=(a,b)=>effectLines(a,b,rodTier)
+    const stepLines=level<max?lines(at(level),at(target)):[]
+    const totalLines=lines(at(0),at(level))
     return {name:displayName(user),gold:user.gold,equipment,slot,tier,
       itemName:TIER_NAMES[tier-1]+SLOT_NAMES[slot],itemEmoji:gearItem(shop,slot,tier)?.emoji,
       enhance:Number(item?.enhance)||0,forge:Number(item?.forge)||0,
       type,typeName:type==="enhance"?"强化":"锻造",level,max,target,equipped:gearLevel(user,slot)===tier,
       stepLines,totalLines:totalLines.length?totalLines:["暂无"],
       // 上一级带来的提升（养成成功后展示）
-      lastLines:level>0?cultivationLines(at(level-1),at(level)):[],
-      rareTargetText:rareTargetText(gearLevel(user,"rod")),
+      lastLines:level>0?lines(at(level-1),at(level)):[],
+      rareTargetText:rareTargetText(rodTier),
       base,chance,bonus:chance===null?0:Number((chance-base).toFixed(2)),
       cost,full:level>=max}
   }
@@ -119,7 +123,7 @@ export class FishingShop extends plugin {
       `🔧 渔具工坊 · ${data.itemName}`,
       `强化 +${data.enhance}/15 · 锻造 +${data.forge}/8`,
       `下次强化：${data.full?"已满级":`${data.chance}% · ${data.cost} 金币 · ${data.stepLines.join("、")}`}`,
-      `🎯 高品级点数加到：${data.rareTargetText}`,
+      `高品级加成分配：${data.rareTargetText}`,
       "使用下方按钮选择装备或强化/锻造"
     ].join("\n"))
     if(!msg)return true
@@ -317,13 +321,14 @@ export class FishingShop extends plugin {
 
   /** #我的渔具 图片数据：每件装备的属性、套装、品级分布 */
   gearImageData(user) {
-    const shop=this.shopCfg, set=gearSet(user), setName=TIER_NAMES[set.tier-1]
+    const shop=this.shopCfg, set=gearSet(user), setName=TIER_NAMES[set.tier-1], rodTier=gearLevel(user,"rod")
+    const lines=(a,b)=>effectLines(a,b,rodTier)
     const items=SLOTS.map(slot=>{
       const tier=gearLevel(user,slot), d=ownedGear(user,slot,tier)||{}
       const eff=slotEffects(slot,tier,d.enhance,d.forge)
       return {slot,slotName:SLOT_NAMES[slot],name:gearItem(shop,slot,tier).name,tier,tierName:TIER_NAMES[tier-1],
         enhance:Number(d.enhance)||0,forge:Number(d.forge)||0,maxE:MAX_ENHANCE,maxF:MAX_FORGE,color:tierColor(tier),textColor:textOn(tierColor(tier)),
-        lines:[...(slot==="rod"?[`第${tier}阶品级概率表`]:[]),...cultivationLines({},eff)]}
+        lines:[...(slot==="rod"?[`基础品级：第 ${tier} 阶`]:[]),...lines({},eff)]}
     })
     const s3=setEffects(set.tier,3), s5=setEffects(set.tier,5)
     const extra=Object.fromEntries(Object.entries(s5).filter(([k])=>!(k in s3)))
@@ -335,12 +340,12 @@ export class FishingShop extends plugin {
       name:displayName(user),gold:user.gold,level:characterProgress(user).level,unlocked:unlockedTier(user),
       capacity:bagCapacity(user,shop,Config.config.fishing?.bagLimit),items,
       suit:{name:setName,count:set.count,pieces:set.pieces,hint,rows:[
-        {label:"3 件",on:set.pieces>=3,lines:cultivationLines({},s3)},
-        {label:"5 件",on:set.pieces>=5,lines:["含 3 件效果",...cultivationLines({},extra)]},
+        {label:"3 件",on:set.pieces>=3,lines:lines({},s3)},
+        {label:"5 件",on:set.pieces>=5,lines:["含 3 件效果",...lines({},extra)]},
       ]},
       odds:FISH_RARITIES.filter(k=>odds[k]>0).map(k=>({label:RARITY_INFO[k].label,color:RARITY_INFO[k].color,pct:odds[k],text:`${Number(odds[k].toFixed(odds[k]<1?2:1))}%`})),
-      rareTargetText:rareTargetText(gearLevel(user,"rod")),
-      totals:cultivationLines({},gearEffects(user,shop)),
+      rareTargetText:rareTargetText(rodTier),
+      totals:lines({},gearEffects(user,shop)),
     }
   }
 
@@ -368,36 +373,11 @@ export class FishingShop extends plugin {
     const set=gearSet(user)
     lines.push("━━━━━━━━━━━━",
       set.pieces?`✨ 套装：${TIER_NAMES[set.tier-1]} ${set.count} 件（${set.pieces} 件套生效）`:`✨ 套装：未生效（穿戴同一阶 3 件 / 5 件触发）`,
-      `🎯 高品级点数加到：${rareTargetText(gearLevel(user,"rod"))}`,
+      `高品级加成分配：${rareTargetText(gearLevel(user,"rod"))}`,
       `鱼护容量：${bagCapacity(user,shop,Config.config.fishing?.bagLimit)}`,"当前生效属性（含套装）：",...effects.map(part => `> ${part}`))
     return lines.join("\n")
   }}
 
-/** 养成效果差值的展示文字：[名称, 单位, 倍率, 是否显示为减少] */
-const CULT_TEXT = {
-  rarePoints: ["高品级", "点", 1, false],
-  rarityShift: ["概率表向下一阶靠拢", "%", 100, false],
-  emptyReduce: ["空军", "%", 1, true],
-  junkReduce: ["垃圾", "%", 1, true],
-  largeBoost: ["大体型", "%", 1, false],
-  lineGuard: ["断线", "%", 1, true],
-  holdChance: ["没及时收杆不跑鱼", "%", 1, false],
-  biteReduce: ["咬钩等待", "s", 1, true],
-  reelWindow: ["收杆时间", "s", 1, false],
-  capacity: ["鱼护容量", "格", 1, false],
-  sellBonus: ["出售金币", "%", 1, false],
-}
-function cultivationLines(a, b) {
-  return Object.entries(CULT_TEXT).map(([k, [name, unit, mul, down]]) => {
-    const d = ((Number(b[k]) || 0) - (Number(a[k]) || 0)) * mul
-    if (Math.abs(d) < 1e-9) return null
-    return `${name} ${(d > 0) !== down ? "+" : "-"}${Number(Math.abs(d).toFixed(3))}${unit}`
-  }).filter(Boolean)
-}
-/** 高品级点数的目标品级，例如“稀有 / 神器”（低档分得多） */
-function rareTargetText(tier) {
-  return rareTargets(tier).map(([i, share]) => `${RARITY_INFO[FISH_RARITIES[i]].label}${Math.round(share * 100)}%`).join(" / ")
-}
 function setText(tier, pieces) {
   return effectText(setEffects(tier, pieces))
 }
