@@ -49,5 +49,7 @@
   list:
     - { icon: 🔄, title: "#钓鱼更新", desc: 主人拉取插件更新 }
     - { icon: ⚠️, title: "#钓鱼强制更新", desc: 主人强制覆盖本地修改并更新 }
-    - { icon: 🗄️, title: "#钓鱼数据迁移", desc: 主人迁移 YAML 存档 }
+    - { icon: 📊, title: "#钓鱼存储状态", desc: 主人查看存储方式与存档数量 }
+    - { icon: 🗄️, title: "#钓鱼数据迁移", desc: 主人导入 YAML 存档，已有的跳过 }
+    - { icon: ♻️, title: "#钓鱼数据迁移覆盖", desc: 主人导入 YAML 存档并覆盖同名存档 }
     - { icon: 📤, title: "#钓鱼数据导出", desc: 主人导出数据库备份 }
