@@ -4,6 +4,24 @@ import { RARITY_INFO } from "./ItemPool.js"
 
 const label = i => RARITY_INFO[FISH_RARITIES[i]].label
 
+const DIGITS = "零一二三四五六七八九"
+/** 阶位的中文数字：5 → 五，10 → 十，16 → 十六，20 → 二十 */
+export function cnNumber(n) {
+  n = Math.floor(Number(n) || 0)
+  if (n < 10) return DIGITS[n]
+  if (n < 20) return "十" + (n % 10 ? DIGITS[n % 10] : "")
+  return DIGITS[Math.floor(n / 10)] + "十" + (n % 10 ? DIGITS[n % 10] : "")
+}
+
+/**
+ * 穿戴标题：“当前穿戴 · 五阶 · 寒玉套装”；3~4 件写出件数；没成套写“未成套”
+ * @param set gearSet() 的结果  @param tierName 套装阶名
+ */
+export function wearTitle(set, tierName) {
+  if (!set?.pieces) return "当前穿戴 · 未成套"
+  return `当前穿戴 · ${cnNumber(set.tier)}阶 · ${tierName}套装${set.count < 5 ? `（${set.count} 件）` : ""}`
+}
+
 /** 高品级加成加到的品级，例如“稀有/神器”（由鱼竿阶位决定） */
 export const rareTargetNames = rodTier => rareTargets(rodTier).map(([i]) => label(i)).join("/")
 
