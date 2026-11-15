@@ -5,7 +5,7 @@ import UserData from "../components/UserData.js"
 import { effectText, getEffects, mergeEffects } from "../components/Titles.js"
 import { oddsPercent } from "../components/ItemPool.js"
 import { luckEffects } from "../components/Game.js"
-import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, tierColor, textOn, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait, baitLevel, canUseBait, maxGearLevel, unlockedTier, tierPrice, ownedGear, ensureGear, buyGear, buyGearSet, equipGear, equipGearSet, cultivateGear, tierNeedLevel, tierBadge, enhanceCost, forgeCost, successRate, slotEffects, gearSet, setEffects, MAX_ENHANCE, MAX_FORGE } from "../components/Gear.js"
+import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, tierColor, textOn, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait, baitLevel, canUseBait, maxGearLevel, unlockedTier, tierPrice, ownedGear, ensureGear, buyGear, buyGearSet, equipGear, equipGearSet, cultivateGear, tierNeedLevel, tierBadge, gearShopSuggest, enhanceCost, forgeCost, successRate, slotEffects, gearSet, setEffects, MAX_ENHANCE, MAX_FORGE } from "../components/Gear.js"
 import { FISH_RARITIES, gearRarityOdds } from "../components/GearOdds.js"
 import { effectLines, rareTargetText, wearTitle, cnNumber } from "../components/GearText.js"
 import { gearIcon } from "../components/GearIcons.js"
@@ -73,7 +73,14 @@ export class FishingShop extends plugin {
       "购买：#购买渔具 鱼竿 9 · 装备：#装备渔具 鱼竿 9",
     ].join("\n"))
     if (!msg) return true
-    return e.reply(withButtons(e, msg, [B.myGear, B.shop]))
+    // 购买 / 穿戴按钮只给发指令的人点，避免别人误点替他花钱
+    const { buyTier, equipTier } = gearShopSuggest(user)
+    const quick = [
+      ...(buyTier ? [{ text: `🛒 购买${TIER_NAMES[buyTier - 1]}套装`, callback: `#购买渔具${TIER_NAMES[buyTier - 1]}套装`, permission: e.user_id }] : []),
+      ...(equipTier ? [{ text: `✅ 使用${TIER_NAMES[equipTier - 1]}套装`, callback: `#使用${TIER_NAMES[equipTier - 1]}套装`, permission: e.user_id }] : []),
+      { text: "🛒 购买单件…", input: "#购买渔具 " },
+    ]
+    return e.reply(withButtons(e, msg, quick, [B.myGear, B.shop]))
   }
   workshopButtons(slot="rod",tier=1) {
     return [

@@ -30,3 +30,15 @@ test("金币不足和等级不足时不发生部分购买",()=>{
   assert.equal(buyGearSet(low,shop,5).reason,"locked")
   assert.equal(SLOTS.some(s=>ownedGear(low,s,5)),false)
 })
+test("渔具商店按钮建议：最高一阶没买齐的套装、已买齐但没穿上的套装",async()=>{
+  const { gearShopSuggest, buyGearSet, equipGearSet } = await import("../components/Gear.js")
+  const u=player(25,1e7) // Lv25：可买到第 6 阶
+  assert.deepEqual(gearShopSuggest(u),{buyTier:6,equipTier:null})
+  buyGearSet(u,shop,6)
+  assert.deepEqual(gearShopSuggest(u),{buyTier:null,equipTier:6}) // 第 6 阶买齐但没穿；不推荐更低阶
+  equipGearSet(u,6)
+  assert.deepEqual(gearShopSuggest(u),{buyTier:null,equipTier:null})
+  // 只买齐了第 4 阶：推荐已解锁的最高第 6 阶
+  const v=player(25,1e7); buyGearSet(v,shop,4)
+  assert.deepEqual(gearShopSuggest(v),{buyTier:6,equipTier:4})
+})

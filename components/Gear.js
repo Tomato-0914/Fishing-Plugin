@@ -105,6 +105,20 @@ export function buyGearSet(user, shop, tier) {
   user.stats.gearSpent = (user.stats.gearSpent || 0) + cost
   return {ok:true,cost,slots:missing,skipped:SLOTS.length-missing.length,inherited}
 }
+/**
+ * 渔具商店的快捷按钮建议
+ * - buyTier：比已买齐的最高套装更高、且已解锁的最高一阶（没有更高的可买时为 null，不推荐低阶）
+ * - equipTier：已买齐的最高一阶套装，且还没全部穿上（无需切换为 null）
+ */
+export function gearShopSuggest(user) {
+  ensureGear(user)
+  const top=unlockedTier(user), full=t=>SLOTS.every(s=>ownedGear(user,s,t))
+  let buyTier=null, equipTier=null
+  for (let t=top;t>=1;t--) { if (full(t)) break; if (!buyTier) buyTier=t }
+  for (let t=top;t>=1;t--) if (full(t)) { if (!SLOTS.every(s=>gearLevel(user,s)===t)) equipTier=t; break }
+  return {buyTier,equipTier}
+}
+
 export function equipGear(user,slot,tier) {
   ensureGear(user)
   if (!SLOTS.includes(slot)||!ownedGear(user,slot,tier)) return {ok:false,reason:"not_owned"}
