@@ -9,7 +9,10 @@ export const LEVEL_COLORS = ["#9aa5b1","#3bb273","#3a8dde","#a259ff","#f2a900","
 export const LEVEL_LABELS = TIER_NAMES
 export const levelColor = lv => LEVEL_COLORS[Math.min(LEVEL_COLORS.length,Math.max(1,lv))-1]
 export const levelLabel = lv => TIER_NAMES[Math.min(20,Math.max(1,lv))-1]
-export const unlockedTier = user => Math.min(20,Math.max(1,Math.floor((Math.min(100,characterProgress(user).level)-1)/5)+1))
+/** 第 N 阶需要的角色等级：1 阶 Lv1，之后每 5 级一阶（2 阶 Lv5、3 阶 Lv10 … 20 阶 Lv95） */
+export const tierNeedLevel = tier => tier <= 1 ? 1 : (tier - 1) * 5
+/** 当前角色等级能用的最高阶：Lv1~4 → 1 阶，Lv5~9 → 2 阶，Lv10~14 → 3 阶 … */
+export const unlockedTier = user => Math.min(20,Math.max(1,Math.floor(Math.min(100,characterProgress(user).level)/5)+1))
 export const tierPrice = (shop,tier) => Math.max(0,Number(shop?.gearV2?.prices?.[tier-1] ?? (200+100*(tier-1)+50*(tier-1)**2)))
 export const gearKey = (slot,tier) => `${slot}:${tier}`
 export const ownedGear = (user,slot,tier) => user.gearV2?.items?.[gearKey(slot,tier)] || null
@@ -34,7 +37,7 @@ export function ensureGear(user) {
 export function buyGear(user,shop,slot,tier) {
   if (!SLOTS.includes(slot)||!Number.isInteger(tier)||tier<1||tier>20) return {ok:false,reason:"invalid"}
   ensureGear(user)
-  if (tier>unlockedTier(user)) return {ok:false,reason:"locked",need:(tier-1)*5+1}
+  if (tier>unlockedTier(user)) return {ok:false,reason:"locked",need:tierNeedLevel(tier)}
   if (ownedGear(user,slot,tier)) return {ok:false,reason:"owned"}
   const cost=tierPrice(shop,tier)
   if (user.gold<cost) return {ok:false,reason:"gold",cost}
@@ -71,7 +74,7 @@ export function buyGearSet(user, shop, tier) {
     return {ok:false,reason:"invalid"}
   ensureGear(user)
   if (tier > unlockedTier(user))
-    return {ok:false,reason:"locked",need:(tier-1)*5+1}
+    return {ok:false,reason:"locked",need:tierNeedLevel(tier)}
   const missing = SLOTS.filter(slot => !ownedGear(user,slot,tier))
   if (!missing.length) return {ok:false,reason:"owned"}
   const cost = tierPrice(shop,tier) * missing.length
@@ -99,7 +102,7 @@ export function equipGearSet(user, tier) {
     return {ok:false,reason:"invalid"}
   ensureGear(user)
   if (tier > unlockedTier(user))
-    return {ok:false,reason:"locked",need:(tier-1)*5+1}
+    return {ok:false,reason:"locked",need:tierNeedLevel(tier)}
   const missing = SLOTS.filter(slot => !ownedGear(user,slot,tier))
   if (missing.length) return {ok:false,reason:"incomplete",missing}
   const already = SLOTS.every(slot => gearLevel(user,slot) === tier)

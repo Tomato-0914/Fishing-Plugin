@@ -37,12 +37,12 @@ fishing:
   multiCount: 10
   multiDaily: 100
   multiCooldown: 30
-  # 百连钓鱼：需要角色等级 hundredLevel（26 级 = 解锁第 6 阶渔具）
+  # 百连钓鱼：需要角色等级 hundredLevel（25 级 = 解锁第 6 阶渔具）
   #   hundredProtectedScale：百连中保护动物出现概率的倍率（0.2 = 降到 1/5）；误钓后照常罚款、禁渔，剩下的竿作废，鱼饵不退
   hundredCount: 100
   hundredDaily: 10
   hundredCooldown: 60
-  hundredLevel: 26
+  hundredLevel: 25
   hundredProtectedScale: 0.2
   # 十连钓鱼的配图，留空则不发送
   multiImage: resources/img/multi.jpg

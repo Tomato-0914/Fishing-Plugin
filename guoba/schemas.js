@@ -35,7 +35,7 @@ export default [
   num("fishing.hundredCount", "百连竿数", "#百连钓鱼 一次抛出的竿数", { min: 20, max: 200 }),
   num("fishing.hundredDaily", "每日百连次数", "每天可以百连的次数，0 点重置", { min: 0, max: 100 }),
   num("fishing.hundredCooldown", "百连间隔(秒)", "两次百连之间的最短间隔，防刷屏", { max: 3600 }),
-  num("fishing.hundredLevel", "百连解锁等级", "角色达到这个等级才能百连（26 级 = 第 6 阶）", { min: 1, max: 100 }),
+  num("fishing.hundredLevel", "百连解锁等级", "角色达到这个等级才能百连（25 级 = 第 6 阶）", { min: 1, max: 100 }),
   num("fishing.hundredProtectedScale", "百连保护动物概率倍率", "0.2 表示百连中保护动物出现概率降到 1/5", { max: 1, step: 0.05 }),
   num("fishing.bagLimit", "Lv1 鱼护容量", "初始鱼护最多存放多少件物品，升级鱼护后按渔具工坊的容量计算", { min: 10, max: 2000 }),
   {

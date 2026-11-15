@@ -5,7 +5,7 @@ import UserData from "../components/UserData.js"
 import { effectText, getEffects, mergeEffects } from "../components/Titles.js"
 import { oddsPercent } from "../components/ItemPool.js"
 import { luckEffects } from "../components/Game.js"
-import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait, baitLevel, canUseBait, maxGearLevel, unlockedTier, tierPrice, ownedGear, ensureGear, buyGear, buyGearSet, equipGear, equipGearSet, cultivateGear, enhanceCost, forgeCost, successRate, slotEffects, gearSet, setEffects, MAX_ENHANCE, MAX_FORGE } from "../components/Gear.js"
+import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait, baitLevel, canUseBait, maxGearLevel, unlockedTier, tierPrice, ownedGear, ensureGear, buyGear, buyGearSet, equipGear, equipGearSet, cultivateGear, tierNeedLevel, enhanceCost, forgeCost, successRate, slotEffects, gearSet, setEffects, MAX_ENHANCE, MAX_FORGE } from "../components/Gear.js"
 import { rareTargets, FISH_RARITIES } from "../components/GearOdds.js"
 import { RARITY_INFO } from "../components/ItemPool.js"
 import { withButtons, B } from "../components/Button.js"
@@ -44,7 +44,7 @@ export class FishingShop extends plugin {
     const tiers = TIER_NAMES.map((name, index) => {
       const tier = index + 1
       return {
-        tier, name, needLevel: index * 5 + 1, price: tierPrice(shop, tier),
+        tier, name, needLevel: tierNeedLevel(tier), price: tierPrice(shop, tier),
         unlocked: tier <= unlocked,
         items: SLOTS.map(slot => {
           const item = gearItem(shop, slot, tier)

@@ -920,7 +920,7 @@ test("十连 / 百连次数：每日重置；旧版额外十连机会照常可�
   assert.equal(hundredLeft(u, 10, d1), 0)
   assert.equal(hundredLeft(u, 10, d2), 10)
   // 默认配置
-  assert.deepEqual([cfg.fishing.multiDaily, cfg.fishing.hundredDaily, cfg.fishing.hundredCount, cfg.fishing.hundredLevel], [100, 10, 100, 26])
+  assert.deepEqual([cfg.fishing.multiDaily, cfg.fishing.hundredDaily, cfg.fishing.hundredCount, cfg.fishing.hundredLevel], [100, 10, 100, 25])
   assert.equal(cfg.fishing.multiTicketChance, undefined)
 })
 
