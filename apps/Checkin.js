@@ -7,7 +7,7 @@ import { effectText } from "../components/Titles.js"
 import { periodKey } from "../components/Period.js"
 import { withButtons, B } from "../components/Button.js"
 import { groupAllowed, displayName, updateNickname } from "../components/common.js"
-import { addBait, baitCount, baitLevel, canUseBait } from "../components/Gear.js"
+import { addBait, baitCount, baitLevel, canUseBait, maxGearLevel } from "../components/Gear.js"
 
 /** 低幸运值待确认：user_id → { day, luck } */
 const pending = new Map()
@@ -72,8 +72,8 @@ export class FishingCheckin extends plugin {
 
     const ret = doCheckin(user, luck)
     addGroup(user, e.group_id)
-    // 打卡奖励按幸运值决定：每 10 点一档，等级越高送的鱼饵越好
-    const reward = checkinReward(luck, Config.shop?.baits)
+    // 打卡奖励：鱼饵阶位跟着穿戴的渔具走（送的一定能用），数量按幸运值
+    const reward = checkinReward(luck, Config.shop?.baits, maxGearLevel(user), cfg.rewards)
     if (reward) addBait(user, reward.bait.id, reward.count)
 
     const lines = [
@@ -82,9 +82,10 @@ export class FishingCheckin extends plugin {
       bar(luck),
       this.tierLine(luck),
       reward
-        ? `🎁 打卡奖励：Lv${baitLevel(reward.bait)} ${reward.bait.emoji}${reward.bait.name} ×${reward.count}（当前 ${baitCount(user, reward.bait.id)}）` +
-          (canUseBait(user, reward.bait) ? "" : `\n🔒 需要至少一件 Lv${baitLevel(reward.bait)} 渔具才能使用，先存着吧`)
-        : "🎁 幸运值为 0，今天没有打卡奖励……",
+        ? `🎁 打卡奖励：第 ${baitLevel(reward.bait)} 阶 ${reward.bait.emoji}${reward.bait.name} ×${reward.count}（当前 ${baitCount(user, reward.bait.id)}）` +
+          (reward.drop ? `\n💧 运气不太好，送的鱼饵降了 ${reward.drop} 阶` : "") +
+          (canUseBait(user, reward.bait) ? "" : `\n🔒 需要穿戴至少一件第 ${baitLevel(reward.bait)} 阶渔具才能使用，先存着吧`)
+        : "🎁 今天没有打卡奖励……",
       `🔥 连续打卡 ${ret.streak} 天 · 累计 ${ret.total} 天`,
     ]
     // 今日欧皇 / 非酋：当天第一个达到阈值的人

@@ -242,22 +242,31 @@ export function doCheckin(user, luck, now = new Date()) {
 /** 0~100 的随机幸运值 */
 export const randomLuck = (rng = Math.random) => Math.floor(rng() * 101)
 
+/** 打卡奖励档位（config.yaml 的 checkin.rewards 可覆盖）：幸运值 ≥ min 时送“渔具阶位 - drop”阶鱼饵 × count */
+export const DEFAULT_CHECKIN_REWARDS = [
+  { min: 90, drop: 0, count: 10 },
+  { min: 70, drop: 0, count: 6 },
+  { min: 30, drop: 0, count: 4 },
+  { min: 10, drop: 1, count: 4 },
+  { min: 0, drop: 2, count: 3 },
+]
+
 /**
- * 打卡奖励：按幸运值决定送什么鱼饵、送几个
- * 每 10 点一档：1~10 送 1 级鱼饵，11~20 送 2 级 … 91~100 送 10 级；数量为在本档的位置（1~10 个）；幸运值 0 不送
- * 例：7 → 1 级 ×7，10 → 1 级 ×10，54 → 6 级 ×4，100 → 10 级 ×10
- * @returns {{ level, count, bait } | null}
+ * 打卡奖励：鱼饵阶位跟着渔具走，数量按幸运值
+ * @param tier 玩家穿戴渔具的最高阶位（= 能用的最高阶鱼饵），运气差时降一 / 两阶，最低 1 阶
+ * @returns {{ level, count, bait, drop } | null}
  */
-export function checkinReward(luck, baits = []) {
-  luck = Math.floor(Number(luck) || 0)
-  if (luck < 1) return null
-  const level = Math.min(10, Math.ceil(luck / 10))
-  const count = luck - (level - 1) * 10
+export function checkinReward(luck, baits = [], tier = 1, rewards = DEFAULT_CHECKIN_REWARDS) {
+  luck = Math.max(0, Math.floor(Number(luck) || 0))
+  const row = [...(rewards?.length ? rewards : DEFAULT_CHECKIN_REWARDS)].sort((a, b) => b.min - a.min).find(r => luck >= Number(r.min))
+  if (!row || !(Number(row.count) > 0)) return null
+  const drop = Math.max(0, Number(row.drop) || 0)
+  const level = Math.max(1, Math.floor(Number(tier) || 1) - drop)
   // 找对应等级的鱼饵；自定义鱼饵表缺这一级时，退到不超过它的最高级
   const lv = b => Math.max(1, Number(b?.level) || 1)
   const bait = baits.find(b => lv(b) === level) ||
     [...baits].filter(b => lv(b) <= level).sort((a, b) => lv(b) - lv(a))[0]
-  return bait ? { level, count, bait } : null
+  return bait ? { level: lv(bait), count: Math.floor(Number(row.count)), bait, drop } : null
 }
 
 /* ==================== 十连次数 ==================== */

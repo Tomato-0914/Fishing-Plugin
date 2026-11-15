@@ -774,26 +774,30 @@ test("鱼钩：阶位与强化提高防跑鱼概率，锻造加高品级点数",
   assert.ok(u.gearV2.items["hook:1"])
 })
 
-test("打卡奖励：按幸运值每 10 点一档送鱼饵", async () => {
-  const { checkinReward } = await import("../components/Game.js")
+test("打卡奖励：鱼饵阶位跟渔具走，数量按幸运值，运气差时降阶", async () => {
+  const { checkinReward, DEFAULT_CHECKIN_REWARDS } = await import("../components/Game.js")
   const baits = Config.shop.baits
-  const r = luck => { const x = checkinReward(luck, baits); return x && [x.level, x.count, x.bait.name] }
-  assert.equal(checkinReward(0, baits), null)               // 0 什么都不送
-  assert.deepEqual(r(1), [1, 1, "普通饵"])
-  assert.deepEqual(r(7), [1, 7, "普通饵"])
-  assert.deepEqual(r(10), [1, 10, "普通饵"])
-  assert.deepEqual(r(11), [2, 1, "蚯蚓"])
-  assert.deepEqual(r(54), [6, 4, "灵蚕饵"])
-  assert.deepEqual(r(60), [6, 10, "灵蚕饵"])
-  assert.deepEqual(r(100), [10, 10, "混元仙饵"])
-  // 0~100 每个值都对得上：等级 1~10、数量 1~10
-  for (let luck = 1; luck <= 100; luck++) {
-    const x = checkinReward(luck, baits)
-    assert.equal((x.level - 1) * 10 + x.count, luck)
-    assert.ok(x.count >= 1 && x.count <= 10)
+  const r = (luck, tier) => { const x = checkinReward(luck, baits, tier, cfg.checkin.rewards); return x && [x.level, x.count, x.bait.name] }
+  assert.deepEqual(cfg.checkin.rewards, DEFAULT_CHECKIN_REWARDS)
+  // 5 阶渔具（金丝秘饵）
+  assert.deepEqual(r(100, 5), [5, 10, "金丝秘饵"])
+  assert.deepEqual(r(90, 5), [5, 10, "金丝秘饵"])
+  assert.deepEqual(r(89, 5), [5, 6, "金丝秘饵"])
+  assert.deepEqual(r(30, 5), [5, 4, "金丝秘饵"])
+  assert.deepEqual(r(29, 5), [4, 4, "活虾"])     // 凶：低一阶
+  assert.deepEqual(r(0, 5), [3, 3, "腥香饵"])    // 大凶：低两阶
+  // 20 阶渔具：最高可得创世神饵
+  assert.deepEqual(r(95, 20), [20, 10, "创世神饵"])
+  // 新手：降阶不低于 1 阶
+  assert.deepEqual(r(5, 1), [1, 3, "普通饵"])
+  assert.deepEqual(r(15, 2), [1, 4, "普通饵"])
+  // 每个幸运值都有奖励，阶位不超过渔具
+  for (let luck = 0; luck <= 100; luck++) for (const tier of [1, 7, 20]) {
+    const x = checkinReward(luck, baits, tier)
+    assert.ok(x && x.level <= tier && x.level >= 1 && x.count >= 3, `${luck} ${tier}`)
   }
   // 自定义鱼饵表缺某一级时，退到不超过它的最高级
-  assert.equal(checkinReward(95, baits.filter(b => (b.level || 1) <= 7)).bait.name, "龙涎香饵")
+  assert.equal(checkinReward(95, baits.filter(b => (b.level || 1) <= 7), 10).bait.name, "龙涎香饵")
   // 锅巴不再有打卡赠送鱼饵的配置项，保存时清掉旧值
   const { supportGuoba } = await import("../guoba/index.js")
   const { configInfo } = supportGuoba()
