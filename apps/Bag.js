@@ -5,6 +5,7 @@ import { RARITY_INFO, isDexFish, formatWeight, SIZE_ORDER } from "../components/
 import { groupBag, sellEntries, discardJunk, todayLuck, luckTier, repriceBag, protectedFine } from "../components/Game.js"
 import { checkTitles, getEffects, effectText, progressText, mergeEffects, ownedTier, ownedTitles, titleName, titleUpText } from "../components/Titles.js"
 import { gearEffects, bagCapacity, totalBait, gearItem, gearLevel, SLOTS, ownedGear, tierBadge } from "../components/Gear.js"
+import { gearIcon } from "../components/GearIcons.js"
 import { withButtons, B } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
 import { itemChance, formatChance, sizeTable, findItems, dexNo } from "../components/Dex.js"
@@ -173,7 +174,7 @@ export class FishingBag extends plugin {
       const tier = gearLevel(user, slot)
       const item = ownedGear(user, slot, tier)
       return {slot, name:gearItem(Config.shop, slot, tier)?.name || slot,
-        tier, ...tierBadge(tier), enhance:item?.enhance || 0, forge:item?.forge || 0}
+        tier, ...tierBadge(tier), icon:gearIcon(slot), enhance:item?.enhance || 0, forge:item?.forge || 0}
     })
     const stats = [
       {label:"抛竿次数",value:s.casts,unit:"次"},
