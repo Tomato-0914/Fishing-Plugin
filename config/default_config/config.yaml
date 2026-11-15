@@ -32,15 +32,18 @@ fishing:
   bagLimit: 200
   # 抛竿时附带的配图：插件目录下的相对路径或绝对路径，留空则不发送
   castImage: resources/img/cast.jpg
-  # 十连钓鱼：一次抛出的竿数，以及结束后的挂鱼饵时间（秒）
+  # 十连钓鱼：一次抛出的竿数、每天可用次数（0 点重置）、两次之间的最短间隔（秒）
+  # 鱼饵或鱼护空间不够时有多少钓多少；#钓鱼 单次抛竿不限次数
   multiCount: 10
-  # 每天可以十连的次数（0 点重置）；测试阶段提高至 100 次，正式运营可改回 10
   multiDaily: 100
-  # 单次钓鱼额外获得 1 次十连机会的概率（%），鱼钩会提高这个概率；额外机会不会过期，最多存 multiBonusMax 次
-  multiTicketChance: 2
-  multiBonusMax: 50
-  # 两次十连之间的最短间隔（秒），防刷屏
   multiCooldown: 30
+  # 百连钓鱼：需要角色等级 hundredLevel（26 级 = 解锁第 6 阶渔具）
+  #   hundredProtectedScale：百连中保护动物出现概率的倍率（0.2 = 降到 1/5）；误钓后照常罚款、禁渔，剩下的竿作废，鱼饵不退
+  hundredCount: 100
+  hundredDaily: 10
+  hundredCooldown: 60
+  hundredLevel: 26
+  hundredProtectedScale: 0.2
   # 十连钓鱼的配图，留空则不发送
   multiImage: resources/img/multi.jpg
 

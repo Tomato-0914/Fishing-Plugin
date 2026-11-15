@@ -426,29 +426,41 @@ test("图鉴详情：概率、体型区间、搜索、个人记录", async () =>
 })
 
 test("渔具：20 阶效果、容量、出售加成，旧版逐级升级已停用", async () => {
-  const { upgradeGear, gearEffects, bagCapacity, gearLevel, gearItem, tierPrice, breakChance } = await import("../components/Gear.js")
+  const { upgradeGear, gearEffects, bagCapacity, gearLevel, gearItem, tierPrice, breakChance, slotEffects, setEffects } = await import("../components/Gear.js")
   const shop = Config.shop
   const near = (a, b) => Math.abs((a || 0) - b) < 1e-9
-  // 新存档：五个部位都是 1 阶新手装备
+  // 新存档：五个部位都是 1 阶新手装备（同时构成新手 5 件套）
   const u = newUser("10010")
   assert.deepEqual(u.gearV2.items, {})
   const e1 = gearEffects(u, shop)
   assert.deepEqual(u.gearV2.equipped, { rod: 1, line: 1, hook: 1, float: 1, net: 1 })
   assert.equal(e1.rarityTier, 1)
-  for (const k of ["lineGuard", "holdChance", "sellBonus", "rarityUR", "rarityEP", "rarityMR"]) assert.ok(near(e1[k], 0), `${k}=${e1[k]}`)
+  for (const k of ["lineGuard", "holdChance", "capacity"]) assert.ok(near(e1[k], 0), `${k}=${e1[k]}`)
+  for (const [k, v] of Object.entries(setEffects(1, 5))) assert.ok(near(e1[k], v + (k === "rarityShift" || k === "rarePoints" || k === "sellBonus" ? 0 : 0)), `${k}=${e1[k]}`)
   assert.equal(bagCapacity(u, shop, cfg.fishing.bagLimit), 200)
   assert.equal(upgradeGear(u, shop, "rod").reason, "obsolete")
-  // 20 阶整套：各部位的特色效果随阶位提高
+  // 20 阶整套：各部位阶位效果 + 20 阶 5 件套
   const v = equip(newUser("10011"), 20)
   const e20 = gearEffects(v, shop)
-  for (const [k, val] of Object.entries({ rarityTier: 20, lineGuard: 38, holdChance: 38, multiTicket: 3.8, biteReduce: 1.9, reelWindow: 3.8, sellBonus: 4.75 }))
+  const set20 = setEffects(20, 5)
+  for (const [k, val] of Object.entries({ rarityTier: 20, lineGuard: 38, holdChance: 38, biteReduce: 1.9, reelWindow: 3.8, sellBonus: 4.75 + set20.sellBonus, capacity: 950, rarityShift: 0.15, rarePoints: 2, emptyReduce: 3, junkReduce: 3, largeBoost: 6 }))
     assert.ok(near(e20[k], val), `${k}=${e20[k]}`)
   assert.equal(bagCapacity(v, shop, 200), 200 + 50 * 19)
-  // 强化 +15、锻造 +8 满级：效果有上限
+  // 强化 +15、锻造 +8 满级
   const w = equip(newUser("10012"), 20, { enhance: 15, forge: 8 })
   const ew = gearEffects(w, shop)
-  assert.ok(near(ew.lineGuard, 38 + 15 + 12) && near(ew.holdChance, 38 + 4.5) && near(ew.sellBonus, 4.75 + 4))
+  assert.ok(near(ew.lineGuard, 38 + 15 + 12), `lineGuard=${ew.lineGuard}`)
+  assert.ok(near(ew.holdChance, 38 + 15))
+  assert.ok(near(ew.sellBonus, 4.75 + 4 + set20.sellBonus))
+  assert.ok(near(ew.rarityShift, 0.5 + 0.15))
+  // 高品级点数：鱼竿 0.15×7 + 0.5×8、鱼线 0.1×8、鱼钩 0.25×8、浮漂 0.25×8、5 件套 2
+  assert.ok(near(ew.rarePoints, 1.05 + 4 + 0.8 + 2 + 2 + 2), `rarePoints=${ew.rarePoints}`)
+  assert.ok(near(ew.junkReduce, 3 + 0.2 * 15))
   assert.equal(bagCapacity(w, shop, 200), 200 + 50 * 19 + 5 * 15)
+  // 鱼竿强化：+1~+7 加高品级点数，+8 起改为概率表靠拢
+  assert.deepEqual(slotEffects("rod", 5, 7, 0), { rarityTier: 5, rarePoints: 1.05, rarityShift: 0 })
+  assert.ok(near(slotEffects("rod", 5, 8, 0).rarityShift, 0.0625))
+  assert.ok(near(slotEffects("rod", 5, 15, 0).rarityShift, 0.5))
   // 鱼线按比例降低断线
   assert.ok(near(breakChance({ type: "item", rarity: "UR", size: "large" }, shop.lineBreak, e20), 16 * (1 - 0.38)))
   // 每一阶都比上一阶贵；阶位名称
@@ -681,14 +693,17 @@ test("渔具越好：普通越来越少，稀有以上越来越多", async () =>
     assert.ok(rows[i].N < rows[i - 1].N, `T${i + 1} 普通减少`)
     assert.ok(high(rows[i]) > high(rows[i - 1]), `T${i + 1} 稀有以上增加`)
     for (const k of ["UR", "EP", "MR"]) assert.ok(rows[i][k] >= rows[i - 1][k] - 1e-9, `T${i + 1} ${k} 不减少`)
-    // 空军、垃圾不受渔具影响
-    assert.ok(Math.abs(rows[i].empty - rows[0].empty) < 1e-9 && Math.abs(rows[i].junk - rows[0].junk) < 1e-9)
+    // 空军、垃圾随套装阶位逐渐减少
+    assert.ok(rows[i].empty < rows[i - 1].empty && rows[i].junk < rows[i - 1].junk)
   }
   assert.ok(rows[19].N < rows[0].N / 10, "20 阶普通不到 1 阶的十分之一")
-  // 品级解锁：传说 8 阶、史诗 11 阶、神话 15 阶起才会出现
-  assert.equal(rows[6].UR, 0); assert.ok(rows[7].UR > 0)
-  assert.equal(rows[9].EP, 0); assert.ok(rows[10].EP > 0)
-  assert.equal(rows[13].MR, 0); assert.ok(rows[14].MR > 0)
+  // 品级解锁：传说 8 阶、史诗 11 阶、神话 15 阶；5 件套的概率表靠拢只让下一阶的品级少量出现
+  assert.ok(rows[6].UR > 0 && rows[6].UR < 0.05, `T7 UR ${rows[6].UR}`); assert.ok(rows[7].UR > rows[6].UR * 5)
+  assert.ok(rows[9].EP < 0.02); assert.ok(rows[10].EP > rows[9].EP * 5)
+  assert.ok(rows[13].MR < 0.02); assert.ok(rows[14].MR > rows[13].MR * 5)
+  // 裸装（不成套）时下一阶的品级完全不会出现
+  const { gearRarityOdds } = await import("../components/GearOdds.js")
+  assert.equal(gearRarityOdds({ rarityTier: 7, rarePoints: 50 }).UR, 0)
 })
 
 test("鱼饵等级：20 档，至少一件同等级渔具才能买和用", async () => {
@@ -736,19 +751,15 @@ test("鱼饵等级：20 档，至少一件同等级渔具才能买和用", async
   assert.equal(buyBait(v, shop, "creation", 1, cfg.bait).ok, true)
 })
 
-test("鱼钩：阶位越高防跑鱼概率越高，额外十连机会提高", async () => {
-  const { holdsOnTimeout, gearEffects, multiTicketChance, ensureGear, gearLevel } = await import("../components/Gear.js")
-  const shop = Config.shop
-  const hook = (t, extra) => gearEffects(equip(newUser("h"), { hook: t }, extra), shop)
-  const holds = Array.from({ length: 20 }, (_, i) => hook(i + 1).holdChance || 0)
+test("鱼钩：阶位与强化提高防跑鱼概率，锻造加高品级点数", async () => {
+  const { holdsOnTimeout, slotEffects, ensureGear, gearLevel } = await import("../components/Gear.js")
+  const holds = Array.from({ length: 20 }, (_, i) => slotEffects("hook", i + 1).holdChance)
   assert.equal(holds[0], 0)
   for (let i = 1; i < 20; i++) assert.ok(holds[i] > holds[i - 1], `T${i + 1}`)
   assert.equal(holds[19], 38)
-  assert.ok(Math.abs(hook(20, { enhance: 15 }).holdChance - 42.5) < 1e-9) // 强化 +0.3%/级
-  // 额外十连机会：基础 2% + 鱼钩
-  assert.equal(multiTicketChance(2, {}), 2)
-  assert.ok(Math.abs(multiTicketChance(2, hook(20)) - 5.8) < 1e-9)
-  assert.ok(Math.abs(multiTicketChance(2, hook(20, { forge: 8 })) - 7.8) < 1e-9) // 锻造 +0.25%/级
+  assert.equal(slotEffects("hook", 20, 15).holdChance, 53) // 强化 +1%/级
+  assert.equal(slotEffects("hook", 20, 15, 8).rarePoints, 2) // 锻造 0.25 点/级
+  assert.equal(slotEffects("hook", 20).multiTicket, undefined) // 不再有额外十连机会
   // 概率与配置一致
   const rng = seeded(21)
   let n = 0
@@ -821,9 +832,11 @@ test("分级称号：Ⅰ/Ⅱ/Ⅲ，只取最高一级，不同称号叠加，获
   const eff = getEffects(u, titles, items)
   assert.equal(eff.emptyReduce, 2)
   assert.equal(eff.sellBonus, 30 + 120)
-  // 称号不再提供鱼获品级加成（品级只由渔具决定）
+  // 称号的品级加成只用高品级点数 / 概率表靠拢，不再使用旧版 boost* / rareBoost
   for (const t of titles) for (const tier of t.tiers) for (const k of Object.keys(tier.effects || {}))
-    assert.ok(!/^boost|^rareBoost|^rarity/.test(k), `${t.id} ${k}`)
+    assert.ok(!/^boost|^rareBoost|^rarity(UR|EP|MR|Tier)/.test(k), `${t.id} ${k}`)
+  assert.equal(eff.rarePoints, 0.6) // 熟练钓手Ⅱ
+  assert.equal(getEffects({ ...u, titleLv: { master: 3 } }, titles, items).rarityShift, 0.1)
   // 进度：距离Ⅲ
   assert.equal(progressText(u, T("skilled"), items), "3,500/50,000")
   assert.equal(progressText(u, T("tycoon"), items), "已满级")
@@ -890,18 +903,25 @@ test("派蒙：第一次获得称号「最好的伙伴」，之后送谢礼", as
   assert.equal(u.bag.length, 0)
 })
 
-test("十连次数：每天 10 次，额外机会不过期，跨天重置", async () => {
-  const { multiLeft, useMulti, grantMultiTicket } = await import("../components/Game.js")
+test("十连 / 百连次数：每日重置；旧版额外十连机会照常可用、不再新增", async () => {
+  const game = await import("../components/Game.js")
+  const { multiLeft, useMulti, hundredLeft, useHundred } = game
+  assert.equal(game.grantMultiTicket, undefined)
   const d1 = new Date(2026, 10, 13, 9), d2 = new Date(2026, 10, 14, 9)
   const u = newUser("10063")
-  for (let i = 0; i < 10; i++) assert.equal(useMulti(u, 10, d1), "free")
-  assert.equal(useMulti(u, 10, d1), null)
-  assert.equal(grantMultiTicket(u, 2, d1), true)
-  assert.equal(grantMultiTicket(u, 2, d1), true)
-  assert.equal(grantMultiTicket(u, 2, d1), false) // 到上限
-  assert.deepEqual(multiLeft(u, 10, d1), { free: 0, bonus: 2 })
-  assert.equal(useMulti(u, 10, d1), "bonus")
-  assert.deepEqual(multiLeft(u, 10, d2), { free: 10, bonus: 1 }) // 跨天：今日次数重置，额外机会保留
+  u.multi = { day: "", used: 0, bonus: 2 } // 旧版攒下的额外机会
+  for (let i = 0; i < 100; i++) assert.equal(useMulti(u, 100, d1), "free")
+  assert.equal(useMulti(u, 100, d1), "bonus")
+  assert.deepEqual(multiLeft(u, 100, d1), { free: 0, bonus: 1 })
+  assert.deepEqual(multiLeft(u, 100, d2), { free: 100, bonus: 1 }) // 跨天：今日次数重置，额外机会保留
+  // 百连：每日 10 次
+  for (let i = 0; i < 10; i++) assert.equal(useHundred(u, 10, d1), true)
+  assert.equal(useHundred(u, 10, d1), false)
+  assert.equal(hundredLeft(u, 10, d1), 0)
+  assert.equal(hundredLeft(u, 10, d2), 10)
+  // 默认配置
+  assert.deepEqual([cfg.fishing.multiDaily, cfg.fishing.hundredDaily, cfg.fishing.hundredCount, cfg.fishing.hundredLevel], [100, 10, 100, 26])
+  assert.equal(cfg.fishing.multiTicketChance, undefined)
 })
 
 test("超大体型与新稀有度", async () => {
@@ -990,4 +1010,94 @@ test("提示文字不再引导已停用的“渔具升级”", async () => {
     const src = fs.readFileSync(path.join(import.meta.dirname, "..", file), "utf8")
     assert.ok(!/升级(鱼竿|鱼线|鱼钩|浮漂|鱼护|渔具)(?!已停用)/.test(src.replace(/旧版渔具升级已停用/g, "")), file)
   }
+})
+
+test("套装：同阶 3 件 / 5 件触发（4 件按 3 件），效果随阶位成长", async () => {
+  const { gearSet, setEffects, gearEffects } = await import("../components/Gear.js")
+  const near = (a, b) => Math.abs((a || 0) - b) < 1e-9
+  assert.deepEqual(setEffects(5, 0), {})
+  const s3 = setEffects(5, 3)
+  assert.ok(near(s3.emptyReduce, 1.5) && near(s3.junkReduce, 1.5) && near(s3.largeBoost, 3))
+  assert.equal(s3.rarityShift, undefined)
+  const s5 = setEffects(20, 5)
+  assert.ok(near(s5.emptyReduce, 3) && near(s5.largeBoost, 6) && near(s5.rarityShift, 0.15) && near(s5.rarePoints, 2) && near(s5.sellBonus, 10))
+  // 穿戴组合
+  const u = equip(newUser("10090"), { rod: 6, line: 6, hook: 6 }) // 6 阶 3 件 + 1 阶 2 件
+  assert.deepEqual([gearSet(u).tier, gearSet(u).count, gearSet(u).pieces], [6, 3, 3])
+  equip(u, { float: 6 })
+  assert.equal(gearSet(u).pieces, 3) // 4 件 = 3 件
+  equip(u, { net: 6 })
+  assert.equal(gearSet(u).pieces, 5)
+  assert.ok(near(gearEffects(u, Config.shop).rarityShift, 0.15))
+  equip(u, { rod: 7, line: 7 }) // 6 阶剩 3 件
+  assert.deepEqual([gearSet(u).tier, gearSet(u).pieces], [6, 3])
+  equip(u, { hook: 7 })
+  assert.deepEqual([gearSet(u).tier, gearSet(u).pieces], [7, 3])
+  equip(u, { hook: 8 }) // 7 阶 2 件 + 6 阶 2 件 + 8 阶 1 件：无套装
+  assert.equal(gearSet(u).pieces, 0)
+})
+
+test("换阶继承：高 1 / 2 / 3 阶保留 50 / 40 / 20% 的强化锻造，再高不保留", async () => {
+  const { buyGear, buyGearSet, ownedGear, inheritLevels } = await import("../components/Gear.js")
+  const shop = Config.shop
+  const u = newUser("10091"); u.gold = 1e9; u.stats.casts = 25 * 99 * 100 // Lv100
+  u.gearV2.items["rod:5"] = { enhance: 15, forge: 8, enhanceFails: 3, forgeFails: 1 }
+  const r6 = buyGear(u, shop, "rod", 6)
+  assert.deepEqual([ownedGear(u, "rod", 6).enhance, ownedGear(u, "rod", 6).forge], [7, 4]) // 50%，向下取整
+  assert.deepEqual([ownedGear(u, "rod", 6).enhanceFails, ownedGear(u, "rod", 6).forgeFails], [0, 0])
+  assert.deepEqual(r6.inherited.from, { enhance: 5, forge: 5 })
+  assert.deepEqual([inheritLevels(u, shop, "rod", 7).enhance, inheritLevels(u, shop, "rod", 7).forge], [6, 3]) // 5 阶 40%：6 / 3；6 阶 50%：3 / 2
+  assert.deepEqual([inheritLevels(u, shop, "rod", 8).enhance, inheritLevels(u, shop, "rod", 8).forge], [3, 1]) // 5 阶 20%：3 / 1；6 阶 40%：2 / 1
+  assert.deepEqual([inheritLevels(u, shop, "rod", 10).enhance, inheritLevels(u, shop, "rod", 10).forge], [0, 0]) // 高 4 阶以上不保留
+  assert.equal(ownedGear(u, "rod", 5).enhance, 15) // 旧装备不受影响
+  // 套装购买逐件继承
+  u.gearV2.items["line:5"] = { enhance: 10, forge: 2, enhanceFails: 0, forgeFails: 0 }
+  const set = buyGearSet(u, shop, 7)
+  assert.deepEqual([set.inherited.rod.enhance, set.inherited.line.enhance, set.inherited.line.forge, set.inherited.hook.enhance], [6, 4, 0, 0])
+})
+
+test("强化 / 锻造成功率：前 3 级必定成功，之后逐级递减；强化上限高于锻造", async () => {
+  const { successRate, cultivateGear, ownedGear, MAX_ENHANCE, MAX_FORGE } = await import("../components/Gear.js")
+  const shop = Config.shop
+  assert.ok(MAX_ENHANCE > MAX_FORGE)
+  const enh = Array.from({ length: MAX_ENHANCE }, (_, i) => successRate(shop, "enhance", i + 1))
+  const frg = Array.from({ length: MAX_FORGE }, (_, i) => successRate(shop, "forge", i + 1))
+  assert.deepEqual(enh, [100, 100, 100, 90, 85, 80, 70, 60, 50, 40, 32, 25, 18, 12, 8])
+  assert.deepEqual(frg, [100, 100, 100, 70, 55, 40, 28, 18])
+  assert.equal(successRate(shop, "enhance", 15, 999), 58) // 失败补偿最多 +50
+  // rng 取最大值也必定成功
+  const u = equip(newUser("10092"), { rod: 3 }); u.gold = 1e7
+  for (let i = 0; i < 3; i++) assert.equal(cultivateGear(u, shop, "rod", 3, "forge", () => 0.9999).success, true)
+  assert.equal(ownedGear(u, "rod", 3).forge, 3)
+  assert.equal(cultivateGear(u, shop, "rod", 3, "forge", () => 0.9999).success, false)
+})
+
+test("百连：保护动物出现概率降低；结果只显示品级数量，空军垃圾断线照常", async () => {
+  const { formatHundred } = await import("../components/Catch.js")
+  const base = buildOdds(cfg.probability, { rarityTier: 10 })
+  const low = buildOdds(cfg.probability, { rarityTier: 10, protectedScale: 0.2 })
+  assert.ok(Math.abs(low["hidden:chinese_sturgeon"] - base["hidden:chinese_sturgeon"] * 0.2) < 1e-12)
+  assert.equal(low["hidden:ocean_heart"], base["hidden:ocean_heart"]) // 隐藏款不变
+  const total = o => Object.values(o).reduce((a, b) => a + b, 0)
+  assert.ok(Math.abs(total(low) - 100) < 1e-9)
+
+  const it = id => itemMap.get(id)
+  const fish = (id, value) => ({ snapped: false, value, reward: 0, result: { type: "item", item: it(id), rarity: it(id).rarity, price: value } })
+  const rounds = [
+    ...Array(30).fill(0).map(() => fish("crucian", 10)),
+    ...Array(20).fill(0).map(() => fish("carp", 30)),
+    fish("tuna", 280), fish("grouperking", 900),
+    fish("ocean_heart", 18888),
+    { snapped: true, value: 0, reward: 0, result: { type: "item", item: it("tuna"), rarity: "SSR", price: 280 } },
+    fish("can", 0),
+    ...Array(5).fill(0).map(() => ({ snapped: false, value: 0, reward: 0, result: { type: "empty" } })),
+  ]
+  const msg = formatHundred(rounds, { markdown: true, xpLine: "✨ 本次获得经验：+300（累计 20000）" }).split("\n")
+  assert.equal(msg[0], `**💯 百连收网** · ${rounds.length} 竿`)
+  assert.equal(msg[1], "✨ 本次获得经验：+300（累计 20000）")
+  assert.equal(msg[2], `💰 **售出预计获得金币：${30 * 10 + 20 * 30 + 280 + 900 + 18888}**`)
+  assert.equal(msg[3], "🐟 鱼获 53｜垃圾 1｜空军 5")
+  assert.ok(msg.includes("> 🌈💎 海洋之心 18888 ✨"))
+  for (const line of ["> 🟡 传说 ×1 ✨", "> 🟣 神器 ×1", "> 🟢 高级 ×20", "> ⚪ 普通 ×30", "💥 断线 1"]) assert.ok(msg.includes(line), line)
+  assert.ok(!msg.some(l => l.includes("鲫鱼") || l.includes("金枪鱼")), "不逐条列出鱼名")
 })

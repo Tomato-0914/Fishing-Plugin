@@ -116,3 +116,39 @@ export function formatMulti(rounds, { sizeLabels = {}, markdown = false, xpLine 
   }
   return [...head, "", ...detail, ...tail].join("\n")
 }
+
+const RARITY_LABEL = { MR: "神话", EP: "史诗", UR: "传说", SSR: "神器", SR: "稀有", R: "高级", N: "普通" }
+
+/**
+ * 百连结果文字：只给各品级数量；空军、垃圾、断线照常统计；
+ * 特殊事件（报警、派蒙、保护动物、隐藏款）逐条列出
+ */
+export function formatHundred(rounds, { markdown = false, xpLine = "", title = "💯 百连收网" } = {}) {
+  const sum = summarize(rounds)
+  const counts = {}, special = []
+  for (const r of rounds) {
+    if (r.banned || r.snapped || r.result.type === "empty") continue
+    const { item } = r.result
+    if (item.special || item.rarity === "hidden") { special.push(r); continue }
+    if (RARITY_LABEL[item.rarity]) counts[item.rarity] = (counts[item.rarity] || 0) + 1
+  }
+  const order = r => r.result.item.special === "protected" ? 0 : r.result.item.special === "police" ? 1 : r.result.item.special === "paimon" ? 3 : 2
+  const lines = [
+    ...special.sort((a, b) => order(a) - order(b)).map(r => roundLine(r)),
+    ...Object.keys(RARITY_LABEL).filter(k => counts[k]).map(k => `${RARITY_DOT[k]} ${RARITY_LABEL[k]} ×${counts[k]}${FLASH.has(k) ? " ✨" : ""}`),
+  ]
+  const head = [
+    markdown ? `**${title}** · ${rounds.length} 竿` : `${title} · ${rounds.length} 竿`,
+    ...(xpLine ? [xpLine] : []),
+    markdown ? `💰 **售出预计获得金币：${sum.value}**` : `💰 售出预计获得金币：${sum.value}`,
+    `🐟 鱼获 ${sum.fish}｜垃圾 ${sum.junk}｜空军 ${sum.empty}`,
+  ]
+  const tail = [
+    sum.snapped ? `💥 断线 ${sum.snapped}` : "",
+    sum.protected ? `🚫 保护动物 ${sum.protected}` : "",
+    sum.banned ? `⛔ 禁渔作废 ${sum.banned} 竿（鱼饵不退）` : "",
+  ].filter(Boolean)
+  if (!lines.length) return [...head, ...tail].join("\n")
+  const detail = markdown ? lines.map(l => `> ${l}`) : lines
+  return [...head, "", ...detail, ...(tail.length ? ["", ...tail] : [])].join("\n")
+}

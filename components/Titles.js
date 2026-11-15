@@ -102,7 +102,9 @@ const EFFECT_TEXT = {
   sellBonus: ["出售金币", "%", false],
   lineGuard: ["断线概率", "%", true],
   holdChance: ["没及时收杆时不跑鱼", "%", false],
-  multiTicket: ["额外十连机会", "%", false],
+  rarePoints: ["高品级", "点", false],
+  rarityShift: ["概率表向下一阶靠拢", "%", false],
+  capacity: ["鱼护容量", "格", false],
   xlBoost: ["超大体型概率", "%", false],
   boostN: ["普通概率", "%", false],
   boostR: ["高级概率", "%", false],
@@ -118,6 +120,9 @@ const EFFECT_TEXT = {
 
 const TIER_NAMES = { boostN: "普通", boostR: "高级", boostSR: "稀有", boostSSR: "神器", boostUR: "传说", boostEP: "史诗", boostMR: "神话" }
 
+/** 展示用数字：最多两位小数 */
+const num = v => Number(Number(v).toFixed(2))
+
 export function effectText(effects = {}) {
   // 分档加成合成一段：普通+4% 高级+7% 稀有+7%
   const tiers = Object.keys(TIER_NAMES).filter(k => Number(effects[k]))
@@ -126,8 +131,9 @@ export function effectText(effects = {}) {
     const [name, unit, inverse] = EFFECT_TEXT[k] || [k, "", false]
     const up = inverse ? v < 0 : v > 0
     if (k === "lineGuard" && v >= 100) return `${name} -100%（不再断线）`
-    if (k === "holdChance") return `${name} ${v}%`
-    return `${name} ${up ? "+" : "-"}${Math.abs(v)}${unit}`
+    if (k === "holdChance") return `${name} ${num(v)}%`
+    if (k === "rarityShift") return `${name} ${num(v * 100)}%`
+    return `${name} ${up ? "+" : "-"}${num(Math.abs(v))}${unit}`
   })
   if (tiers) parts.unshift(tiers)
   return parts.length ? parts.join("，") : "无"

@@ -5,7 +5,9 @@ import UserData from "../components/UserData.js"
 import { effectText, getEffects, mergeEffects } from "../components/Titles.js"
 import { oddsPercent } from "../components/ItemPool.js"
 import { luckEffects } from "../components/Game.js"
-import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait, baitLevel, canUseBait, maxGearLevel, unlockedTier, tierPrice, ownedGear, ensureGear, buyGear, buyGearSet, equipGear, equipGearSet, cultivateGear, enhanceCost, forgeCost, successRate } from "../components/Gear.js"
+import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait, baitLevel, canUseBait, maxGearLevel, unlockedTier, tierPrice, ownedGear, ensureGear, buyGear, buyGearSet, equipGear, equipGearSet, cultivateGear, enhanceCost, forgeCost, successRate, slotEffects, gearSet, setEffects, MAX_ENHANCE, MAX_FORGE } from "../components/Gear.js"
+import { rareTargets, FISH_RARITIES } from "../components/GearOdds.js"
+import { RARITY_INFO } from "../components/ItemPool.js"
 import { withButtons, B } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
 import { groupAllowed, updateNickname, displayName } from "../components/common.js"
@@ -77,9 +79,10 @@ export class FishingShop extends plugin {
       [B.myGear,{text:"🏪 渔具商店",callback:"#渔具商店"},B.help]
     ]
   }
-  workshopData(user,slot="rod",type="enhance") {
-    const shop=this.shopCfg,tier=gearLevel(user,slot),item=ownedGear(user,slot,tier)
-    const level=Number(item?.[type])||0,max=type==="enhance"?15:8,target=level+1
+  workshopData(user,slot="rod",type="enhance",tier=gearLevel(user,slot)) {
+    const shop=this.shopCfg,item=ownedGear(user,slot,tier)
+    const max=type==="enhance"?MAX_ENHANCE:MAX_FORGE
+    const level=Math.min(max,Number(item?.[type])||0),target=level+1
     const fails=Number(item?.[type==="enhance"?"enhanceFails":"forgeFails"])||0
     const base=level<max?successRate(shop,type,target,0):null
     const chance=level<max?successRate(shop,type,target,fails):null
@@ -89,21 +92,19 @@ export class FishingShop extends plugin {
       return {slot:s,name:TIER_NAMES[t-1]+SLOT_NAMES[s],emoji:gearItem(shop,s,t)?.emoji,
         tier:t,enhance:Number(d?.enhance)||0,forge:Number(d?.forge)||0,selected:s===slot}
     })
-    const descriptions={
-      rod:{enhance:"高级鱼出现概率",forge:"特殊鱼获取概率",enhanceStep:0.15,forgeStep:0.10,unit:"%"},
-      line:{enhance:"断线概率相对降低",forge:"大鱼断线概率相对降低",enhanceStep:1,forgeStep:1.5,unit:"%"},
-      hook:{enhance:"收杆成功率",forge:"额外钓鱼机会",enhanceStep:0.3,forgeStep:0.25,unit:"%"},
-      float:{enhance:"等待时间缩短",forge:"有效收杆时间延长",enhanceStep:0.3,forgeStep:0.5,unit:"%"},
-      net:{enhance:"鱼护容量",forge:"出售金币收益",enhanceStep:5,forgeStep:0.5,unit:type==="enhance"?"格":"%"}
-    }
-    const d=descriptions[slot],step=type==="enhance"?d.enhanceStep:d.forgeStep
+    // 本次养成类型的效果：另一种养成保持当前等级，按 slotEffects 实际计算差值
+    const other=type==="enhance"?Number(item?.forge)||0:Number(item?.enhance)||0
+    const at=lv=>type==="enhance"?slotEffects(slot,tier,lv,other):slotEffects(slot,tier,other,lv)
+    const stepLines=level<max?cultivationLines(at(level),at(target)):[]
+    const totalLines=cultivationLines(at(0),at(level))
     return {name:displayName(user),gold:user.gold,equipment,slot,tier,
       itemName:TIER_NAMES[tier-1]+SLOT_NAMES[slot],itemEmoji:gearItem(shop,slot,tier)?.emoji,
       enhance:Number(item?.enhance)||0,forge:Number(item?.forge)||0,
-      type,typeName:type==="enhance"?"强化":"锻造",level,max,target,
-      effectName:d[type],effectStep:step,unit:slot==="net"&&type==="enhance"?"格":"%",
-      effectTotal:Number((step*level).toFixed(2)),
-      nextTotal:Number((step*(level+1)).toFixed(2)),
+      type,typeName:type==="enhance"?"强化":"锻造",level,max,target,equipped:gearLevel(user,slot)===tier,
+      stepLines,totalLines:totalLines.length?totalLines:["暂无"],
+      // 上一级带来的提升（养成成功后展示）
+      lastLines:level>0?cultivationLines(at(level-1),at(level)):[],
+      rareTargetText:rareTargetText(gearLevel(user,"rod")),
       base,chance,bonus:chance===null?0:Number((chance-base).toFixed(2)),
       cost,full:level>=max}
   }
@@ -116,7 +117,8 @@ export class FishingShop extends plugin {
     const msg=await renderOrText(puppeteer,"forgeworkshop",data,()=>[
       `🔧 渔具工坊 · ${data.itemName}`,
       `强化 +${data.enhance}/15 · 锻造 +${data.forge}/8`,
-      `下次强化：${data.full?"已满级":`${data.chance}% · ${data.cost} 金币`}`,
+      `下次强化：${data.full?"已满级":`${data.chance}% · ${data.cost} 金币 · ${data.stepLines.join("、")}`}`,
+      `🎯 高品级点数加到：${data.rareTargetText}`,
       "使用下方按钮选择装备或强化/锻造"
     ].join("\n"))
     if(!msg)return true
@@ -140,7 +142,14 @@ export class FishingShop extends plugin {
       return e.reply("无效的渔具套装名称，请查看 #渔具商店")
     }
     await UserData.save(user.user_id)
-    return e.reply(`购买成功！获得${TIER_NAMES[tier-1]}套装中的 ${ret.slots.length} 件渔具：${ret.slots.map(slot=>SLOT_NAMES[slot]).join("、")}。\n花费 ${ret.cost} 金币，剩余 ${user.gold} 金币。${ret.skipped ? `\n已有 ${ret.skipped} 件已自动跳过，未重复收费。` : ""}\n装备不会自动切换，可使用 #装备渔具 鱼竿 ${tier} 等指令穿戴。`)
+    // 继承相同的部位合并成一行：“鱼竿、鱼线 强化 +7、锻造 +4（来自第5阶）”
+    const groups = new Map()
+    for (const slot of ret.slots) {
+      const t = inheritText(ret.inherited?.[slot], false)
+      if (t) groups.set(t, [...(groups.get(t) || []), slot])
+    }
+    const inh = [...groups].map(([t, slots]) => [slots.length === SLOTS.length ? "全部 5 件" : slots.map(x => SLOT_NAMES[x]).join("、"), t])
+    return e.reply(`购买成功！获得${TIER_NAMES[tier-1]}套装中的 ${ret.slots.length} 件渔具：${ret.slots.map(slot=>SLOT_NAMES[slot]).join("、")}。\n花费 ${ret.cost} 金币，剩余 ${user.gold} 金币。${ret.skipped ? `\n已有 ${ret.skipped} 件已自动跳过，未重复收费。` : ""}${inh.length ? `\n🔁 继承：${inh.map(([who,t])=>`${who} ${t}`).join("；")}` : ""}\n装备不会自动切换，可使用 #使用${TIER_NAMES[tier-1]}套装 一键穿戴（5 件套属性：${setText(tier,5)}）。`)
   }
   async purchase(e) {
     if(!groupAllowed(e))return false
@@ -149,7 +158,7 @@ export class FishingShop extends plugin {
     const ret=buyGear(user,this.shopCfg,p.slot,p.tier)
     if(!ret.ok)return e.reply({locked:`角色等级不足，需 Lv${ret.need} 才能购买`,owned:"已拥有该渔具",gold:`金币不足，需要 ${ret.cost} 金币`,invalid:"无效的装备阶位"}[ret.reason]||"购买失败")
     await UserData.save(user.user_id)
-    return e.reply(`购买成功：${ret.item.name}，花费 ${ret.cost} 金币。发送 #装备渔具 ${SLOT_NAMES[p.slot]} ${p.tier} 穿戴`)
+    return e.reply(`购买成功：${ret.item.name}，花费 ${ret.cost} 金币。${inheritText(ret.inherited)}\n发送 #装备渔具 ${SLOT_NAMES[p.slot]} ${p.tier} 穿戴`)
   }
   async equipSet(e) {
     if (!groupAllowed(e)) return false
@@ -164,7 +173,7 @@ export class FishingShop extends plugin {
       return e.reply("无效的渔具套装名称，请查看 #渔具商店")
     }
     await UserData.save(user.user_id)
-    return e.reply(`已成功使用${TIER_NAMES[tier-1]}套装！\n鱼竿、鱼线、鱼钩、浮漂、鱼护已全部切换，原有强化和锻造等级保持不变，套装属性现已生效。`)
+    return e.reply(`已成功使用${TIER_NAMES[tier-1]}套装！\n鱼竿、鱼线、鱼钩、浮漂、鱼护已全部切换，原有强化和锻造等级保持不变。\n✨ 5 件套属性已生效：${setText(tier,5)}`)
   }
   async equip(e) {
     if(!groupAllowed(e))return false
@@ -173,7 +182,8 @@ export class FishingShop extends plugin {
     const ret=equipGear(user,p.slot,p.tier)
     if(!ret.ok)return e.reply(ret.reason==="locked"?"角色等级不足，不能穿戴":"尚未购买该装备")
     await UserData.save(user.user_id)
-    return e.reply(`已装备：${gearItem(this.shopCfg,p.slot,p.tier).name}，属性已生效`)
+    const set=gearSet(user)
+    return e.reply(`已装备：${gearItem(this.shopCfg,p.slot,p.tier).name}，属性已生效${set.pieces?`\n✨ ${TIER_NAMES[set.tier-1]}${set.pieces} 件套：${setText(set.tier,set.pieces)}`:""}`)
   }
   async upgrade(e){return e.reply("旧版渔具升级已停用，请使用 #购买渔具、#渔具强化 或 #渔具锻造")}
   async enhance(e){return this.cultivate(e,"enhance")}
@@ -186,10 +196,10 @@ export class FishingShop extends plugin {
     const ret=cultivateGear(user,this.shopCfg,p.slot,tier,type)
     if(!ret.ok)return e.reply({not_owned:"未拥有该阶位渔具",max:"已达到最高等级",gold:`金币不足，需要 ${ret.cost} 金币`,invalid:"参数无效"}[ret.reason]||"操作失败")
     await UserData.save(user.user_id)
-    const data=this.workshopData(user,p.slot,type)
+    const data=this.workshopData(user,p.slot,type,tier)
     const resultData={...data,success:ret.success,spent:ret.cost,
       attemptedChance:ret.chance,oldLevel:ret.success?data.level-1:data.level,
-      gained:ret.success?data.effectStep:0}
+      gainedText:ret.success?data.lastLines.join("、"):""}
     const msg=await renderOrText(puppeteer,"forgeresult",resultData,()=>[
       `${ret.success?"🎉":"💢"} ${data.itemName} ${data.typeName}${ret.success?"成功":"失败"}！`,
       `等级：+${resultData.oldLevel} → +${data.level}`,
@@ -317,6 +327,43 @@ export class FishingShop extends plugin {
     const effects = effectText(gearEffects(user,shop))
       .split(/，|\s+(?=[^\s，]+[+-]\d)/)
       .map(part => part.trim()).filter(Boolean)
-    lines.push("━━━━━━━━━━━━",`鱼护容量：${bagCapacity(user,shop,Config.config.fishing?.bagLimit)}`,"当前生效属性：",...effects.map(part => `> ${part}`))
+    const set=gearSet(user)
+    lines.push("━━━━━━━━━━━━",
+      set.pieces?`✨ 套装：${TIER_NAMES[set.tier-1]} ${set.count} 件（${set.pieces} 件套生效）`:`✨ 套装：未生效（穿戴同一阶 3 件 / 5 件触发）`,
+      `🎯 高品级点数加到：${rareTargetText(gearLevel(user,"rod"))}`,
+      `鱼护容量：${bagCapacity(user,shop,Config.config.fishing?.bagLimit)}`,"当前生效属性（含套装）：",...effects.map(part => `> ${part}`))
     return e.reply(withButtons(e,lines.join("\n"),[B.workshop,B.shop,B.start]))
   }}
+
+/** 养成效果差值的展示文字：[名称, 单位, 倍率, 是否显示为减少] */
+const CULT_TEXT = {
+  rarePoints: ["高品级", "点", 1, false],
+  rarityShift: ["概率表向下一阶靠拢", "%", 100, false],
+  lineGuard: ["断线", "%", 1, true],
+  holdChance: ["没及时收杆不跑鱼", "%", 1, false],
+  biteReduce: ["咬钩等待", "s", 1, true],
+  junkReduce: ["垃圾", "%", 1, true],
+  reelWindow: ["收杆时间", "s", 1, false],
+  capacity: ["鱼护容量", "格", 1, false],
+  sellBonus: ["出售金币", "%", 1, false],
+}
+function cultivationLines(a, b) {
+  return Object.entries(CULT_TEXT).map(([k, [name, unit, mul, down]]) => {
+    const d = ((Number(b[k]) || 0) - (Number(a[k]) || 0)) * mul
+    if (Math.abs(d) < 1e-9) return null
+    return `${name} ${(d > 0) !== down ? "+" : "-"}${Number(Math.abs(d).toFixed(3))}${unit}`
+  }).filter(Boolean)
+}
+/** 高品级点数的目标品级，例如“稀有 / 神器”（低档分得多） */
+function rareTargetText(tier) {
+  return rareTargets(tier).map(([i, share]) => `${RARITY_INFO[FISH_RARITIES[i]].label}${Math.round(share * 100)}%`).join(" / ")
+}
+function setText(tier, pieces) {
+  return effectText(setEffects(tier, pieces))
+}
+/** 继承提示：“强化 +7、锻造 +3” */
+function inheritText(inh, withPrefix = true) {
+  if (!inh || (!inh.enhance && !inh.forge)) return ""
+  const parts = [inh.enhance ? `强化 +${inh.enhance}（来自第${inh.from.enhance}阶）` : "", inh.forge ? `锻造 +${inh.forge}（来自第${inh.from.forge}阶）` : ""].filter(Boolean)
+  return withPrefix ? `\n🔁 继承旧装备：${parts.join("、")}` : parts.join("、")
+}

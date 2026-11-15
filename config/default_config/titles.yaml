@@ -6,8 +6,9 @@
 #            dex 图鉴中已收集的鱼类种数（need 写 all 表示集齐） / checkinDays 累计打卡天数
 # desc 中的 {n} 会替换成该级的 need
 # 垃圾、空军会随渔具变好而越来越少（下限 5% / 3%），所以海洋卫士、空军司令的门槛比钓鱼次数类的低很多
-# 称号不再直接影响鱼获品级；只保留空军、垃圾、体型、收益等非品级加成。
-#   biteReduce、cooldown（挂鱼饵 -N 秒）、reelWindow、sellBonus（出售金币 +N%，可以超过 100%）等
+# 品级加成只用 rarePoints（高品级点数）与 rarityShift（概率表向下一阶靠拢，0.1 = 10%），与渔具、套装共用同一套规则；
+#   旧版 boost* / rareBoost 不生效。其他效果：emptyReduce、junkReduce、largeBoost、biteReduce、cooldown（挂鱼饵 -N 秒）、
+#   reelWindow、sellBonus（出售金币 +N%，可以超过 100%）等
 
 - id: veteran
   name: 钓鱼佬
@@ -25,9 +26,9 @@
   stat: catches
   desc: 累计钓到 {n} 条鱼
   tiers:
-    - { need: 100,   effects: { emptyReduce: 2 } }
-    - { need: 3000,  effects: { emptyReduce: 2 } }
-    - { need: 50000, effects: { emptyReduce: 2 } }
+    - { need: 100,   effects: { emptyReduce: 2, rarePoints: 0.3 } }
+    - { need: 3000,  effects: { emptyReduce: 2, rarePoints: 0.6 } }
+    - { need: 50000, effects: { emptyReduce: 2, rarePoints: 1 } }
 
 - id: guardian
   name: 海洋卫士
@@ -77,7 +78,7 @@
   tiers:
     - { need: 20,  effects: { emptyReduce: 1 } }
     - { need: 45,  effects: { largeBoost: 5, emptyReduce: 1 } }
-    - { need: all, effects: { largeBoost: 10, emptyReduce: 1 } }
+    - { need: all, effects: { largeBoost: 10, emptyReduce: 1, rarityShift: 0.1 } }
 
 - id: legend
   name: 传说猎人
@@ -85,9 +86,9 @@
   stat: ur
   desc: 累计钓到 {n} 条传说鱼
   tiers:
-    - { need: 5,    effects: { largeBoost: 5 } }
-    - { need: 100,  effects: { largeBoost: 10, emptyReduce: 1 } }
-    - { need: 1000, effects: { largeBoost: 20, emptyReduce: 1 } }
+    - { need: 5,    effects: { largeBoost: 5, rarePoints: 0.2 } }
+    - { need: 100,  effects: { largeBoost: 10, emptyReduce: 1, rarePoints: 0.5 } }
+    - { need: 1000, effects: { largeBoost: 20, emptyReduce: 1, rarePoints: 1 } }
 
 - id: citizen
   name: 热心市民
@@ -105,9 +106,9 @@
   stat: heart
   desc: 钓到海洋之心 {n} 次
   tiers:
-    - { need: 1, effects: { emptyReduce: 1 } }
-    - { need: 3, effects: { emptyReduce: 2 } }
-    - { need: 8, effects: { emptyReduce: 2 } }
+    - { need: 1, effects: { emptyReduce: 1, rarePoints: 0.2 } }
+    - { need: 3, effects: { emptyReduce: 2, rarePoints: 0.4 } }
+    - { need: 8, effects: { emptyReduce: 2, rarePoints: 0.8 } }
 
 # ---------- 特殊称号（只有一级） ----------
 - id: bestie

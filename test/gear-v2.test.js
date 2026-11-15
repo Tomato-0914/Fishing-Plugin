@@ -15,15 +15,18 @@ test("20阶按角色等级解锁购买，装备必须已拥有",()=>{
 test("独立强化、锻造，失败扣费不掉级，成功清空各自补偿",()=>{
   const u=player()
   buyGear(u,shop,"rod",9)
+  // 前 3 级必定成功，从 +4 开始才可能失败
+  for(let i=0;i<3;i++) assert.equal(cultivateGear(u,shop,"rod",9,"enhance",()=>0.999).success,true)
+  for(let i=0;i<3;i++) cultivateGear(u,shop,"rod",9,"forge",()=>0.999)
   const before=u.gold
   const fail=cultivateGear(u,shop,"rod",9,"enhance",()=>0.999)
   assert.equal(fail.success,false)
-  assert.equal(ownedGear(u,"rod",9).enhance,0)
+  assert.equal(ownedGear(u,"rod",9).enhance,3)
   assert.equal(ownedGear(u,"rod",9).enhanceFails,1)
   assert.equal(u.gold,before-fail.cost)
   const win=cultivateGear(u,shop,"rod",9,"enhance",()=>0)
   assert.equal(win.success,true)
-  assert.equal(ownedGear(u,"rod",9).enhance,1)
+  assert.equal(ownedGear(u,"rod",9).enhance,4)
   assert.equal(ownedGear(u,"rod",9).enhanceFails,0)
   cultivateGear(u,shop,"rod",9,"forge",()=>0.999)
   assert.equal(ownedGear(u,"rod",9).forgeFails,1)
@@ -31,7 +34,7 @@ test("独立强化、锻造，失败扣费不掉级，成功清空各自补偿",
   assert.equal(ownedGear(u,"rod",9).forgeFails,1)
 })
 test("失败补偿最多50个百分点且只穿戴装备生效",()=>{
-  assert.equal(successRate(shop,"enhance",15,999),65)
+  assert.equal(successRate(shop,"enhance",15,999),58) // 默认 8% + 补偿最多 50
   const u=player()
   buyGear(u,shop,"rod",9)
   assert.equal(gearEffects(u,shop).rarityTier,1) // 买了不穿戴不生效

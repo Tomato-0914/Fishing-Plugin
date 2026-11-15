@@ -22,37 +22,51 @@ export const ROD_ODDS = [
   [6,16,32,25,16,4,1],
   [5,13,30,27,19,4.5,1.5],
 ]
+/** 第 20 阶之上的虚拟一行：只用于 20 阶鱼竿“向下一阶靠拢”，不能直接装备 */
+export const TOP_ODDS = [4,10,26,29,23,5.5,2.5]
+/** 概率表最多向下一阶靠拢 90%，保证买新一阶始终更好 */
+export const MAX_SHIFT = 0.9
 const clamp = (n,min,max) => Math.min(max,Math.max(min,Number(n)||0))
-/** 所有部位的概率增量已由 gearEffects 汇总到 rarityUR/EP/MR。 */
+const rowOf = (rows, i) => rows[i] || TOP_ODDS
+
+/**
+ * 高品级点数加到哪些品级：当前鱼竿阶位已解锁的稀有及以上品级中最高的三档，
+ * 权重 低:中:高 = 3:2:1（越稀有分得越少）；还没有稀有以上时加到高级。
+ * @returns [[品级下标, 权重占比], ...]
+ */
+export function rareTargets(tier, rows = ROD_ODDS) {
+  const row = rowOf(rows, Math.floor(clamp(tier,1,20)) - 1)
+  const unlocked = [2,3,4,5,6].filter(i => Number(row[i]) > 0)
+  const targets = (unlocked.length ? unlocked : [1]).slice(-3)
+  const sum = targets.reduce((a,_,j) => a + targets.length - j, 0)
+  return targets.map((i,j) => [i, (targets.length - j) / sum])
+}
+
+/**
+ * 渔具决定的鱼获品级分布（条件概率，合计 100%）
+ * - rarityTier：鱼竿阶位，决定基础概率表
+ * - rarityShift：概率表向下一阶靠拢的比例（0~0.9），来自鱼竿高级强化、5 件套、称号
+ * - rarePoints：高品级点数，加到 rareTargets 的品级，从更低的品级按比例扣除；
+ *   没解锁的品级加不上去（以整数阶位为准，靠拢不会提前解锁）
+ */
 export function gearRarityOdds(effects = {}, rows = ROD_ODDS) {
   const tier = Math.floor(clamp(effects.rarityTier || 1,1,20))
-  const base = [...(rows[tier-1] || ROD_ODDS[tier-1])].map(n=>Math.max(0,Number(n)||0))
-  const desired = [clamp(effects.rarityUR,0,100),clamp(effects.rarityEP,0,100),clamp(effects.rarityMR,0,100)]
-  const targets = [4,5,6]
-  const source = [0,1,2]
-  // 只有当前鱼竿已经解锁的品级才允许获得培养加成。
-  const increments = desired.map((v,i)=>base[targets[i]]>0?v:0)
-  let remaining = increments.reduce((a,b)=>a+b,0)
-  // 按 4:5:8 扣除低级鱼；某一品级不足时从其他低级品级补扣。
-  const available = source.reduce((a,i)=>a+base[i],0)
-  const scale = remaining>available ? available/remaining : 1
-  remaining *= scale
-  const shares = [4/17,5/17,8/17]
-  let deducted=0
-  for (const i of source) {
-    const take=Math.min(base[i],remaining*shares[i])
-    base[i]-=take
-    deducted+=take
+  const shift = clamp(effects.rarityShift,0,MAX_SHIFT)
+  const lo = rowOf(rows, tier-1), hi = rowOf(rows, tier)
+  const base = FISH_RARITIES.map((_,i) => {
+    const a = Math.max(0,Number(lo[i])||0), b = Math.max(0,Number(hi[i])||0)
+    return a + (b - a) * shift
+  })
+  const targets = rareTargets(tier, rows)
+  const lowest = targets[0][0]
+  const sources = FISH_RARITIES.map((_,i) => i).filter(i => i < lowest)
+  const available = sources.reduce((a,i) => a + base[i], 0)
+  // 低品级最多扣掉 90%，避免普通鱼被扣光
+  const points = Math.min(clamp(effects.rarePoints,0,100), available * 0.9)
+  if (points > 0 && available > 0) {
+    for (const i of sources) base[i] -= points * base[i] / available
+    for (const [i, share] of targets) base[i] += points * share
   }
-  let left=remaining-deducted
-  // 分摊后的余量继续扣除，保证总概率严格守恒。
-  for (const i of source) {
-    const take=Math.min(base[i],Math.max(0,left))
-    base[i]-=take
-    left-=take
-  }
-  for (let i=0;i<targets.length;i++) base[targets[i]]+=increments[i]*scale
-  // 归一化消除浮点误差；零权重品级仍为零。
-  const sum=base.reduce((a,b)=>a+b,0)
-  return Object.fromEntries(FISH_RARITIES.map((key,i)=>[key,sum>0?base[i]*100/sum:0]))
+  const sum = base.reduce((a,b) => a+b, 0)
+  return Object.fromEntries(FISH_RARITIES.map((key,i) => [key, sum>0 ? base[i]*100/sum : 0]))
 }

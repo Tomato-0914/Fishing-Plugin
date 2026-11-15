@@ -22,6 +22,7 @@ export const B = {
   cast: { text: "🎣 再来一竿", callback: "#钓鱼" },
   start: { text: "🎣 开始钓鱼", callback: "#钓鱼" },
   multi: { text: "🔟 十连钓鱼", callback: "#十连钓鱼" },
+  hundred: { text: "💯 百连钓鱼", callback: "#百连钓鱼" },
   fish: { text: "🎣 钓鱼", callback: "#钓鱼" },
   reel: e => ({ text: "🪝 收杆！", callback: "#收杆", permission: e.user_id }),
   bag: { text: "🎒 我的鱼护", callback: "#我的鱼护" },
