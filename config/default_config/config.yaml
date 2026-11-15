@@ -76,7 +76,9 @@ probability:
 # 误钓保护动物的惩罚：禁渔时长（分钟）与罚款
 #   goldRate：按当前金币的百分比罚款（%），gold 为罚款上限；goldRate 为 0 时固定罚 gold
 #   金币不足时扣到 0 为止
+#   dailyMax：每人每天最多误钓几次，达到后当天不会再钓到保护动物（0 为不限制）
 protectedPenalty:
+  dailyMax: 3
   banMinutes: 60
   goldRate: 5
   gold: 10000

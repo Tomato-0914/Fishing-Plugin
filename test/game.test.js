@@ -1121,3 +1121,31 @@ test("抛竿提示的渔具：成套显示“阶名（件数）”，其余部�
   assert.equal(gearSummary(equip(newUser("10102"), { rod: 6, line: 6, hook: 6, float: 5 }), shop), "流云（3） · 寒玉浮漂 · 新手鱼护")
   assert.equal(gearSummary(equip(newUser("10103"), { rod: 6, line: 6, hook: 5, float: 5 }), shop), "流云鱼竿 · 流云鱼线 · 寒玉鱼钩 · 寒玉浮漂 · 新手鱼护")
 })
+
+test("保护动物：每人每天最多误钓 3 次，达到后当天不再出现，跨天重置", async () => {
+  const { resolveCast } = await import("../components/Catch.js")
+  const { protectedToday, protectedDailyMax } = await import("../components/Game.js")
+  assert.equal(protectedDailyMax(cfg.protectedPenalty), 3)
+  // 只会钓到保护动物的配置
+  const only = { ...cfg, probability: { mode: "gear", empty: 0, junk: 0, hidden: {}, protected: { chinese_sturgeon: 100 } } }
+  const u = newUser("10110"); u.gold = 100000
+  const day = new Date(2026, 10, 15, 10, 0)
+  const cast = (now, rng = seeded(3)) => { u.banUntil = 0; return resolveCast(u, { items, cfg: only, shop: Config.shop, rng, now }) }
+  for (let i = 1; i <= 3; i++) {
+    const r = cast(new Date(day.getTime() + i * 60000))
+    assert.equal(r.result.item?.special, "protected", `第 ${i} 次`)
+    assert.equal(r.penalty.today, i)
+  }
+  assert.equal(protectedToday(u, day), 3)
+  // 第 4 次起当天不再出现保护动物
+  for (let i = 0; i < 20; i++) assert.notEqual(cast(new Date(day.getTime() + 600000)).result.item?.special, "protected")
+  assert.equal(u.stats.protected, 3)
+  // 第二天重置
+  const next = new Date(2026, 10, 16, 9, 0)
+  assert.equal(protectedToday(u, next), 0)
+  assert.equal(cast(next).result.item?.special, "protected")
+  // dailyMax 为 0 时不限制
+  const free = { ...only, protectedPenalty: { ...cfg.protectedPenalty, dailyMax: 0 } }
+  const v = newUser("10111")
+  for (let i = 0; i < 5; i++) { v.banUntil = 0; assert.equal(resolveCast(v, { items, cfg: free, shop: Config.shop, rng: seeded(4), now: day }).result.item?.special, "protected") }
+})

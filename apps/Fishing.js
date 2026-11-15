@@ -2,7 +2,7 @@ import { plugin } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
-import { multiLeft, useMulti, hundredLeft, useHundred, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier } from "../components/Game.js"
+import { multiLeft, useMulti, hundredLeft, useHundred, protectedDailyMax, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier } from "../components/Game.js"
 import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, holdsOnTimeout, maxLevel, gearSummary } from "../components/Gear.js"
 import { resolveCast, summarize, formatMulti, formatHundred } from "../components/Catch.js"
 import { experience, characterProgress, xpGainText } from "../components/Progression.js"
@@ -463,6 +463,7 @@ export class Fishing extends plugin {
         `💬 ${item.intro || item.desc}`,
         "🕊️ 已经小心地把它放回水里了",
         `⚖️ 处罚：罚款 ${p.fine ?? 0} 金币，禁渔 ${p.minutes ?? 0} 分钟${hm ? `（${hm} 解禁）` : ""}`,
+        ...(protectedDailyMax(this.cfg.protectedPenalty) ? [`📅 今日已误钓 ${p.today ?? 1}/${protectedDailyMax(this.cfg.protectedPenalty)} 次${(p.today ?? 1) >= protectedDailyMax(this.cfg.protectedPenalty) ? "，今天不会再钓到保护动物了" : ""}`] : []),
         `👛 当前金币：${user.gold}`,
       ].join("\n"), [{ text: `📖 了解${item.name}`, callback: `#钓鱼图鉴 ${item.name}` }, B.bag])
     }

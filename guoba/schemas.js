@@ -85,6 +85,7 @@ export default [
   num("probability.protected.chinese_sucker", "胭脂鱼", "", { step: 0.001 }),
   num("probability.protected.roughskin_sculpin", "松江鲈", "", { step: 0.001 }),
   num("probability.protected.hawksbill", "玳瑁", "", { step: 0.001 }),
+  num("protectedPenalty.dailyMax", "每日误钓上限", "每人每天最多钓到几次保护动物，达到后当天不再出现（0 为不限制）", { max: 50 }),
   num("protectedPenalty.banMinutes", "误钓禁渔时长(分钟)", "", { max: 1440 }),
   num("protectedPenalty.goldRate", "误钓罚款比例(%)", "按当前金币的百分比罚款，0 为固定罚款", { max: 100, step: 0.1 }),
   num("protectedPenalty.gold", "误钓罚款上限(金币)", "按比例罚款时的上限；比例为 0 时为固定罚款，金币不足时扣到 0 为止"),
