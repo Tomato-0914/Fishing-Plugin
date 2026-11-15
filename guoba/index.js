@@ -4,6 +4,22 @@ import schemas from "./schemas.js"
 
 const isObj = v => v && typeof v === "object" && !Array.isArray(v)
 
+/**
+ * 只保留和默认值不同的项：没改过的不写入 config/config，以后插件更新默认值时可以自动生效
+ * 数组（如运势档位）整段比较，有差异就整段保留
+ */
+export function diffFromDefaults(cur, def) {
+  if (isObj(cur) && isObj(def)) {
+    const out = {}
+    for (const [k, v] of Object.entries(cur)) {
+      const d = k in def ? diffFromDefaults(v, def[k]) : v
+      if (d !== undefined) out[k] = d
+    }
+    return Object.keys(out).length ? out : undefined
+  }
+  return JSON.stringify(cur) === JSON.stringify(def) ? undefined : cur
+}
+
 function setPath(obj, key, value) {
   const keys = key.split(".")
   let cur = obj
@@ -50,11 +66,14 @@ export function supportGuoba() {
           }
           // 已取消的旧配置项，保存时一并清掉
           if (cfg.checkin) delete cfg.checkin.baitReward
-          Config.set("config", cfg)
+          // 已取消的旧配置项
+          if (cfg.fishing) { delete cfg.fishing.castImage; delete cfg.fishing.multiImage; delete cfg.fishing.autoReel }
+          Config.set("config", diffFromDefaults(cfg, Config.defaults("config") || {}) || {})
+          // 旧版固定概率模式才需要总和为 100；渔具决定品级时鱼的概率不填
           const p = cfg.probability
           const sum = ["empty", "junk", "N", "R", "SR", "SSR", "UR", "EP", "MR"].reduce((s, k) => s + Number(p[k] || 0), 0) +
             Object.values({ ...(p.hidden || {}), ...(p.protected || {}) }).reduce((s, v) => s + Number(v || 0), 0)
-          const tip = Math.abs(sum - 100) > 0.001 ? `（概率总和为 ${Number(sum.toFixed(4))}%，将按比例换算）` : ""
+          const tip = p.mode !== "gear" && Math.abs(sum - 100) > 0.001 ? `（概率总和为 ${Number(sum.toFixed(4))}%，将按比例换算）` : ""
           return Result.ok({}, `保存成功 🎣${tip}`)
         } catch (err) {
           return Result.error({}, `保存失败：${err.message}`)

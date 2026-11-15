@@ -30,8 +30,6 @@ fishing:
   cooldown: 10
   # 鱼护（背包）容量
   bagLimit: 200
-  # 抛竿时附带的配图：插件目录下的相对路径或绝对路径，留空则不发送
-  castImage: resources/img/cast.jpg
   # 十连钓鱼：一次抛出的竿数、每天可用次数（0 点重置）、两次之间的最短间隔（秒）
   # 鱼饵或鱼护空间不够时有多少钓多少；#钓鱼 单次抛竿不限次数
   multiCount: 10
@@ -44,8 +42,6 @@ fishing:
   hundredCooldown: 60
   hundredLevel: 25
   hundredProtectedScale: 0.2
-  # 十连钓鱼的配图，留空则不发送
-  multiImage: resources/img/multi.jpg
 
 # 概率 V2：普通至神话的全局基础概率为 0，鱼竿及培养决定条件品级分布。
 # 空军、垃圾、隐藏款、保护动物单独计算；鱼获品级占剩余概率。

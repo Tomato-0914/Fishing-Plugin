@@ -209,12 +209,9 @@ git clone https://github.com/Tomato-0914/Fishing-Plugin.git ./plugins/Fishing-Pl
 
 ## 配置
 
-- 抛竿配图：`#钓鱼` 默认发送 `resources/img/cast.jpg`，`#十连钓鱼` 默认发送 `resources/img/multi.jpg`，可在锅巴或 `config.yaml` 的 `fishing.castImage` / `fishing.multiImage` 中换成自己的图片，留空则不发送。
-  图片和文字合成一条消息、图片在上。QQBot 需要在 QQBot.yaml 中开启 `markdownImage: true`；未开启时 QQ 会把文字排在图片上方，插件会改为先单独发图片、再发文字。
-
 - 锅巴：可修改开关、钓鱼节奏、各项概率、体型、警局奖励、排行人数、群黑白名单。
-- 手动：`config/default_config/` 为默认配置，复制到 `config/config/` 后修改。
-  - `config.yaml` 按字段合并，只写要改的项即可
+- 手动：`config/default_config/` 为默认配置。在 `config/config/` 下新建同名文件，**只写要改的字段**；不要复制整份默认配置，否则以后插件更新的默认值不会生效。
+  - `config.yaml` 按字段合并，只写要改的项即可（锅巴保存时也只写入改过的项，没改的随插件更新）
   - `items.yaml`（物品池）、`titles.yaml`（称号）、`help.yaml`（帮助图）整份替换
 
 ## 数据
