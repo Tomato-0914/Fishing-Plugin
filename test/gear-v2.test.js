@@ -89,11 +89,25 @@ test("装备等级徽章：需求等级与阶位颜色",async()=>{
   assert.equal(tierBadge(1).needLevel,1)
   assert.equal(tierBadge(20).needLevel,95)
 })
-test("渔具图标：五个部位共用一套内联 SVG",async()=>{
+test("渔具图标：没有图片时五个部位各有一套内联 SVG",async()=>{
+  const fs = await import("node:fs"), os = await import("node:os"), path = await import("node:path")
   const { gearIcon } = await import("../components/GearIcons.js")
-  const icons=["rod","line","hook","float","net"].map(gearIcon)
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(),"gear-empty-"))
+  const icons=["rod","line","hook","float","net"].map(s=>gearIcon(s,5,{dir}))
   assert.equal(new Set(icons).size,5)
   for(const i of icons){ assert.match(i,/^<svg class="gear-art" viewBox="0 0 96 96"/); assert.ok(!i.includes("{{")) }
+  fs.rmSync(dir,{recursive:true,force:true})
+})
+
+test("渔具图片：5 个部位 × 20 阶都有图片，文件名正确",async()=>{
+  const fs = await import("node:fs")
+  const { gearImage, gearIcon, GEAR_IMG_DIR } = await import("../components/GearIcons.js")
+  for(const s of ["rod","line","hook","float","net"]){
+    for(let t=1;t<=20;t++) assert.equal(gearImage(s,t),`${s}/${t}.png`,`${s} 第${t}阶`)
+    const extra=fs.readdirSync(`${GEAR_IMG_DIR}/${s}`).filter(f=>!/^(\d+|default)\.(png|webp|jpg)$/.test(f)&&f!==".gitkeep")
+    assert.deepEqual(extra,[],`${s} 文件夹里有命名不规范的文件`)
+  }
+  assert.match(gearIcon("net",6),/gear\/net\/6\.png/)
 })
 test("渔具图片：<阶位> 优先，其次 default，都没有用内置 SVG",async()=>{
   const fs = await import("node:fs"), os = await import("node:os"), path = await import("node:path")
