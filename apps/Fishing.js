@@ -344,7 +344,7 @@ export class Fishing extends plugin {
     const int = (v, d) => Math.max(0, Math.floor(Number(v ?? d) || 0))
     if (kind === "hundred") return {
       kind, label: "百连", count: Math.max(1, int(f.hundredCount, 100)), daily: int(f.hundredDaily, 10),
-      cooldown: int(f.hundredCooldown, 60), delay: [5, 10], level: int(f.hundredLevel, 26),
+      cooldown: int(f.hundredCooldown, 60), delay: [5, 10], level: int(f.hundredLevel, 25),
       protectedScale: Math.max(0, Number(f.hundredProtectedScale ?? 0.2)),
     }
     return {
@@ -365,7 +365,7 @@ export class Fishing extends plugin {
     return this.batch(e, "multi")
   }
 
-  /** 百连钓鱼：角色 26 级解锁，一次抛出 100 根竿；鱼饵、鱼护空间不够时有多少钓多少 */
+  /** 百连钓鱼：角色 25 级解锁，一次抛出 100 根竿；鱼饵、鱼护空间不够时有多少钓多少 */
   async hundred(e) {
     return this.batch(e, "hundred")
   }
