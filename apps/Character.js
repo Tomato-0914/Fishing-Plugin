@@ -2,6 +2,7 @@
 import { plugin } from "../components/yunzai.js"
 import UserData from "../components/UserData.js"
 import { characterProgress } from "../components/Progression.js"
+import { FISH_XP } from "../components/Game.js"
 import { groupAllowed, updateNickname, displayName } from "../components/common.js"
 
 export class FishingCharacter extends plugin {
@@ -31,9 +32,11 @@ export class FishingCharacter extends plugin {
       `⭐ ${displayName(user)} 的钓鱼等级`,
       `等级：Lv${p.level}`,
       `总经验：${p.xp}`,
-      `当前进度：${p.currentXp}/${p.requiredXp}（${p.percent}%）`,
-      `距 Lv${p.level + 1} 还需 ${p.remainingXp} 经验`,
-      "💡 每次抛竿 +1 经验，成功钓获额外 +4 经验。",
+      ...(p.max ? ["🏆 已满级"] : [
+        `当前进度：${p.currentXp}/${p.requiredXp}（${p.percent}%）`,
+        `距 Lv${p.level + 1} 还需 ${p.remainingXp} 经验`,
+      ]),
+      `💡 每次抛竿 +1 经验；钓到鱼按品级再加：普通 +${FISH_XP.N} … 神话 +${FISH_XP.MR}，隐藏款 +${FISH_XP.hidden}`,
     ].join("\n"))
   }
 
