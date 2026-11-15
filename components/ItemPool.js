@@ -51,10 +51,9 @@ export function triangular(min, max, rng = Math.random) {
  */
 export function buildOdds(prob, effects = {}, limits = {}) {
   if (prob?.mode === "gear") {
-    // 先独立判定空军、垃圾、隐藏款和保护动物；剩余权重按鱼竿品级分配。
-    // 忽略称号、鱼饵和运势的 boost* / rareBoost，避免突破装备毕业上限。
-    const special = { ...(prob.hidden || {}), ...(prob.protected || {}) }
-    const specialEntries = Object.entries(special).map(([id,v])=>[`hidden:${id}`,Math.max(0,Number(v)||0)])
+    // 先独立判定空军、垃圾、隐藏款和保护动物；剩余权重按渔具决定的品级分布分配。
+    // 品级只认 rarityTier / rarityShift / rarePoints（渔具、套装、称号），旧版 boost* / rareBoost 不生效。
+    const specialEntries = specialOdds(prob, effects)
     const specialTotal=specialEntries.reduce((sum,[,v])=>sum+v,0)
     let empty=Math.max(0,(Number(prob.empty)||0)-(Number(effects.emptyReduce)||0))
     let junk=Math.max(0,(Number(prob.junk)||0)-(Number(effects.junkReduce)||0))
@@ -126,9 +125,20 @@ export function buildOdds(prob, effects = {}, limits = {}) {
     }
   }
   // 隐藏款、保护动物：单独设置的固定概率，不受渔具和称号影响
-  for (const [id, chance] of Object.entries({ ...(prob.hidden || {}), ...(prob.protected || {}) }))
-    odds[`hidden:${id}`] = Number(chance) || 0
+  for (const [k, v] of specialOdds(prob, effects)) odds[k] = v
   return odds
+}
+
+/**
+ * 隐藏款与保护动物的概率：[["hidden:<id>", %], ...]
+ * effects.protectedScale：保护动物概率倍率（百连钓鱼降低出现概率），默认 1
+ */
+function specialOdds(prob, effects = {}) {
+  const scale = effects.protectedScale == null ? 1 : Math.max(0, Number(effects.protectedScale) || 0)
+  return [
+    ...Object.entries(prob.hidden || {}).map(([id, v]) => [`hidden:${id}`, Math.max(0, Number(v) || 0)]),
+    ...Object.entries(prob.protected || {}).map(([id, v]) => [`hidden:${id}`, Math.max(0, Number(v) || 0) * scale]),
+  ]
 }
 
 /** 实际出现概率（%，已归一化），用于展示：{ empty, junk, N, R, SR, SSR, UR, hidden } */

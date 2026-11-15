@@ -251,7 +251,7 @@ export function checkinReward(luck, baits = []) {
 
 /* ==================== 十连次数 ==================== */
 
-/** 今天的十连状态 { day, used, bonus }：跨天时重置 used，额外机会 bonus 保留 */
+/** 今天的十连状态 { day, used, bonus }：跨天时重置 used；bonus 为旧版攒下的额外机会（不再新增，用完为止） */
 export function multiState(user, now = new Date()) {
   const today = periodKey("day", now)
   user.multi ||= { day: today, used: 0, bonus: 0 }
@@ -274,10 +274,26 @@ export function useMulti(user, daily = 10, now = new Date()) {
   return null
 }
 
-/** 获得一次额外十连机会（不超过上限），返回是否获得 */
-export function grantMultiTicket(user, max = 50, now = new Date()) {
-  const m = multiState(user, now)
-  if (m.bonus >= Number(max)) return false
-  m.bonus++
+/* ==================== 百连次数 ==================== */
+
+/** 今天的百连状态 { day, used }：跨天重置 */
+export function hundredState(user, now = new Date()) {
+  const today = periodKey("day", now)
+  user.hundred ||= { day: today, used: 0 }
+  if (user.hundred.day !== today) { user.hundred.day = today; user.hundred.used = 0 }
+  user.hundred.used = Math.max(0, Number(user.hundred.used) || 0)
+  return user.hundred
+}
+
+/** 今日剩余百连次数 */
+export function hundredLeft(user, daily = 10, now = new Date()) {
+  return Math.max(0, Number(daily) - hundredState(user, now).used)
+}
+
+/** 消耗一次百连，没有次数返回 false */
+export function useHundred(user, daily = 10, now = new Date()) {
+  const h = hundredState(user, now)
+  if (h.used >= Number(daily)) return false
+  h.used++
   return true
 }

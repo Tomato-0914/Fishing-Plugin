@@ -1,4 +1,4 @@
-/** 第二版渔具：20 阶、独立购买/穿戴、强化 +15、锻造 +8。 */
+/** 第二版渔具：20 阶、独立购买/穿戴、强化 +15、锻造 +8、套装属性、换阶继承。 */
 import { mergeEffects } from "./Titles.js"
 import { characterProgress } from "./Progression.js"
 export const SLOTS = ["rod", "line", "hook", "float", "net"]
@@ -39,10 +39,31 @@ export function buyGear(user,shop,slot,tier) {
   const cost=tierPrice(shop,tier)
   if (user.gold<cost) return {ok:false,reason:"gold",cost}
   user.gold-=cost
-  user.gearV2.items[gearKey(slot,tier)]={enhance:0,forge:0,enhanceFails:0,forgeFails:0}
+  const inherited=inheritLevels(user,shop,slot,tier)
+  user.gearV2.items[gearKey(slot,tier)]={enhance:inherited.enhance,forge:inherited.forge,enhanceFails:0,forgeFails:0}
   user.stats ||= {}
   user.stats.gearSpent=(user.stats.gearSpent||0)+cost
-  return {ok:true,cost,item:gearItem(shop,slot,tier)}
+  return {ok:true,cost,item:gearItem(shop,slot,tier),inherited}
+}
+
+/** 换阶继承比例（%）：比旧装备高 1 / 2 / 3 阶分别保留 50 / 40 / 20%，再高不保留 */
+export const inheritRates = shop => (shop?.gearV2?.inherit || [50,40,20]).map(n => Math.max(0,Number(n)||0))
+
+/**
+ * 购买新一阶装备时继承的强化 / 锻造等级：从同部位已拥有的低阶装备中各取继承后最高的一件，向下取整
+ * @returns {{ enhance, forge, from: { enhance?: tier, forge?: tier } }}
+ */
+export function inheritLevels(user,shop,slot,tier) {
+  const rates=inheritRates(shop), out={enhance:0,forge:0,from:{}}
+  for (let t=1;t<tier;t++) {
+    const old=ownedGear(user,slot,t), rate=rates[tier-t-1]||0
+    if (!old||!rate) continue
+    for (const type of ["enhance","forge"]) {
+      const lv=Math.min(type==="enhance"?MAX_ENHANCE:MAX_FORGE,Math.floor((Number(old[type])||0)*rate/100))
+      if (lv>out[type]) { out[type]=lv; out.from[type]=t }
+    }
+  }
+  return out
 }
 /** 一次购买同阶五件；已拥有的部位跳过且不重复扣费。校验通过后统一扣款。 */
 export function buyGearSet(user, shop, tier) {
@@ -56,11 +77,14 @@ export function buyGearSet(user, shop, tier) {
   const cost = tierPrice(shop,tier) * missing.length
   if (user.gold < cost) return {ok:false,reason:"gold",cost,have:user.gold,missing:missing.length}
   user.gold -= cost
-  for (const slot of missing)
-    user.gearV2.items[gearKey(slot,tier)] = {enhance:0,forge:0,enhanceFails:0,forgeFails:0}
+  const inherited = {}
+  for (const slot of missing) {
+    const inh = inherited[slot] = inheritLevels(user,shop,slot,tier)
+    user.gearV2.items[gearKey(slot,tier)] = {enhance:inh.enhance,forge:inh.forge,enhanceFails:0,forgeFails:0}
+  }
   user.stats ||= {}
   user.stats.gearSpent = (user.stats.gearSpent || 0) + cost
-  return {ok:true,cost,slots:missing,skipped:SLOTS.length-missing.length}
+  return {ok:true,cost,slots:missing,skipped:SLOTS.length-missing.length,inherited}
 }
 export function equipGear(user,slot,tier) {
   ensureGear(user)
@@ -83,10 +107,16 @@ export function equipGearSet(user, tier) {
   for (const slot of SLOTS) user.gearV2.equipped[slot] = tier
   return {ok:true,slots:[...SLOTS]}
 }
+export const MAX_ENHANCE = 15, MAX_FORGE = 8
 export const enhanceCost = (shop,tier,target) => Math.ceil((Number(shop?.gearV2?.enhanceCostFactor)||50)*tier*target)
 export const forgeCost = (shop,tier,target) => Math.ceil((Number(shop?.gearV2?.forgeCostFactor)||100)*tier*target)
+/** 默认成功率：每行 [目标等级上限, 基础成功率(%), 每次失败补偿(百分点)]；前 3 级必定成功 */
+export const DEFAULT_RATES = {
+  enhance: [[3,100,0],[4,90,2],[5,85,2],[6,80,3],[7,70,3],[8,60,4],[9,50,5],[10,40,5],[11,32,6],[12,25,7],[13,18,8],[14,12,9],[15,8,10]],
+  forge: [[3,100,0],[4,70,4],[5,55,5],[6,40,6],[7,28,8],[8,18,10]],
+}
 export const successRate = (shop,type,target,fails=0) => {
-  const defaults=type==="enhance" ? [[3,95,2],[6,85,3],[9,70,5],[12,50,7],[14,30,10],[15,15,10]] : [[2,90,3],[4,75,5],[6,55,7],[7,35,10],[8,20,10]]
+  const defaults=DEFAULT_RATES[type==="enhance"?"enhance":"forge"]
   const rows=shop?.gearV2?.rates?.[type]||defaults
   const row=rows.find(r=>target<=Number(r[0]))||rows.at(-1)
   return Math.min(100,Number(row[1])+Math.min(50,Math.max(0,fails)*Number(row[2])))
@@ -96,7 +126,7 @@ export function cultivateGear(user,shop,slot,tier,type,rng=Math.random) {
   if (!["enhance","forge"].includes(type)||!SLOTS.includes(slot)||!Number.isInteger(tier)) return {ok:false,reason:"invalid"}
   const item=ownedGear(user,slot,tier)
   if (!item) return {ok:false,reason:"not_owned"}
-  const max=type==="enhance"?15:8
+  const max=type==="enhance"?MAX_ENHANCE:MAX_FORGE
   const current=Number(item[type])||0
   if (current>=max) return {ok:false,reason:"max"}
   const target=current+1, cost=type==="enhance"?enhanceCost(shop,tier,target):forgeCost(shop,tier,target)
@@ -111,26 +141,60 @@ export function cultivateGear(user,shop,slot,tier,type,rng=Math.random) {
   return {ok:true,success,chance,cost,target,failures:item[failKey]}
 }
 export function upgradeGear(user,shop,slot) { return {ok:false,reason:"obsolete"} }
+
+/**
+ * 单件渔具的效果（阶位 + 强化 + 锻造）。gearEffects 与工坊预览共用
+ * - 鱼竿：阶位决定概率表；强化 +1~+7 高品级 0.15 点/级，+8~+15 概率表向下一阶靠拢 6.25%/级；锻造高品级 0.5 点/级
+ * - 鱼线：断线 -2%/阶；强化断线 -1%/级；锻造断线 -1.5%/级、高品级 0.1 点/级（断线降低合计最多 85%）
+ * - 鱼钩：防跑鱼 2%/阶；强化防跑鱼 +1%/级；锻造高品级 0.25 点/级（防跑鱼合计最多 85%）
+ * - 浮漂：咬钩 -0.1s/阶、收杆 +0.2s/阶；强化咬钩 -0.1s/级、垃圾 -0.2%/级；锻造收杆 +0.25s/级、高品级 0.25 点/级
+ * - 鱼护：容量 +50/阶、出售 +0.25%/阶；强化容量 +5/级；锻造出售 +0.5%/级
+ */
+export function slotEffects(slot,tier,enhance=0,forge=0) {
+  const t=Math.max(0,tier-1), e=Math.max(0,Number(enhance)||0), f=Math.max(0,Number(forge)||0)
+  if (slot==="rod") return {rarityTier:tier,rarePoints:0.15*Math.min(e,7)+0.5*f,rarityShift:0.0625*Math.max(0,e-7)}
+  if (slot==="line") return {lineGuard:Math.min(85,2*t+e+1.5*f),rarePoints:0.1*f}
+  if (slot==="hook") return {holdChance:Math.min(85,2*t+e),rarePoints:0.25*f}
+  if (slot==="float") return {biteReduce:Math.min(8,0.1*t+0.1*e),junkReduce:0.2*e,reelWindow:Math.min(10,0.2*t+0.25*f),rarePoints:0.25*f}
+  if (slot==="net") return {capacity:50*t+5*e,sellBonus:Math.min(30,0.25*t+0.5*f)}
+  return {}
+}
+
+/**
+ * 套装：穿戴中同一阶的件数（4 件按 3 件算）
+ * - 3 件：空军 -(1+0.1t)%、垃圾 -(1+0.1t)%、大体型 +(2+0.2t)%
+ * - 5 件：再加概率表靠拢 15%、高品级 0.1t 点、出售 +0.5t%
+ * @returns {{ tier, count, pieces: 0|3|5, effects }}
+ */
+export function gearSet(user) {
+  ensureGear(user)
+  const count = {}
+  for (const slot of SLOTS) { const t=gearLevel(user,slot); count[t]=(count[t]||0)+1 }
+  const [tier, n] = Object.entries(count).map(([t,c])=>[Number(t),c]).sort((a,b)=>b[1]-a[1]||b[0]-a[0])[0]
+  const pieces = n>=5 ? 5 : n>=3 ? 3 : 0
+  return { tier, count:n, pieces, effects:setEffects(tier,pieces) }
+}
+
+export function setEffects(tier,pieces) {
+  if (pieces<3) return {}
+  const out={emptyReduce:1+0.1*tier,junkReduce:1+0.1*tier,largeBoost:2+0.2*tier}
+  if (pieces>=5) Object.assign(out,{rarityShift:0.15,rarePoints:0.1*tier,sellBonus:0.5*tier})
+  return out
+}
+
+/** 穿戴中渔具的全部效果（含套装） */
 export function gearEffects(user,shop) {
   ensureGear(user)
   const out=[]
   for (const slot of SLOTS) {
     const tier=gearLevel(user,slot),item=ownedGear(user,slot,tier)
-    if (!item) continue
-    const e=Number(item.enhance)||0,f=Number(item.forge)||0,t=tier-1
-    if(slot==="rod") out.push({rarityTier:tier,rarityUR:0.20*e+0.25*f,rarityEP:0.10*e+0.25*f,rarityMR:0.125*f})
-    if(slot==="line") out.push({lineGuard:Math.min(85,2*t+e+1.5*f)})
-    if(slot==="hook") out.push({holdChance:Math.min(85,2*t+0.3*e),multiTicket:Math.min(15,0.2*t+0.25*f),rarityUR:0.10*e,rarityEP:0.10*e,rarityMR:0.125*f})
-    if(slot==="float") out.push({biteReduce:Math.min(8,0.10*t+0.03*e),reelWindow:Math.min(10,0.2*t+0.075*f),rarityUR:0.10*e,rarityEP:0.05*e+0.09375*f,rarityMR:0.0625*f})
-    if(slot==="net") out.push({sellBonus:Math.min(30,0.25*t+0.5*f)})
+    if (item) out.push(slotEffects(slot,tier,item.enhance,item.forge))
   }
+  out.push(gearSet(user).effects)
   return mergeEffects(...out)
 }
 export function bagCapacity(user,shop,baseLimit=200) {
-  ensureGear(user)
-  const tier=gearLevel(user,"net")
-  const enhance=Number(ownedGear(user,"net",tier)?.enhance)||0
-  return Math.max(1,(Number(baseLimit)||200)+50*(tier-1)+5*enhance)
+  return Math.max(1,(Number(baseLimit)||200)+(Number(gearEffects(user,shop).capacity)||0))
 }
 
 /* ---------------- 鱼饵 ---------------- */
@@ -240,10 +304,6 @@ export function buyBait(user, shop, id, count, baitCfg = 2) {
 }
 
 /* ---------------- 断线 ---------------- */
-
-/** 单次钓鱼额外获得十连机会的概率（%）：基础概率 + 鱼钩等的 multiTicket */
-export const multiTicketChance = (base, effects = {}) =>
-  Math.min(100, Math.max(0, (Number(base) || 0) + (Number(effects.multiTicket) || 0)))
 
 /** 鱼钩防跑鱼：咬钩后没及时收杆时，按 holdChance% 的概率鱼仍被钩住 */
 export function holdsOnTimeout(effects = {}, rng = Math.random) {

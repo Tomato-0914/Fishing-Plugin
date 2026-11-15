@@ -2,9 +2,9 @@ import { plugin } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
-import { multiLeft, useMulti, grantMultiTicket, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier } from "../components/Game.js"
-import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, holdsOnTimeout, maxLevel, multiTicketChance } from "../components/Gear.js"
-import { resolveCast, summarize, formatMulti } from "../components/Catch.js"
+import { multiLeft, useMulti, hundredLeft, useHundred, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier } from "../components/Game.js"
+import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, holdsOnTimeout, maxLevel } from "../components/Gear.js"
+import { resolveCast, summarize, formatMulti, formatHundred } from "../components/Catch.js"
 import { experience, levelThreshold, characterProgress } from "../components/Progression.js"
 import { checkTitles, getEffects, effectText, titleUpText } from "../components/Titles.js"
 import { withButtons, B } from "../components/Button.js"
@@ -51,13 +51,14 @@ export class Fishing extends plugin {
   constructor() {
     super({
       name: "钓鱼",
-      dsc: "钓鱼小游戏：抛竿 / 收杆",
+      dsc: "钓鱼小游戏：抛竿 / 收杆 / 十连 / 百连",
       event: "message",
       priority: 500,
       rule: [
         { reg: /^#?钓鱼$/, fnc: "cast" },
         { reg: /^#?收杆$/, fnc: "reel" },
         { reg: /^#?十连钓鱼$/, fnc: "multi" },
+        { reg: /^#?百连钓鱼$/, fnc: "hundred" },
       ],
     })
   }
@@ -114,7 +115,7 @@ export class Fishing extends plugin {
 
     const session = sessions.get(id)
     if (session) {
-      if (session.stage === "multi") { await this.send(e, "🎣 十连的鱼竿还在水里，正在收网，稍等一下~"); return null }
+      if (session.stage === "multi") { await this.send(e, `🎣 ${session.label || "十连"}的鱼竿还在水里，正在收网，稍等一下~`); return null }
       if (session.stage === "bite") { await this.send(e, withButtons(e, "🐟 浮漂正在剧烈抖动！快发送 #收杆！", [B.reel(e)])); return null }
       await this.send(e, pick(WAITING_TEXT))
       return null
@@ -275,7 +276,7 @@ export class Fishing extends plugin {
     const id = String(e.user_id)
     const s = sessions.get(id)
     if (!s) return this.send(e, withButtons(e, "🤔 你还没有抛竿哦~ 发送 #钓鱼 开始吧！", [B.start, B.multi]))
-    if (s.stage === "multi") return this.send(e, "🎣 十连会自动收网，稍等一下就好~")
+    if (s.stage === "multi") return this.send(e, `🎣 ${s.label || "十连"}会自动收网，稍等一下就好~`)
 
     clearTimeout(s.timer)
     sessions.delete(id)
@@ -308,13 +309,8 @@ export class Fishing extends plugin {
     const round = resolveCast(user, { items: Config.items, cfg, shop, effects })
     const { result, snapped, chance: snap, reward } = round
     const xpLine = xpSettlement(user, s.xpBefore ?? experience(user) - 1)
-    // 单次钓鱼有概率额外获得 1 次十连机会（鱼钩提高概率）；误钓保护动物时没有
-    let suffix = ""
-    const ticketChance = multiTicketChance(cfg.fishing?.multiTicketChance ?? 2, effects)
-    if (!round.penalty && ticketChance > 0 && Math.random() * 100 < ticketChance && grantMultiTicket(user, cfg.fishing?.multiBonusMax ?? 50))
-      suffix = `🎟️ 运气不错！获得 1 次额外十连机会（现有 ${user.multi.bonus} 次）`
     const withPrefix = msg => {
-      const wrap = t => [prefix, t, xpLine, suffix].filter(Boolean).join("\n")
+      const wrap = t => [prefix, t, xpLine].filter(Boolean).join("\n")
       if (Array.isArray(msg)) return [wrap(msg[0]), ...msg.slice(1)]
       return wrap(msg)
     }
@@ -342,29 +338,59 @@ export class Fishing extends plugin {
     return this.announceTitles(e, user)
   }
 
-  /** 十连钓鱼：一次抛出多根竿，稍等片刻后自动收网统一结算 */
+  /** 十连 / 百连的参数（都可在 config.yaml 的 fishing 中修改） */
+  batchCfg(kind) {
+    const f = this.cfg.fishing || {}
+    const int = (v, d) => Math.max(0, Math.floor(Number(v ?? d) || 0))
+    if (kind === "hundred") return {
+      kind, label: "百连", count: Math.max(1, int(f.hundredCount, 100)), daily: int(f.hundredDaily, 10),
+      cooldown: int(f.hundredCooldown, 60), delay: [5, 10], level: int(f.hundredLevel, 26),
+      protectedScale: Math.max(0, Number(f.hundredProtectedScale ?? 0.2)),
+    }
+    return {
+      kind: "multi", label: "十连", count: Math.max(1, int(f.multiCount, 10)), daily: int(f.multiDaily, 100),
+      cooldown: int(f.multiCooldown, 30), delay: [3, 8], level: 0, protectedScale: 1,
+    }
+  }
+
+  /** 今日剩余次数文字 */
+  batchLeftText(user, c) {
+    if (c.kind === "hundred") return `${hundredLeft(user, c.daily)} 次`
+    const left = multiLeft(user, c.daily)
+    return `${left.free} 次${left.bonus ? `（另有旧版额外机会 ${left.bonus} 次）` : ""}`
+  }
+
+  /** 十连钓鱼：一次抛出 10 根竿，稍等片刻后自动收网统一结算 */
   async multi(e) {
+    return this.batch(e, "multi")
+  }
+
+  /** 百连钓鱼：角色 26 级解锁，一次抛出 100 根竿；鱼饵、鱼护空间不够时有多少钓多少 */
+  async hundred(e) {
+    return this.batch(e, "hundred")
+  }
+
+  async batch(e, kind) {
     if (!groupAllowed(e)) return false
+    const c = this.batchCfg(kind)
+    if (c.level > 1) {
+      const lv = characterProgress(UserData.get(String(e.user_id))).level
+      if (lv < c.level)
+        return this.send(e, withButtons(e, `🔒 ${c.label}钓鱼需要角色 Lv${c.level}（当前 Lv${lv}），先用 #十连钓鱼 或 #钓鱼 升级吧~`, [B.multi, B.cast]))
+    }
     const ctx = await this.precheck(e)
     if (!ctx) return true
-    const { id, user, name, fcfg, shop, limit } = ctx
+    const { id, user, name, shop, limit } = ctx
 
-    // 每天的十连次数：先用今日次数，再用单钓攒下的额外机会
-    const daily = Number(fcfg.multiDaily ?? 10)
-    const left = multiLeft(user, daily)
-    if (left.free + left.bonus < 1) {
-      const chance = multiTicketChance(fcfg.multiTicketChance ?? 2, gearEffects(user, shop))
+    // 每天的次数：十连先用今日次数，再用旧版攒下的额外机会；百连只有今日次数
+    const used = kind === "hundred" ? useHundred(user, c.daily) : useMulti(user, c.daily)
+    if (!used)
       return this.send(e, withButtons(e, [
-        `🎟️ 今天的 ${daily} 次十连已经用完啦~`,
-        `🎣 单次钓鱼有 ${Number(chance.toFixed(2))}% 的概率额外获得 1 次十连机会`,
-        "💡 更高阶的鱼钩或锻造鱼钩可以提高这个概率，明天 0 点十连次数会重置",
+        `🎟️ 今天的 ${c.daily} 次${c.label}已经用完啦~ 明天 0 点重置`,
+        "🎣 #钓鱼 单次抛竿不限次数，有鱼饵就能钓",
       ].join("\n"), [B.cast]))
-    }
-    useMulti(user, daily)
-    const after = multiLeft(user, daily)
 
-    const want = Math.max(1, Math.floor(Number(fcfg.multiCount) || 10))
-    const n = Math.min(want, usableBait(user, shop), limit - user.bag.length)
+    const n = Math.min(c.count, usableBait(user, shop), limit - user.bag.length)
     const baits = []
     let lockNote = ""
     for (let i = 0; i < n; i++) {
@@ -377,15 +403,15 @@ export class Fishing extends plugin {
     addGroup(user, e.group_id)
     UserData.save(id)
 
-    const s = { stage: "multi", castAt: Date.now(), xpBefore: experience(user) - baits.length }
-    const delay = triangular(3, 8) * 1000
-    s.timer = setTimeout(() => this.multiSettle(e, id, baits).catch(err => logger.error(err)), delay)
+    const s = { stage: "multi", kind, label: c.label, castAt: Date.now(), xpBefore: experience(user) - baits.length }
+    const delay = triangular(...c.delay) * 1000
+    s.timer = setTimeout(() => this.batchSettle(e, id, baits, c).catch(err => logger.error(err)), delay)
     sessions.set(id, s)
 
     // 用到的鱼饵：金丝秘饵 ×8、普通饵 ×2
     const usedCount = new Map()
     for (const b of baits) usedCount.set(b.name, (usedCount.get(b.name) || 0) + 1)
-    const short = baits.length < want
+    const short = baits.length < c.count
       ? `⚠️ ${usableBait(user, shop) === 0 ? "鱼饵" : "鱼护空间"}只够钓 ${baits.length} 竿`
       : ""
     await this.sendCast(e, [
@@ -395,35 +421,38 @@ export class Fishing extends plugin {
       this.gearLine(user, shop),
       `🪱 ${[...usedCount].map(([k, v]) => `${k} ×${v}`).join("、")}（剩余可用鱼饵 ${usableBait(user, shop)}）`,
       this.luckLine(user),
-      `🎟️ 今日十连剩余 ${after.free} 次${after.bonus ? `（另有额外机会 ${after.bonus} 次）` : ""}`,
+      `🎟️ 今日${c.label}剩余 ${this.batchLeftText(user, c)}`,
       "⏳ 稍等片刻，收网后统一结算",
     ].filter(Boolean).join("\n"))
     await this.announceTitles(e, user)
     return true
   }
 
-  async multiSettle(e, id, baits) {
+  async batchSettle(e, id, baits, c = this.batchCfg("multi")) {
     const s = sessions.get(id)
     if (!s || s.stage !== "multi") return
     sessions.delete(id)
     const user = UserData.get(id)
     const cfg = this.cfg
     const shop = Config.shop
-    const rounds = baits.map(bait => resolveCast(user, { items: Config.items, cfg, shop, effects: this.effectsFor(user, bait) }))
-    // 两次十连之间的最短间隔（防刷屏）
-    const cd = this.startCooldown(id, user, Number(cfg.fishing?.multiCooldown ?? 30))
+    // 百连降低保护动物出现概率；误钓后禁渔，后面的竿作废（鱼饵不退）
+    const extra = c.protectedScale !== 1 ? { protectedScale: c.protectedScale } : {}
+    const rounds = baits.map(bait => resolveCast(user, { items: Config.items, cfg, shop, effects: { ...this.effectsFor(user, bait), ...extra } }))
+    // 两次之间的最短间隔（防刷屏）
+    const cd = this.startCooldown(id, user, c.cooldown)
     UserData.save(id)
 
     const sum = summarize(rounds)
     const xpLine = xpSettlement(user, s.xpBefore ?? experience(user) - baits.length)
+    const markdown = e.bot?.adapter?.id === "QQBot"
     const sizeLabels = Object.fromEntries(Object.entries(cfg.size || {}).map(([k, v]) => [k, v.label]))
-    // QQBot 使用轻量 Markdown 加粗标题，其他协议保持纯文本；均不使用引用块
-    const left = multiLeft(user, Number(cfg.fishing?.multiDaily ?? 10))
-    const msg = formatMulti(rounds, { sizeLabels, markdown: e.bot?.adapter?.id === "QQBot", xpLine }) +
-      `\n🎟️ 剩余十连：${left.free} 次${left.bonus ? `（额外 ${left.bonus} 次）` : ""}` +
-      (cd ? `\n⏳ 冷却：${cd} 秒` : "")
+    const body = c.kind === "hundred"
+      ? formatHundred(rounds, { markdown, xpLine })
+      : formatMulti(rounds, { sizeLabels, markdown, xpLine })
+    const msg = body + `\n🎟️ 剩余${c.label}：${this.batchLeftText(user, c)}` + (cd ? `\n⏳ 冷却：${cd} 秒` : "")
+    const hundredOpen = characterProgress(user).level >= this.batchCfg("hundred").level
     await this.send(e, withButtons(e, msg,
-      [{ ...B.multi, text: "🔟 十连" }, { ...B.fish, text: "🎣 钓鱼" }],
+      [{ ...B.multi, text: "🔟 十连" }, ...(hundredOpen ? [{ ...B.hundred, text: "💯 百连" }] : []), { ...B.fish, text: "🎣 钓鱼" }],
       [{ ...B.bag, text: "🎒 鱼护" }, { ...B.sellAll, text: "💰 出售" }, ...(sum.junk ? [{ ...B.discard, text: "♻️ 清理" }] : [])]))
     await this.announceTitles(e, user)
   }
