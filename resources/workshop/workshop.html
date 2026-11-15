@@ -48,9 +48,9 @@
     {{each tiers t}}
     <section class="tier {{t.unlocked ? '' : 'locked'}}">
       <div class="tier-head">
-        <span class="tier-number">第 {{t.tier}} 阶</span>
-        <span class="tier-name">{{t.name}}系列</span>
-        <span class="tier-meta">需角色 Lv{{t.needLevel}} {{t.unlocked ? '✓ 已解锁' : '🔒 未解锁'}}</span>
+        <span class="tier-number" style="background:{{t.color}};color:{{t.textColor}}">Lv.{{t.needLevel}}</span>
+        <span class="tier-name">{{t.name}}系列 · {{t.tierCn}}阶</span>
+        <span class="tier-meta">{{t.unlocked ? '✓ 已解锁' : '🔒 未解锁'}}</span>
         <span class="tier-price">💰 {{t.price}} / 件</span>
       </div>
       <div class="gear-grid">

@@ -83,3 +83,9 @@ test("我的渔具标题：当前穿戴 · 五阶 · 寒玉套装",async()=>{
   assert.equal(wearTitle({tier:6,count:3,pieces:3},"流云"),"当前穿戴 · 六阶 · 流云套装（3 件）")
   assert.equal(wearTitle({tier:6,count:2,pieces:0},"流云"),"当前穿戴 · 未成套")
 })
+test("装备等级徽章：需求等级与阶位颜色",async()=>{
+  const { tierBadge, tierColor } = await import("../components/Gear.js")
+  assert.deepEqual(tierBadge(5),{needLevel:20,color:tierColor(5),textColor:"#1d2a35"})
+  assert.equal(tierBadge(1).needLevel,1)
+  assert.equal(tierBadge(20).needLevel,95)
+})
