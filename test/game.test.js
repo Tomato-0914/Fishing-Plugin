@@ -1303,17 +1303,25 @@ test("称号一览：未获得在最上面，已获得按等级排，满级在�
   assert.deepEqual(sortTitleCards(cards).map(x => x.name), ["深海之子", "热心市民", "空军司令", "监狱常客", "钓鱼佬", "熟练钓手", "最好的伙伴"])
 })
 
-test("配置里用到的 emoji 都有本地图标（图片里不会显示成方框）", async () => {
+test("用到的 emoji 都有本地图标（图片里不会显示成方框）", async () => {
   const fs = await import("node:fs")
-  const YAML = (await import("yaml")).default
-  const have = new Set(fs.readdirSync(new URL("../resources/emoji/", import.meta.url)))
+  const path = await import("node:path")
+  const root = new URL("..", import.meta.url).pathname
+  const have = new Set(fs.readdirSync(path.join(root, "resources/emoji")))
+  const re = /\p{Extended_Pictographic}\uFE0F?(?:\u200D\p{Extended_Pictographic}\uFE0F?)*/gu
   const code = s => [...s].map(ch => ch.codePointAt(0)).filter(n => n !== 0xfe0f).map(n => n.toString(16)).join("-")
-  for (const f of ["titles", "items", "shop"]) {
-    const missing = new Set()
-    JSON.stringify(YAML.parse(fs.readFileSync(new URL(`../config/default_config/${f}.yaml`, import.meta.url), "utf8")),
-      (k, v) => { if (k === "emoji" && typeof v === "string" && !have.has(`${code(v)}.svg`)) missing.add(v); return v })
-    assert.deepEqual([...missing], [], `${f}.yaml`)
+  const missing = {}
+  const walk = dir => {
+    for (const f of fs.readdirSync(dir)) {
+      const p = path.join(dir, f)
+      if (fs.statSync(p).isDirectory()) { if (!["emoji", "gear"].includes(f)) walk(p); continue }
+      if (!/\.(html|js|yaml)$/.test(f) || f === "twemoji.min.js") continue
+      for (const m of fs.readFileSync(p, "utf8").matchAll(re))
+        if (!have.has(`${code(m[0])}.svg`)) (missing[m[0]] ||= path.relative(root, p))
+    }
   }
+  for (const d of ["resources", "apps", "components", "config/default_config"]) walk(path.join(root, d))
+  assert.deepEqual(missing, {})
 })
 
 test("称号「史诗猎人」「神话猎人」：按钓到史诗 / 神话鱼的条数分三级", async () => {
