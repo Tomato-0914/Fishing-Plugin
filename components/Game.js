@@ -317,3 +317,28 @@ export function useHundred(user, daily = 10, now = new Date()) {
   h.used++
   return true
 }
+
+/* ==================== 冷却 ==================== */
+
+/** 各玩法独立冷却，存在存档里（重启不丢）：cast 单钓 / multi 十连 / hundred 百连，以后的新玩法加一个 kind 即可 */
+export const COOLDOWN_LABELS = { cast: "钓鱼", multi: "十连", hundred: "百连" }
+
+/** 剩余冷却（秒，向上取整），没有冷却为 0 */
+export function cooldownLeft(user, kind, now = Date.now()) {
+  return Math.max(0, Math.ceil(((Number(user?.cd?.[kind]) || 0) - now) / 1000))
+}
+
+/** 设置冷却（秒）；0 表示清除 */
+export function setCooldown(user, kind, seconds, now = Date.now()) {
+  user.cd ||= {}
+  if (seconds > 0) user.cd[kind] = now + seconds * 1000
+  else delete user.cd[kind]
+}
+
+/** 冷却时间文字：45 秒 / 12 分 30 秒 / 1 小时 5 分 */
+export function cooldownText(sec) {
+  sec = Math.max(0, Math.ceil(sec))
+  if (sec < 60) return `${sec} 秒`
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60
+  return h ? `${h} 小时${m ? ` ${m} 分` : ""}` : `${m} 分${s ? ` ${s} 秒` : ""}`
+}

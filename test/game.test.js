@@ -1221,3 +1221,20 @@ test("钓鱼按钮：按今日剩余次数显示，优先级 百连 > 十连 > �
   assert.deepEqual(texts(low), ["🔟 十连", "🎣 钓鱼"])
   assert.deepEqual(fishRow(low).map(b => b.callback), ["#十连钓鱼", "#钓鱼"])
 })
+
+test("冷却：各玩法独立计算并存进存档；剩余冷却 ≥ 1 分钟的玩法不显示按钮", async () => {
+  const { cooldownLeft, setCooldown, cooldownText } = await import("../components/Game.js")
+  const { fishRow } = await import("../components/Button.js")
+  const u = newUser("10140"); u.stats.casts = 25 * 29 * 30 // Lv30
+  const now = Date.now()
+  setCooldown(u, "multi", 30, now)
+  setCooldown(u, "hundred", 3600, now)
+  assert.deepEqual([cooldownLeft(u, "cast", now), cooldownLeft(u, "multi", now), cooldownLeft(u, "hundred", now)], [0, 30, 3600])
+  assert.ok(u.cd.multi > now) // 存在存档里，重启不丢
+  // 百连冷却 1 小时：不显示百连；十连只剩 30 秒：保留按钮
+  assert.deepEqual(fishRow(u, { short: true }).map(b => b.text), ["🔟 十连", "🎣 钓鱼"])
+  setCooldown(u, "hundred", 0, now)
+  assert.equal(u.cd.hundred, undefined)
+  assert.deepEqual(fishRow(u, { short: true }).map(b => b.text), ["💯 百连", "🔟 十连", "🎣 钓鱼"])
+  assert.deepEqual([cooldownText(45), cooldownText(750), cooldownText(3600), cooldownText(3900)], ["45 秒", "12 分 30 秒", "1 小时", "1 小时 5 分"])
+})

@@ -1,5 +1,5 @@
 import Config from "./Config.js"
-import { multiLeft, hundredLeft } from "./Game.js"
+import { multiLeft, hundredLeft, cooldownLeft } from "./Game.js"
 import { characterProgress } from "./Progression.js"
 
 /** 当前消息是否来自 QQBot 协议且支持按钮 */
@@ -24,16 +24,21 @@ export function withButtons(e, msg, ...rows) {
  * - 百连：达到解锁等级且今天还有次数才显示
  * - 十连：今天还有次数（含旧版攒下的额外机会）才显示
  * - 钓鱼：单钓不限次数，总是显示
+ * 某个玩法剩余冷却 ≥ 1 分钟时不显示（短冷却保留按钮，消息留在群里，冷却过后还能直接点）
  * @param short 短文字（十连 / 百连收网结果用）
  */
+/** 剩余冷却达到这么多秒就不显示该玩法的按钮 */
+export const HIDE_COOLDOWN = 60
+
 export function fishRow(user, { short = false } = {}) {
   const f = Config.config.fishing || {}
   const row = []
   if (user) {
-    if (characterProgress(user).level >= Number(f.hundredLevel ?? 25) && hundredLeft(user, Number(f.hundredDaily ?? 10)) > 0)
+    const cooling = kind => cooldownLeft(user, kind) >= HIDE_COOLDOWN
+    if (characterProgress(user).level >= Number(f.hundredLevel ?? 25) && hundredLeft(user, Number(f.hundredDaily ?? 10)) > 0 && !cooling("hundred"))
       row.push(short ? { ...B.hundred, text: "💯 百连" } : B.hundred)
     const m = multiLeft(user, Number(f.multiDaily ?? 100))
-    if (m.free + m.bonus > 0) row.push(short ? { ...B.multi, text: "🔟 十连" } : B.multi)
+    if (m.free + m.bonus > 0 && !cooling("multi")) row.push(short ? { ...B.multi, text: "🔟 十连" } : B.multi)
   }
   row.push(short ? { ...B.fish, text: "🎣 钓鱼" } : B.cast)
   return row
