@@ -28,20 +28,28 @@ fishing:
   reelWindow: 15
   # 一次钓鱼结束后“挂鱼饵”的时间（秒）
   cooldown: 10
-  # 鱼护（背包）容量
-  bagLimit: 200
+  # 1 阶鱼护的容量（鱼护每高一阶 +500、强化每级 +50）
+  bagLimit: 2000
   # 十连钓鱼：一次抛出的竿数、每天可用次数（0 点重置）、两次之间的最短间隔（秒）
   # 鱼饵或鱼护空间不够时有多少钓多少；#钓鱼 单次抛竿不限次数
   multiCount: 10
   multiDaily: 100
   multiCooldown: 30
   # 百连钓鱼：需要角色等级 hundredLevel（25 级 = 解锁第 6 阶渔具）
-  #   hundredProtectedScale：百连中保护鱼类出现概率的倍率（0.2 = 降到 1/5）；误钓后照常罚款、禁渔，剩下的竿作废，鱼饵不退
   hundredCount: 100
   hundredDaily: 10
   hundredCooldown: 60
   hundredLevel: 25
-  hundredProtectedScale: 0.2
+  # 千连钓鱼：60 级解锁，每天 3 次，两次之间间隔 1 小时
+  thousandCount: 1000
+  thousandDaily: 3
+  thousandCooldown: 3600
+  thousandLevel: 60
+  # 连钓时每一竿钓到保护鱼类的总概率（%），按物种比例分配；单钓按 probability.protected
+  #   一次十连 / 百连 / 千连碰到保护鱼类的概率都约为 10%；误钓后照常罚款、禁渔，剩下的竿作废，鱼饵不退
+  multiProtected: 1
+  hundredProtected: 0.1
+  thousandProtected: 0.01
 
 # 概率 V2：普通至神话的全局基础概率为 0，鱼竿及培养决定条件品级分布。
 # 空军、垃圾、隐藏款、保护鱼类单独计算；鱼获品级占剩余概率。

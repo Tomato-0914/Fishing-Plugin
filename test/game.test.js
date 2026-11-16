@@ -437,15 +437,15 @@ test("渔具：20 阶效果、容量、出售加成，旧版逐级升级已停�
   assert.equal(e1.rarityTier, 1)
   for (const k of ["lineGuard", "holdChance", "capacity"]) assert.ok(near(e1[k], 0), `${k}=${e1[k]}`)
   for (const [k, v] of Object.entries(setEffects(1, 5))) assert.ok(near(e1[k], v + (k === "rarityShift" || k === "rarePoints" || k === "sellBonus" ? 0 : 0)), `${k}=${e1[k]}`)
-  assert.equal(bagCapacity(u, shop, cfg.fishing.bagLimit), 200)
+  assert.equal(bagCapacity(u, shop, cfg.fishing.bagLimit), 2000)
   assert.equal(upgradeGear(u, shop, "rod").reason, "obsolete")
   // 20 阶整套：各部位阶位效果 + 20 阶 5 件套
   const v = equip(newUser("10011"), 20)
   const e20 = gearEffects(v, shop)
   const set20 = setEffects(20, 5)
-  for (const [k, val] of Object.entries({ rarityTier: 20, lineGuard: 38, holdChance: 38, biteReduce: 1.9, reelWindow: 3.8, sellBonus: 4.75 + set20.sellBonus, capacity: 950, rarityShift: 0.15, rarePoints: 2, emptyReduce: 3, junkReduce: 3, largeBoost: 6 }))
+  for (const [k, val] of Object.entries({ rarityTier: 20, lineGuard: 38, holdChance: 38, biteReduce: 1.9, reelWindow: 3.8, sellBonus: 4.75 + set20.sellBonus, capacity: 9500, rarityShift: 0.15, rarePoints: 2, emptyReduce: 3, junkReduce: 3, largeBoost: 6 }))
     assert.ok(near(e20[k], val), `${k}=${e20[k]}`)
-  assert.equal(bagCapacity(v, shop, 200), 200 + 50 * 19)
+  assert.equal(bagCapacity(v, shop, 2000), 2000 + 500 * 19)
   // 强化 +15、锻造 +8 满级
   const w = equip(newUser("10012"), 20, { enhance: 15, forge: 8 })
   const ew = gearEffects(w, shop)
@@ -456,7 +456,7 @@ test("渔具：20 阶效果、容量、出售加成，旧版逐级升级已停�
   // 高品级点数：鱼竿 0.15×7 + 0.5×8、鱼线 0.1×8、鱼钩 0.25×8、浮漂 0.25×8、5 件套 2
   assert.ok(near(ew.rarePoints, 1.05 + 4 + 0.8 + 2 + 2 + 2), `rarePoints=${ew.rarePoints}`)
   assert.ok(near(ew.junkReduce, 3 + 0.2 * 15))
-  assert.equal(bagCapacity(w, shop, 200), 200 + 50 * 19 + 5 * 15)
+  assert.equal(bagCapacity(w, shop, 2000), 2000 + 500 * 19 + 50 * 15)
   // 鱼竿强化：+1~+7 加高品级点数，+8 起改为概率表靠拢
   assert.deepEqual(slotEffects("rod", 5, 7, 0), { rarityTier: 5, rarePoints: 1.05, rarityShift: 0 })
   assert.ok(near(slotEffects("rod", 5, 8, 0).rarityShift, 0.0625))
@@ -1237,4 +1237,35 @@ test("冷却：各玩法独立计算并存进存档；剩余冷却 ≥ 1 分钟�
   assert.equal(u.cd.hundred, undefined)
   assert.deepEqual(fishRow(u, { short: true }).map(b => b.text), ["💯 百连", "🔟 十连", "🎣 钓鱼"])
   assert.deepEqual([cooldownText(45), cooldownText(750), cooldownText(3600), cooldownText(3900)], ["45 秒", "12 分 30 秒", "1 小时", "1 小时 5 分"])
+})
+
+test("千连钓鱼：60 级、每天 3 次、间隔 1 小时；各连钓保护鱼类每竿概率分开设定", async () => {
+  const { batchCfg, batchRemaining, useBatch, protectedScaleFor, BATCH_ORDER } = await import("../components/Batch.js")
+  const { fishRow } = await import("../components/Button.js")
+  const { setCooldown } = await import("../components/Game.js")
+  const t = batchCfg("thousand")
+  assert.deepEqual([t.count, t.daily, t.cooldown, t.level], [1000, 3, 3600, 60])
+  assert.deepEqual(BATCH_ORDER, ["thousand", "hundred", "multi"])
+  // 每竿保护鱼类总概率：十连 1%、百连 0.1%、千连 0.01%（单钓 0.35% 不变）
+  for (const [kind, rate] of [["multi", 1], ["hundred", 0.1], ["thousand", 0.01]]) {
+    const c = batchCfg(kind)
+    const odds = buildOdds(cfg.probability, { rarityTier: 10, protectedScale: protectedScaleFor(c, cfg.probability) })
+    const prot = Object.keys(cfg.probability.protected).reduce((a, id) => a + odds[`hidden:${id}`], 0)
+    assert.ok(Math.abs(prot - rate) < 1e-9, `${kind} ${prot}`)
+    // 一次连钓碰到保护鱼类约 10%
+    assert.ok(Math.abs(1 - (1 - rate / 100) ** c.count - 0.095) < 0.01, kind)
+  }
+  // 次数与按钮
+  const u = newUser("10150"); u.stats.casts = 25 * 59 * 60 // Lv60
+  assert.deepEqual(fishRow(u, { short: true }).map(b => b.text), ["🌊 千连", "💯 百连", "🔟 十连", "🎣 钓鱼"])
+  assert.equal(useBatch(u, t), true)
+  setCooldown(u, "thousand", t.cooldown)
+  assert.deepEqual(fishRow(u, { short: true }).map(b => b.text), ["💯 百连", "🔟 十连", "🎣 钓鱼"]) // 千连冷却 1 小时：不显示
+  useBatch(u, t); useBatch(u, t)
+  assert.equal(batchRemaining(u, t), 0)
+  assert.equal(useBatch(u, t), false)
+  const low = newUser("10151"); low.stats.casts = 25 * 58 * 59 // Lv59：千连未解锁
+  assert.ok(!fishRow(low, { short: true }).some(b => b.text.includes("千连")))
+  // 鱼护容量扩大 10 倍
+  assert.equal(cfg.fishing.bagLimit, 2000)
 })

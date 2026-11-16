@@ -2,12 +2,13 @@ import { plugin } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
-import { multiLeft, useMulti, hundredLeft, useHundred, protectedDailyMax, protectedToday, cooldownLeft, setCooldown, cooldownText, COOLDOWN_LABELS, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier } from "../components/Game.js"
+import { protectedDailyMax, protectedToday, cooldownLeft, setCooldown, cooldownText, COOLDOWN_LABELS, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier } from "../components/Game.js"
 import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, holdsOnTimeout, maxLevel, gearSummary } from "../components/Gear.js"
 import { resolveCast, summarize, formatMulti, formatHundred } from "../components/Catch.js"
 import { experience, characterProgress, xpGainText } from "../components/Progression.js"
 import { checkTitles, getEffects, effectText, titleUpText } from "../components/Titles.js"
 import { withButtons, B, fishRow } from "../components/Button.js"
+import { batchCfg, batchLeftText, useBatch, protectedScaleFor } from "../components/Batch.js"
 import { groupAllowed, displayName, updateNickname, pick, itemMap, playerEffects } from "../components/common.js"
 
 /** 进行中的钓鱼：user_id → { stage: "waiting" | "bite" | "multi", timer, castAt, biteAt } */
@@ -41,6 +42,7 @@ export class Fishing extends plugin {
         { reg: /^#?收杆$/, fnc: "reel" },
         { reg: /^#?十连钓鱼$/, fnc: "multi" },
         { reg: /^#?百连钓鱼$/, fnc: "hundred" },
+        { reg: /^#?千连钓鱼$/, fnc: "thousand" },
       ],
     })
   }
@@ -333,26 +335,9 @@ export class Fishing extends plugin {
     return this.announceTitles(e, user)
   }
 
-  /** 十连 / 百连的参数（都可在 config.yaml 的 fishing 中修改） */
+  /** 连钓参数（components/Batch.js，可在 config.yaml 的 fishing 中修改） */
   batchCfg(kind) {
-    const f = this.cfg.fishing || {}
-    const int = (v, d) => Math.max(0, Math.floor(Number(v ?? d) || 0))
-    if (kind === "hundred") return {
-      kind, label: "百连", count: Math.max(1, int(f.hundredCount, 100)), daily: int(f.hundredDaily, 10),
-      cooldown: int(f.hundredCooldown, 60), delay: [5, 10], level: int(f.hundredLevel, 25),
-      protectedScale: Math.max(0, Number(f.hundredProtectedScale ?? 0.2)),
-    }
-    return {
-      kind: "multi", label: "十连", count: Math.max(1, int(f.multiCount, 10)), daily: int(f.multiDaily, 100),
-      cooldown: int(f.multiCooldown, 30), delay: [3, 8], level: 0, protectedScale: 1,
-    }
-  }
-
-  /** 今日剩余次数文字 */
-  batchLeftText(user, c) {
-    if (c.kind === "hundred") return `${hundredLeft(user, c.daily)} 次`
-    const left = multiLeft(user, c.daily)
-    return `${left.free} 次${left.bonus ? `（另有旧版额外机会 ${left.bonus} 次）` : ""}`
+    return batchCfg(kind, this.cfg.fishing || {})
   }
 
   /** 十连钓鱼：一次抛出 10 根竿，稍等片刻后自动收网统一结算 */
@@ -363,6 +348,11 @@ export class Fishing extends plugin {
   /** 百连钓鱼：角色 25 级解锁，一次抛出 100 根竿；鱼饵、鱼护空间不够时有多少钓多少 */
   async hundred(e) {
     return this.batch(e, "hundred")
+  }
+
+  /** 千连钓鱼：角色 60 级解锁，每天 3 次，每次间隔 1 小时，一次抛出 1000 根竿 */
+  async thousand(e) {
+    return this.batch(e, "thousand")
   }
 
   async batch(e, kind) {
@@ -378,7 +368,7 @@ export class Fishing extends plugin {
     const { id, user, name, shop, limit } = ctx
 
     // 每天的次数：十连先用今日次数，再用旧版攒下的额外机会；百连只有今日次数
-    const used = kind === "hundred" ? useHundred(user, c.daily) : useMulti(user, c.daily)
+    const used = useBatch(user, c)
     if (!used)
       return this.send(e, withButtons(e, [
         `🎟️ 今天的 ${c.daily} 次${c.label}已经用完啦~ 明天 0 点重置`,
@@ -416,7 +406,7 @@ export class Fishing extends plugin {
       this.gearLine(user, shop),
       `🪱 ${[...usedCount].map(([k, v]) => `${k} ×${v}`).join("、")}（剩余可用鱼饵 ${usableBait(user, shop)}）`,
       this.luckLine(user),
-      `🎟️ 今日${c.label}剩余 ${this.batchLeftText(user, c)}`,
+      `🎟️ 今日${c.label}剩余 ${batchLeftText(user, c)}`,
       "⏳ 稍等片刻，收网后统一结算",
     ].filter(Boolean).join("\n"))
     await this.announceTitles(e, user)
@@ -431,7 +421,7 @@ export class Fishing extends plugin {
     const cfg = this.cfg
     const shop = Config.shop
     // 百连降低保护鱼类出现概率；误钓后禁渔，后面的竿作废（鱼饵不退）
-    const extra = c.protectedScale !== 1 ? { protectedScale: c.protectedScale } : {}
+    const extra = { protectedScale: protectedScaleFor(c, cfg.probability) }
     const rounds = baits.map(bait => resolveCast(user, { items: Config.items, cfg, shop, effects: { ...this.effectsFor(user, bait), ...extra } }))
     // 两次之间的最短间隔（防刷屏）
     const cd = this.startCooldown(id, user, c.cooldown, c.kind)
@@ -442,10 +432,10 @@ export class Fishing extends plugin {
     const markdown = e.bot?.adapter?.id === "QQBot"
     const sizeLabels = Object.fromEntries(Object.entries(cfg.size || {}).map(([k, v]) => [k, v.label]))
     const protectedMax = protectedDailyMax(cfg.protectedPenalty)
-    const body = c.kind === "hundred"
-      ? formatHundred(rounds, { markdown, xpLine, protectedMax })
+    const body = c.kind !== "multi"
+      ? formatHundred(rounds, { markdown, xpLine, protectedMax, title: `${c.emoji} ${c.label}收网` })
       : formatMulti(rounds, { sizeLabels, markdown, xpLine, protectedMax })
-    const msg = body + `\n🎟️ 剩余${c.label}：${this.batchLeftText(user, c)}` + (cd ? `\n⏳ 冷却：${cd} 秒` : "")
+    const msg = body + `\n🎟️ 剩余${c.label}：${batchLeftText(user, c)}` + (cd ? `\n⏳ 冷却：${cooldownText(cd)}` : "")
     await this.send(e, withButtons(e, msg,
       fishRow(user, { short: true }),
       [{ ...B.bag, text: "🎒 鱼护" }, { ...B.sellAll, text: "💰 出售" }, ...(sum.junk ? [{ ...B.discard, text: "♻️ 清理" }] : [])]))

@@ -1,5 +1,5 @@
 import Config from "./Config.js"
-import { multiLeft, hundredLeft, cooldownLeft } from "./Game.js"
+import { batchCfg, batchAvailable, BATCH_ORDER } from "./Batch.js"
 import { characterProgress } from "./Progression.js"
 
 /** 当前消息是否来自 QQBot 协议且支持按钮 */
@@ -19,26 +19,25 @@ export function withButtons(e, msg, ...rows) {
   return [msg, segment.button(...rows)].flat()
 }
 
-/**
- * 钓鱼按钮行：按优先级 百连 > 十连 > 钓鱼
- * - 百连：达到解锁等级且今天还有次数才显示
- * - 十连：今天还有次数（含旧版攒下的额外机会）才显示
- * - 钓鱼：单钓不限次数，总是显示
- * 某个玩法剩余冷却 ≥ 1 分钟时不显示（短冷却保留按钮，消息留在群里，冷却过后还能直接点）
- * @param short 短文字（十连 / 百连收网结果用）
- */
 /** 剩余冷却达到这么多秒就不显示该玩法的按钮 */
 export const HIDE_COOLDOWN = 60
 
+/**
+ * 钓鱼按钮行：按优先级 千连 > 百连 > 十连 > 钓鱼
+ * - 千连 / 百连 / 十连：达到解锁等级、今天还有次数，且剩余冷却不到 1 分钟才显示
+ *   （短冷却保留按钮，消息留在群里，冷却过后还能直接点）
+ * - 钓鱼：单钓不限次数，总是显示
+ * @param short 短文字（连钓收网结果用）
+ */
 export function fishRow(user, { short = false } = {}) {
-  const f = Config.config.fishing || {}
   const row = []
   if (user) {
-    const cooling = kind => cooldownLeft(user, kind) >= HIDE_COOLDOWN
-    if (characterProgress(user).level >= Number(f.hundredLevel ?? 25) && hundredLeft(user, Number(f.hundredDaily ?? 10)) > 0 && !cooling("hundred"))
-      row.push(short ? { ...B.hundred, text: "💯 百连" } : B.hundred)
-    const m = multiLeft(user, Number(f.multiDaily ?? 100))
-    if (m.free + m.bonus > 0 && !cooling("multi")) row.push(short ? { ...B.multi, text: "🔟 十连" } : B.multi)
+    const level = characterProgress(user).level
+    for (const kind of BATCH_ORDER) {
+      const c = batchCfg(kind)
+      if (batchAvailable(user, c, level, HIDE_COOLDOWN))
+        row.push({ text: short ? `${c.emoji} ${c.label}` : `${c.emoji} ${c.label}钓鱼`, callback: c.cmd })
+    }
   }
   row.push(short ? { ...B.fish, text: "🎣 钓鱼" } : B.cast)
   return row
@@ -50,6 +49,7 @@ export const B = {
   start: { text: "🎣 开始钓鱼", callback: "#钓鱼" },
   multi: { text: "🔟 十连钓鱼", callback: "#十连钓鱼" },
   hundred: { text: "💯 百连钓鱼", callback: "#百连钓鱼" },
+  thousand: { text: "🌊 千连钓鱼", callback: "#千连钓鱼" },
   fish: { text: "🎣 钓鱼", callback: "#钓鱼" },
   reel: e => ({ text: "🪝 收杆！", callback: "#收杆", permission: e.user_id }),
   bag: { text: "🎒 我的鱼护", callback: "#我的鱼护" },
