@@ -1114,7 +1114,12 @@ test("收网经验提示：显示获得经验与距离下一级还需多少，�
   assert.equal(xpGainText(at(11560), 11500), "✨ 获得经验：+60（距离 Lv23 还需 1,090）\n🎉 等级提升：Lv21 → Lv22")
   assert.equal(levelThreshold(23) - 11560, 1090)
   assert.ok(!xpGainText(at(11000), 10966).includes("累计"))
-  assert.equal(xpGainText(at(levelThreshold(100) + 5), levelThreshold(100)), "✨ 获得经验：+5（已满级）")
+  // 已经满级：不再显示经验
+  assert.equal(xpGainText(at(levelThreshold(100) + 5), levelThreshold(100)), "")
+  // 这次刚好升到满级：显示获得经验和满级
+  const up = xpGainText(at(levelThreshold(100) + 5), levelThreshold(100) - 10)
+  assert.ok(up.startsWith("✨ 获得经验：+15（已满级）"), up)
+  assert.ok(up.includes("Lv99 → Lv100 🏆 已满级"), up)
 })
 
 test("抛竿提示的渔具：成套显示“阶名（件数）”，其余部位逐件列出", async () => {
