@@ -1246,16 +1246,18 @@ test("千连钓鱼：60 级、每天 3 次、间隔 1 小时；各连钓保护�
   const t = batchCfg("thousand")
   assert.deepEqual([t.count, t.daily, t.cooldown, t.level], [1000, 3, 3600, 60])
   assert.deepEqual(BATCH_ORDER, ["thousand", "hundred", "multi"])
-  // 每竿保护鱼类总概率：默认三种连钓都与单钓相同（0.35%）；可分别配置
+  // 一次连钓（整次）碰到保护鱼类的概率默认都是 0.35%，与单钓一竿相同；每竿按竿数换算
+  const singleTotal = Object.values(cfg.probability.protected).reduce((a, v) => a + v, 0)
   for (const kind of ["multi", "hundred", "thousand"]) {
     const c = batchCfg(kind)
-    assert.equal(c.protectedRate, 0.35)
-    assert.ok(Math.abs(protectedScaleFor(c, cfg.probability) - 1) < 1e-9, kind)
+    assert.equal(c.protectedPull, 0.35)
+    const odds = buildOdds(cfg.probability, { rarityTier: 10, protectedScale: protectedScaleFor(c, cfg.probability) })
+    const perCast = Object.keys(cfg.probability.protected).reduce((a, id) => a + odds[`hidden:${id}`], 0) / 100
+    const perPull = 1 - (1 - perCast) ** c.count
+    assert.ok(Math.abs(perPull * 100 - singleTotal) < 1e-6, `${kind} ${perPull * 100}`)
   }
-  const custom = batchCfg("thousand", { thousandProtected: 0.01 })
-  const odds = buildOdds(cfg.probability, { rarityTier: 10, protectedScale: protectedScaleFor(custom, cfg.probability) })
-  const prot = Object.keys(cfg.probability.protected).reduce((a, id) => a + odds[`hidden:${id}`], 0)
-  assert.ok(Math.abs(prot - 0.01) < 1e-9, `${prot}`)
+  assert.ok(Math.abs(batchCfg("multi").protectedRate - 0.03506) < 1e-4)
+  assert.ok(Math.abs(batchCfg("thousand").protectedRate - 0.0003506) < 1e-6)
   // 次数与按钮
   const u = newUser("10150"); u.stats.casts = 25 * 59 * 60 // Lv60
   assert.deepEqual(fishRow(u, { short: true }).map(b => b.text), ["🌊 千连", "💯 百连", "🔟 十连", "🎣 钓鱼"])
