@@ -28,7 +28,7 @@ export class FishingPet extends plugin {
       event: "message",
       priority: 500,
       rule: [
-        { reg: /^#?(?:宠物商店|宠物图鉴)$/, fnc: "shop" },
+        { reg: /^#?宠物商店$/, fnc: "shop" },
         { reg: /^#?购买宠物\s*(.+)$/, fnc: "buy" },
         { reg: /^#?(?:我的)?宠物$/, fnc: "mine" },
         { reg: /^#?宠物出战\s*(.+)$/, fnc: "active" },
@@ -68,25 +68,19 @@ export class FishingPet extends plugin {
     return [row.slice(0, 4), [{ text: "🐾 我的宠物", callback: "#我的宠物" }, { text: "🛒 宠物商店", callback: "#宠物商店" }, B.fish]].filter(r => r.length)
   }
 
-  /* ---------------- 宠物商店 / 图鉴 ---------------- */
+  /* ---------------- 宠物商店 ---------------- */
 
+  /** 只展示可以领养的一阶宠物；进化路线在 #我的宠物 里逐阶预览 */
   shopData(user) {
-    const c = this.c, seen = new Set(user.pets.seen), level = characterProgress(user).level
-    // 自己的宠物走过的形态都算见过
-    for (const [id, d] of [...Object.entries(user.pets.owned), ...Object.entries(user.pets.lost)])
-      for (let k = 1; k <= petStage(d, c); k++) { const f = formAt(petDef(id), k, d.branch); if (f) seen.add(f.id) }
-    const show = (petId, f, stage) => seen.has(f.id)
-      ? { name: f.name, icon: petIcon(petId, f), stage: STAGE_CN[stage], skill: `「${f.skill?.name}」${skillText(f.skill?.effect, f.skill?.value)}`, seen: true }
-      : { name: "？？？", icon: `<span class="pet-emoji">❓</span>`, stage: STAGE_CN[stage], skill: "达到后解锁", seen: false }
+    const c = this.c, level = characterProgress(user).level
     const lines = petDefs().map(def => {
-      const owned = user.pets.owned[def.id], lost = user.pets.lost[def.id]
+      const owned = user.pets.owned[def.id], lost = user.pets.lost[def.id], f = def.forms[0]
       return {
         id: def.id, name: def.name, title: def.title, desc: def.desc,
-        icon: petIcon(def.id, def.forms[0]), first: def.forms[0].name,
+        icon: petIcon(def.id, f), first: f.name, emoji: f.emoji,
+        skill: `「${f.skill?.name}」${skillText(f.skill?.effect, f.skill?.value)}`,
         status: owned ? `已拥有 · Lv${petLevel(owned, c)}` : lost ? "离家出走中（可寻回）" : level < c.unlockLevel ? `🔒 角色 Lv${c.unlockLevel} 解锁` : `💰 ${wan(c.price)}金币`,
-        canBuy: !owned && level >= c.unlockLevel,
-        forms: def.forms.map((f, i) => show(def.id, f, i + 1)),
-        branches: (def.branches || []).map(b => ({ name: b.name, desc: b.desc, forms: b.forms.map((f, i) => show(def.id, f, i + 4)) })),
+        owned: !!owned, canBuy: !owned && level >= c.unlockLevel,
       }
     })
     return { name: displayName(user), gold: money(user.gold), lines, price: wan(c.price), unlock: c.unlockLevel, branchLv: branchLevel(c), stageLevels: c.stageLevels }
@@ -96,12 +90,11 @@ export class FishingPet extends plugin {
     if (!groupAllowed(e)) return false
     const user = this.load(e), data = this.shopData(user)
     const msg = await renderOrText(puppeteer, "petshop", data, () => [
-      `🛒 宠物商店 · 一阶宠物 ${data.price} 金币/只（角色 Lv${data.unlock} 解锁）`,
+      `🛒 宠物商店 · ${data.price}金币/只（角色 Lv${data.unlock} 开放）`,
       LINE,
-      ...data.lines.map(l => [`${l.title}：${l.first}（${l.status}）`, `　${l.desc}`,
-        `　${l.forms.map(f => f.name).join(" → ")} → ${l.branches.map(b => `${b.name}：${b.forms.map(f => f.name).join(" → ")}`).join(" / ")}`].join("\n")),
+      ...data.lines.map(l => [`${l.emoji} ${l.first} · ${l.title}（${l.status}）`, `　${l.desc}`, `　初始技能${l.skill}`].join("\n")),
       LINE,
-      `Lv${data.branchLv} 时选择进化方向 · 发送 #购买宠物 ${data.lines[0]?.first || ""}`,
+      `Lv${data.stageLevels[1]}、Lv${data.stageLevels[2]} 自动进化，Lv${data.branchLv} 选择进化方向 · #购买宠物 名称`,
     ].join("\n"))
     if (!msg) return true
     const buy = data.lines.filter(l => l.canBuy).map(l => ({ text: `🛒 购买${l.first}`, callback: `#购买宠物 ${l.first}` }))
@@ -172,14 +165,22 @@ export class FishingPet extends plugin {
           if (f) next.push({ title: `Lv${c.stageLevels[main.stage]} 进化为 ${f.name}`, icon: petIcon(main.id, f), skill: `「${f.skill?.name}」${skillText(f.skill?.effect, f.skill?.value)}` })
         } else {
           for (const b of def.branches || []) {
-            const f = b.forms[0], g = b.forms[1]
-            next.push({ title: `${b.name}：${f.name} → ${g?.name || ""}`, icon: petIcon(main.id, f), skill: `「${f.skill?.name}」${skillText(f.skill?.effect, f.skill?.value)} · 「${g?.skill?.name}」${skillText(g?.skill?.effect, g?.skill?.value)}`, desc: b.desc })
+            const f = b.forms[0]
+            next.push({ title: `Lv${c.stageLevels[3]} ${b.name}：进化为 ${f.name}`, icon: petIcon(main.id, f), skill: `「${f.skill?.name}」${skillText(f.skill?.effect, f.skill?.value)}`, desc: b.desc })
           }
         }
       }
-      // 进化路线
-      const path = [1, 2, 3].map(k => formAt(def, k)).concat(data.branch ? [4, 5].map(k => formAt(def, k, data.branch)) : [])
-        .map((f, i) => ({ name: f?.name, icon: petIcon(main.id, f), on: i + 1 <= main.stage, now: i + 1 === main.stage, lv: c.stageLevels[i] }))
+      // 进化路线：只显示走过的形态和下一阶（没选方向时下一阶为“选择方向”）
+      const path = []
+      for (let k = 1; k <= main.stage; k++) {
+        const f = formAt(def, k, data.branch)
+        path.push({ name: f?.name, icon: petIcon(main.id, f), on: true, now: k === main.stage, lv: c.stageLevels[k - 1] })
+      }
+      if (main.stage < 5) {
+        const f = main.stage < 3 || data.branch ? formAt(def, main.stage + 1, data.branch) : null
+        path.push(f ? { name: f.name, icon: petIcon(main.id, f), on: false, lv: c.stageLevels[main.stage] }
+          : { name: "选择方向", icon: `<span class="pet-emoji">🔀</span>`, on: false, lv: c.stageLevels[main.stage] })
+      }
       detail = { skills, next, path, waitingBranch: needsBranch(data, c) }
     }
     const lost = lostPets(user, Date.now(), c).map(({ id, data, left }) => ({ id, name: petName(petDef(id), data, c), defName: petDef(id)?.name || id, level: petLevel(data, c), left: dayLeft(left) }))
@@ -283,7 +284,7 @@ export class FishingPet extends plugin {
       : `🔮 ${name} 到 Lv${branchLevel(c)} 时可以选择进化方向（当前 Lv${petLevel(d, c)}）：`
     return [head, LINE, ...(def.branches || []).flatMap(b => [
       `【${b.name}】${b.desc || ""}`,
-      ...b.forms.map((f, i) => `　${STAGE_CN[i + 4]} ${f.emoji} ${f.name}「${f.skill?.name}」${skillText(f.skill?.effect, f.skill?.value)}`),
+      ...b.forms.slice(0, 1).map(f => `　${STAGE_CN[4]} ${f.emoji} ${f.name}「${f.skill?.name}」${skillText(f.skill?.effect, f.skill?.value)}`),
     ]), LINE, `发送 ${(def.branches || []).map(b => `#宠物进化 ${b.name}`).join(" 或 ")}`].join("\n")
   }
 

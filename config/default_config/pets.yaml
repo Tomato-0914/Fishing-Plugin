@@ -23,13 +23,13 @@
   branches:
     - id: dragon
       name: 化龙
-      desc: 跃过龙门，化身为龙，专精品级与鱼价
+      desc: 跃过龙门，踏上化龙之路，专精品级与鱼价
       forms:
         - { id: jiao,   name: 蛟, emoji: 🐍, skill: { name: 化蛟, effect: rarityUp,    value: 1.8 } }
         - { id: dragon, name: 龙, emoji: 🐉, skill: { name: 龙吟, effect: triplePrice, value: 1.5 } }
     - id: kun
       name: 化鲲
-      desc: 北冥有鱼，其名为鲲，化而为鸟，其名为鹏
+      desc: 北冥有鱼，其名为鲲，不知其几千里也，专精丰收
       forms:
         - { id: kun,  name: 鲲, emoji: 🐋, skill: { name: 北冥, effect: extraFish2, value: 1.4 } }
         - { id: peng, name: 鹏, emoji: 🦅, skill: { name: 扶摇, effect: rarityUp,   value: 2 } }
@@ -45,13 +45,13 @@
   branches:
     - id: phoenix
       name: 化凤
-      desc: 浴火而生的凤凰，专精鱼价与丰收
+      desc: 浴火而生的神鸟，专精鱼价与丰收
       forms:
         - { id: fire_phoenix, name: 火凤, emoji: 🦜, skill: { name: 炎羽, effect: triplePrice, value: 1.4 } }
         - { id: phoenix,      name: 凤凰, emoji: 🦚, skill: { name: 涅槃, effect: extraFish2,  value: 1.4 } }
     - id: crow
       name: 化乌
-      desc: 驮着太阳飞行的三足金乌，专精品级与节省鱼饵
+      desc: 追逐太阳的神鸟，专精品级与节省鱼饵
       forms:
         - { id: red_crow,    name: 赤乌, emoji: 🐦‍⬛, skill: { name: 逐日, effect: rarityUp, value: 1.8 } }
         - { id: golden_crow, name: 金乌, emoji: ☀️, skill: { name: 烈日, effect: baitSave, value: 6 } }

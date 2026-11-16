@@ -93,7 +93,6 @@
       <div class="card-title">🧬 进化路线</div>
       <div class="path">
         {{each detail.path n i}}{{if i}}<span class="arrow">→</span>{{/if}}<div class="node {{n.on ? 'on' : ''}} {{n.now ? 'now' : ''}}"><div class="ic">{{@n.icon}}</div><b>{{n.name}}</b><span class="muted">Lv{{n.lv}}</span></div>{{/each}}
-        {{if detail.path.length < 4}}<span class="arrow">→</span><div class="node"><div class="ic"><span class="pet-emoji">🔀</span></div><b>选择方向</b><span class="muted">Lv{{branchLv}}</span></div>{{/if}}
       </div>
       {{if detail.next.length}}<div style="margin-top:12px">
         {{each detail.next x}}<div class="next"><div class="ic">{{@x.icon}}</div><div><div class="nt">🔮 {{x.title}}</div><div class="nd">{{x.skill}}</div>{{if x.desc}}<div class="nd">{{x.desc}}</div>{{/if}}</div></div>{{/each}}
