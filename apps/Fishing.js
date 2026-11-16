@@ -297,7 +297,7 @@ export class Fishing extends plugin {
       await this.send(e, withButtons(e, pick([
         "😅 收杆太早啦，鱼饵被白白浪费……什么都没钓到~",
         "😅 太心急了！水面一片平静，鱼钩上空空如也~",
-      ]) + "\n" + xpLine, fishRow(user)))
+      ]) + (xpLine ? "\n" + xpLine : ""), fishRow(user)))
       return this.announceTitles(e, user)
     }
 

@@ -44,10 +44,12 @@ export function levelAtXp(xp) {
 export function xpGainText(user, beforeXp) {
   const p = characterProgress(user)
   const oldLevel = levelAtXp(Math.max(0, beforeXp))
+  // 本来就已满级：不再显示经验
+  if (oldLevel >= MAX_LEVEL) return ""
   const gain = Math.max(0, p.xp - beforeXp)
   const next = p.max ? "已满级" : `距离 Lv${p.level + 1} 还需 ${p.remainingXp.toLocaleString("en-US")}`
   return [
     `✨ 获得经验：+${gain}（${next}）`,
-    ...(p.level > oldLevel ? [`🎉 等级提升：Lv${oldLevel} → Lv${p.level}`] : []),
+    ...(p.level > oldLevel ? [`🎉 等级提升：Lv${oldLevel} → Lv${p.level}${p.max ? " 🏆 已满级" : ""}`] : []),
   ].join("\n")
 }
