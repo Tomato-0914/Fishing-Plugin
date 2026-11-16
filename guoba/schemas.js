@@ -40,9 +40,9 @@ export default [
   num("fishing.thousandDaily", "每日千连次数", "每天可以千连的次数，0 点重置", { min: 0, max: 20 }),
   num("fishing.thousandCooldown", "千连间隔(秒)", "两次千连之间的最短间隔", { max: 86400 }),
   num("fishing.thousandLevel", "千连解锁等级", "角色达到这个等级才能千连", { min: 1, max: 100 }),
-  num("fishing.multiProtected", "十连保护鱼类概率(%)", "一次十连（整次）碰到保护鱼类的概率，默认 0.35 与单钓相同；每竿概率自动换算", { max: 100, step: 0.01 }),
-  num("fishing.hundredProtected", "百连保护鱼类概率(%)", "一次百连（整次）碰到保护鱼类的概率，默认 0.35 与单钓相同；每竿概率自动换算", { max: 100, step: 0.01 }),
-  num("fishing.thousandProtected", "千连保护鱼类概率(%)", "一次千连（整次）碰到保护鱼类的概率，默认 0.35 与单钓相同；每竿概率自动换算", { max: 100, step: 0.01 }),
+  num("fishing.multiProtected", "十连保护鱼类概率(%)", "一次十连（整次）碰到保护鱼类的概率；每竿概率自动换算（默认十连 0.35、百连 3.5、千连 10）", { max: 100, step: 0.01 }),
+  num("fishing.hundredProtected", "百连保护鱼类概率(%)", "一次百连（整次）碰到保护鱼类的概率；每竿概率自动换算（默认十连 0.35、百连 3.5、千连 10）", { max: 100, step: 0.01 }),
+  num("fishing.thousandProtected", "千连保护鱼类概率(%)", "一次千连（整次）碰到保护鱼类的概率；每竿概率自动换算（默认十连 0.35、百连 3.5、千连 10）", { max: 100, step: 0.01 }),
   num("fishing.bagLimit", "Lv1 鱼护容量", "1 阶鱼护的容量；鱼护每高一阶 +500、强化每级 +50", { min: 100, max: 20000 }),
 
   { label: "鱼饵", component: "SOFT_GROUP_BEGIN" },
