@@ -1246,18 +1246,17 @@ test("千连钓鱼：60 级、每天 3 次、间隔 1 小时；各连钓保护�
   const t = batchCfg("thousand")
   assert.deepEqual([t.count, t.daily, t.cooldown, t.level], [1000, 3, 3600, 60])
   assert.deepEqual(BATCH_ORDER, ["thousand", "hundred", "multi"])
-  // 一次连钓（整次）碰到保护鱼类的概率默认都是 0.35%，与单钓一竿相同；每竿按竿数换算
-  const singleTotal = Object.values(cfg.probability.protected).reduce((a, v) => a + v, 0)
-  for (const kind of ["multi", "hundred", "thousand"]) {
+  // 一次连钓（整次）碰到保护鱼类的概率：十连 0.35%、百连 3.5%、千连 10%；每竿按竿数换算
+  for (const [kind, pull] of [["multi", 0.35], ["hundred", 3.5], ["thousand", 10]]) {
     const c = batchCfg(kind)
-    assert.equal(c.protectedPull, 0.35)
+    assert.equal(c.protectedPull, pull)
     const odds = buildOdds(cfg.probability, { rarityTier: 10, protectedScale: protectedScaleFor(c, cfg.probability) })
     const perCast = Object.keys(cfg.probability.protected).reduce((a, id) => a + odds[`hidden:${id}`], 0) / 100
-    const perPull = 1 - (1 - perCast) ** c.count
-    assert.ok(Math.abs(perPull * 100 - singleTotal) < 1e-6, `${kind} ${perPull * 100}`)
+    assert.ok(Math.abs((1 - (1 - perCast) ** c.count) * 100 - pull) < 1e-6, `${kind}`)
+    // 每天次数用满时，平均 3~4 天遇到一次
+    const days = 1 / (1 - (1 - pull / 100) ** c.daily)
+    assert.ok(days >= 3 && days <= 4, `${kind} ${days}`)
   }
-  assert.ok(Math.abs(batchCfg("multi").protectedRate - 0.03506) < 1e-4)
-  assert.ok(Math.abs(batchCfg("thousand").protectedRate - 0.0003506) < 1e-6)
   // 次数与按钮
   const u = newUser("10150"); u.stats.casts = 25 * 59 * 60 // Lv60
   assert.deepEqual(fishRow(u, { short: true }).map(b => b.text), ["🌊 千连", "💯 百连", "🔟 十连", "🎣 钓鱼"])
