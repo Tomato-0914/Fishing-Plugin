@@ -2,7 +2,7 @@ import { plugin } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
-import { multiLeft, useMulti, hundredLeft, useHundred, protectedDailyMax, protectedToday, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier } from "../components/Game.js"
+import { multiLeft, useMulti, hundredLeft, useHundred, protectedDailyMax, protectedToday, cooldownLeft, setCooldown, cooldownText, COOLDOWN_LABELS, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier } from "../components/Game.js"
 import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, holdsOnTimeout, maxLevel, gearSummary } from "../components/Gear.js"
 import { resolveCast, summarize, formatMulti, formatHundred } from "../components/Catch.js"
 import { experience, characterProgress, xpGainText } from "../components/Progression.js"
@@ -12,8 +12,6 @@ import { groupAllowed, displayName, updateNickname, pick, itemMap, playerEffects
 
 /** 进行中的钓鱼：user_id → { stage: "waiting" | "bite" | "multi", timer, castAt, biteAt } */
 const sessions = new Map()
-/** 挂鱼饵冷却：user_id → 结束时间戳 */
-const cooldowns = new Map()
 
 const CAST_TEXT = [
   "甩出了鱼竿~ 浮漂稳稳落在水面，静待鱼儿上钩……",
@@ -74,7 +72,7 @@ export class Fishing extends plugin {
    * 抛竿前的公共检查（#钓鱼 与 #十连钓鱼 共用）：新手礼包、进行中、冷却、鱼护、鱼饵
    * @returns 可以抛竿时返回上下文；已回复用户并结束时返回 null
    */
-  async precheck(e) {
+  async precheck(e, kind = "cast") {
     const id = String(e.user_id)
     const user = UserData.get(id)
     updateNickname(user, e)
@@ -119,8 +117,14 @@ export class Fishing extends plugin {
       return null
     }
 
-    const left = (cooldowns.get(id) || 0) - Date.now()
-    if (left > 0) { await this.send(e, `${pick(BAIT_TEXT)}请等待 ${Math.ceil(left / 1000)}s...`); return null }
+    // 各玩法冷却独立：十连 / 百连冷却中不影响单钓，反之亦然
+    const left = cooldownLeft(user, kind)
+    if (left > 0) {
+      await this.send(e, kind === "cast"
+        ? `${pick(BAIT_TEXT)}请等待 ${left}s...`
+        : withButtons(e, `⏳ ${COOLDOWN_LABELS[kind] || kind}冷却中，还需 ${cooldownText(left)}`, fishRow(user)))
+      return null
+    }
 
     const shop = Config.shop
     const limit = bagCapacity(user, shop, fcfg.bagLimit)
@@ -251,12 +255,14 @@ export class Fishing extends plugin {
   }
 
   /** 挂鱼饵冷却；seconds 不传时取 fishing.cooldown，称号的冷却缩减同样生效 */
-  startCooldown(id, user, seconds) {
-    const effects = getEffects(user, Config.titles, Config.items)
+  /**
+   * 开始冷却；kind 为 cast（单钓，默认取 fishing.cooldown，称号的“挂鱼饵 -N 秒”生效）/ multi / hundred
+   */
+  startCooldown(id, user, seconds, kind = "cast") {
+    const reduce = kind === "cast" ? getEffects(user, Config.titles, Config.items).cooldown || 0 : 0
     const base = seconds ?? Number(this.cfg.fishing?.cooldown ?? 10)
-    const cd = Math.max(0, base - (effects.cooldown || 0))
-    if (cd > 0) cooldowns.set(id, Date.now() + cd * 1000)
-    else cooldowns.delete(id)
+    const cd = Math.max(0, base - reduce)
+    setCooldown(user, kind, cd)
     return cd
   }
 
@@ -367,7 +373,7 @@ export class Fishing extends plugin {
       if (lv < c.level)
         return this.send(e, withButtons(e, `🔒 ${c.label}钓鱼需要角色 Lv${c.level}（当前 Lv${lv}），先用 #十连钓鱼 或 #钓鱼 升级吧~`, [B.multi, B.cast]))
     }
-    const ctx = await this.precheck(e)
+    const ctx = await this.precheck(e, kind)
     if (!ctx) return true
     const { id, user, name, shop, limit } = ctx
 
@@ -428,7 +434,7 @@ export class Fishing extends plugin {
     const extra = c.protectedScale !== 1 ? { protectedScale: c.protectedScale } : {}
     const rounds = baits.map(bait => resolveCast(user, { items: Config.items, cfg, shop, effects: { ...this.effectsFor(user, bait), ...extra } }))
     // 两次之间的最短间隔（防刷屏）
-    const cd = this.startCooldown(id, user, c.cooldown)
+    const cd = this.startCooldown(id, user, c.cooldown, c.kind)
     UserData.save(id)
 
     const sum = summarize(rounds)
