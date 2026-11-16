@@ -1,5 +1,5 @@
 /** 一竿的结算：抽取结果 → 断线判定 → 记入存档（纯函数，#收杆 与十连钓鱼共用） */
-import { roll } from "./ItemPool.js"
+import { roll, rollOfRarity, rollFish, NEXT_RARITY, FISH_TIERS } from "./ItemPool.js"
 import { recordResult } from "./Game.js"
 import { breakChance } from "./Gear.js"
 
@@ -14,18 +14,64 @@ export function resolveCast(user, { items, cfg, shop, effects = {}, rng = Math.r
   if (Number(user.banUntil) > now.getTime()) return { result: { type: "banned" }, snapped: false, chance: 0, reward: 0, value: 0, banned: true }
   // 每个群每天最多钓到 groupDailyMax 条保护鱼类：达到后本群今天不会再出现（概率归还给其他结果）
   if (group?.max && group.count() >= group.max) effects = { ...effects, protectedScale: 0 }
-  const result = roll({ items, probability: cfg.probability, size: cfg.size, limits: cfg.limits }, effects, rng)
+  const ctx = { items, probability: cfg.probability, size: cfg.size, limits: cfg.limits }
+  let result = roll(ctx, effects, rng)
+  // 宠物技能：品级 +1、鱼价 ×3 / ×2（只对鱼生效；没有对应效果时不额外消耗随机数）
+  const pet = {}
+  if (result.type === "item" && FISH.has(result.rarity)) {
+    const up = Number(effects.rarityUp) || 0
+    if (up > 0 && result.rarity !== "MR" && rng() * 100 < up) {
+      const better = rollOfRarity(ctx, NEXT_RARITY[result.rarity], effects, rng)
+      if (better) { pet.up = result.rarity; result = better }
+    }
+    const x3 = Number(effects.triplePrice) || 0, x2 = Number(effects.doublePrice) || 0
+    const mult = x3 > 0 && rng() * 100 < x3 ? 3 : x2 > 0 && rng() * 100 < x2 ? 2 : 1
+    if (mult > 1) { result.price *= mult; pet.mult = mult }
+  }
   const chance = breakChance(result, shop?.lineBreak, effects)
   if (chance > 0 && rng() * 100 < chance) {
     user.stats.escaped++
     user.stats.lineBreak = (user.stats.lineBreak || 0) + 1
-    return { result, snapped: true, chance, reward: 0, value: 0 }
+    return { result, snapped: true, chance, reward: 0, value: 0, pet }
   }
-  const { reward, value, penalty, paimon } = recordResult(user, result, {
-    policeReward: cfg.policeReward, protectedPenalty: cfg.protectedPenalty, paimonGift: cfg.paimonGift, now,
-  })
+  const opts = { policeReward: cfg.policeReward, protectedPenalty: cfg.protectedPenalty, paimonGift: cfg.paimonGift, now }
+  const { reward, value, penalty, paimon } = recordResult(user, result, opts)
   if (penalty && group) Object.assign(penalty, { group: group.add(), groupMax: group.max || 0 })
-  return { result, snapped: false, chance, reward, value, penalty, paimon }
+  // 宠物技能：钓到鱼时有概率多钓一条 / 两条（同样按当前品级分布，直接入鱼护，不会断线）
+  const extras = []
+  if (result.type === "item" && FISH.has(result.rarity)) {
+    const two = Number(effects.extraFish2) || 0, one = Number(effects.extraFish) || 0
+    const n = two > 0 && rng() * 100 < two ? 2 : one > 0 && rng() * 100 < one ? 1 : 0
+    for (let i = 0; i < n; i++) {
+      const r = rollFish(ctx, effects, rng)
+      if (!r) continue
+      const rec = recordResult(user, r, opts)
+      extras.push({ result: r, snapped: false, chance: 0, reward: 0, value: rec.value, extra: true })
+    }
+  }
+  return { result, snapped: false, chance, reward, value, penalty, paimon, pet, extras }
+}
+
+const FISH = new Set(FISH_TIERS)
+
+/** 把多钓到的鱼展开成独立的一竿，方便汇总 */
+export const withExtras = rounds => rounds.flatMap(r => [r, ...(r.extras || [])])
+
+/** 一次连钓里宠物技能触发的汇总：🐾 宠物技能：多钓 3 条 · 鱼价翻倍 2 次 … */
+export function petProcLine(rounds, baitSaved = 0) {
+  let extra = 0, up = 0, x2 = 0, x3 = 0
+  for (const r of rounds) {
+    if (r.extra) extra++
+    if (r.snapped) continue
+    if (r.pet?.up) up++
+    if (r.pet?.mult === 2) x2++
+    if (r.pet?.mult === 3) x3++
+  }
+  const parts = [
+    extra ? `多钓 ${extra} 条` : "", up ? `品级提升 ${up} 次` : "",
+    x3 ? `鱼价 ×3 ${x3} 次` : "", x2 ? `鱼价翻倍 ${x2} 次` : "", baitSaved ? `省下鱼饵 ${baitSaved} 个` : "",
+  ].filter(Boolean)
+  return parts.length ? `🐾 宠物技能：${parts.join(" · ")}` : ""
 }
 
 /** 十连汇总 */
@@ -69,7 +115,8 @@ export function roundLine(r, sizeLabels = {}) {
   if (item.special === "protected") return `🚫 ${item.emoji} ${item.name}（保护鱼类）已放生 · 🚔 ${protectedPenaltyText(r.penalty)}`
   if (item.special === "paimon") return `🧚 ${item.name}：才不是应急食品！${r.paimon?.gift ? ` +${r.paimon.gift}` : ""}`
   if (item.rarity === "junk") return `🗑️ ${item.emoji} ${item.name}`
-  return `${dot}${item.emoji} ${name} ${r.value}${FLASH.has(item.rarity) ? " ✨" : ""}`
+  const tag = `${r.pet?.up ? " ⬆️" : ""}${r.pet?.mult ? ` 💰×${r.pet.mult}` : ""}${r.extra ? " 🐾" : ""}`
+  return `${dot}${item.emoji} ${name} ${r.value}${FLASH.has(item.rarity) ? " ✨" : ""}${tag}`
 }
 
 /**
@@ -151,7 +198,7 @@ export function formatHundred(rounds, { markdown = false, xpLine = "", title = "
     ...Object.keys(RARITY_LABEL).filter(k => counts[k]).map(k => `${RARITY_DOT[k]} ${RARITY_LABEL[k]} ×${counts[k]}${FLASH.has(k) ? " ✨" : ""}`),
   ]
   const head = [
-    markdown ? `**${title}** · ${rounds.length} 竿` : `${title} · ${rounds.length} 竿`,
+    markdown ? `**${title}** · ${rounds.filter(r => !r.extra).length} 竿` : `${title} · ${rounds.filter(r => !r.extra).length} 竿`,
     ...(xpLine ? [xpLine] : []),
     markdown ? `💰 **售出预计获得金币：${sum.value}**` : `💰 售出预计获得金币：${sum.value}`,
     `🐟 鱼获 ${sum.fish}｜垃圾 ${sum.junk}｜空军 ${sum.empty}`,

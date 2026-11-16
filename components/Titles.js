@@ -116,6 +116,13 @@ const EFFECT_TEXT = {
   rarityUR: ["传说概率", "%", false],
   rarityEP: ["史诗概率", "%", false],
   rarityMR: ["神话概率", "%", false],
+  // 宠物技能
+  doublePrice: ["鱼价翻倍概率", "%", false],
+  triplePrice: ["鱼价 ×3 概率", "%", false],
+  extraFish: ["多钓一条概率", "%", false],
+  extraFish2: ["多钓两条概率", "%", false],
+  rarityUp: ["品级 +1 概率", "%", false],
+  baitSave: ["不消耗鱼饵概率", "%", false],
 }
 
 const TIER_NAMES = { boostN: "普通", boostR: "高级", boostSR: "稀有", boostSSR: "神器", boostUR: "传说", boostEP: "史诗", boostMR: "神话" }

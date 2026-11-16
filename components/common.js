@@ -1,11 +1,12 @@
 import Config from "./Config.js"
 import { RARITY_INFO } from "./ItemPool.js"
-import { getEffects } from "./Titles.js"
+import { getEffects, mergeEffects } from "./Titles.js"
 import { luckEffects } from "./Game.js"
 import { gearEffects, allEffects, currentBait } from "./Gear.js"
+import { petEffects } from "./Pet.js"
 
 /**
- * 玩家抛一竿时的全部效果：称号 + 今日幸运 + 渔具 + 鱼饵
+ * 玩家抛一竿时的全部效果：称号 + 今日幸运 + 渔具 + 出战宠物（饥饿时不算） + 鱼饵
  * 钓鱼结算与图鉴概率共用，保证图鉴显示的就是实际概率
  * @param bait 本竿鱼饵；不传时取当前使用的鱼饵，传 null 表示不算鱼饵
  */
@@ -14,7 +15,7 @@ export function playerEffects(user, bait = currentBait(user, Config.shop)) {
     titles: getEffects(user, Config.titles, Config.items),
     luck: luckEffects(user, Config.config.checkin?.tiers),
     gear: gearEffects(user, Config.shop),
-    bait: bait?.effects,
+    bait: mergeEffects(bait?.effects, petEffects(user)),
   })
 }
 

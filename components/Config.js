@@ -67,6 +67,7 @@ class Config {
   get items() { return this.get("items") }
   get titles() { return this.get("titles") }
   get shop() { return this.get("shop") }
+  get pets() { return this.get("pets") }
 }
 
 export default new Config()

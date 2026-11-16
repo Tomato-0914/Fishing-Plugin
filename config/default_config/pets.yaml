@@ -1,0 +1,57 @@
+# ===== 宠物 =====
+# 每种宠物是一条进化线：一阶在宠物商店购买，二、三阶按等级自动进化；
+# 到达 config.yaml pet.branchLevel（默认 Lv60）后由玩家选择进化方向（branches），选择前经验照常累积但等级暂停；
+# 选定方向后四阶立即生效，五阶按等级自动进化。方向选定后不能更改。
+#
+# 每一阶解锁一个技能，之前的技能每进一阶提升 pet.skillGrowth%（默认 25%）。
+# 技能效果（effect）只用按比例影响收益的效果，保证不同宠物、不同方向在同等级时收益接近：
+#   doublePrice 鱼价翻倍概率(%) / triplePrice 鱼价 ×3 概率(%) / extraFish 多钓一条概率(%) / extraFish2 多钓两条概率(%)
+#   rarityUp 鱼的品级 +1 概率(%) / baitSave 不消耗鱼饵概率(%) / sellBonus 出售金币 +%
+# 默认数值按收益模型配平：同等级的各条路线每竿平均收益相差约 ±3% 以内（测试会检查不超过 ±5%）。
+#   一阶约 +3%，二阶约 +8%，三阶约 +14%，四阶约 +22%，五阶约 +32%
+#
+# 图片：resources/pets/<宠物 id>/<形态 id>.png（没有时显示 emoji）
+
+- id: koi
+  name: 鲤鱼
+  title: 鲤鱼跃龙门
+  desc: 逆流而上的小鲤鱼，传说跃过龙门便能化龙
+  forms:
+    - { id: koi_fry,    name: 小鲤鱼, emoji: 🐟, skill: { name: 逆流, effect: doublePrice, value: 1.5 } }
+    - { id: koi,        name: 锦鲤,   emoji: 🎏, skill: { name: 锦运, effect: sellBonus,   value: 2 } }
+    - { id: golden_koi, name: 金鳞鲤, emoji: 🐠, skill: { name: 金鳞, effect: extraFish,   value: 1.8 } }
+  branches:
+    - id: dragon
+      name: 化龙
+      desc: 跃过龙门，化身为龙，专精品级与鱼价
+      forms:
+        - { id: jiao,   name: 蛟, emoji: 🐍, skill: { name: 化蛟, effect: rarityUp,    value: 1.8 } }
+        - { id: dragon, name: 龙, emoji: 🐉, skill: { name: 龙吟, effect: triplePrice, value: 1.5 } }
+    - id: kun
+      name: 化鲲
+      desc: 北冥有鱼，其名为鲲，化而为鸟，其名为鹏
+      forms:
+        - { id: kun,  name: 鲲, emoji: 🐋, skill: { name: 北冥, effect: extraFish2, value: 1.4 } }
+        - { id: peng, name: 鹏, emoji: 🦅, skill: { name: 扶摇, effect: rarityUp,   value: 2 } }
+
+- id: bird
+  name: 雀鸟
+  title: 百鸟朝凤
+  desc: 叽叽喳喳的小雀，总爱从水里叼小鱼回来
+  forms:
+    - { id: sparrow,  name: 雏雀, emoji: 🐤, skill: { name: 衔鱼, effect: extraFish,   value: 1.5 } }
+    - { id: pheasant, name: 锦鸡, emoji: 🐓, skill: { name: 报晓, effect: doublePrice, value: 1.9 } }
+    - { id: luan,     name: 青鸾, emoji: 🕊️, skill: { name: 青羽, effect: sellBonus,   value: 2 } }
+  branches:
+    - id: phoenix
+      name: 化凤
+      desc: 浴火而生的凤凰，专精鱼价与丰收
+      forms:
+        - { id: fire_phoenix, name: 火凤, emoji: 🦜, skill: { name: 炎羽, effect: triplePrice, value: 1.4 } }
+        - { id: phoenix,      name: 凤凰, emoji: 🦚, skill: { name: 涅槃, effect: extraFish2,  value: 1.4 } }
+    - id: crow
+      name: 化乌
+      desc: 驮着太阳飞行的三足金乌，专精品级与节省鱼饵
+      forms:
+        - { id: red_crow,    name: 赤乌, emoji: 🐦‍⬛, skill: { name: 逐日, effect: rarityUp, value: 1.8 } }
+        - { id: golden_crow, name: 金乌, emoji: ☀️, skill: { name: 烈日, effect: baitSave, value: 6 } }

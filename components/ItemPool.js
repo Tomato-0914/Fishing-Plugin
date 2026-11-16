@@ -214,7 +214,11 @@ export function roll({ items, probability, size, limits }, effects = {}, rng = M
     item = pool.length ? weightedPick(pool.map(i => [i, i.chance ?? 1]), rng) : undefined
   }
   if (!item) return { type: "empty" }
+  return itemResult(item, size, effects, rng)
+}
 
+/** 物品 → 结果：抽体型、重量、售价 */
+function itemResult(item, size, effects, rng) {
   const result = { type: "item", item, rarity: item.rarity, price: Number(item.price) || 0 }
   if (item.rarity === "junk") result.price = 0
 
@@ -229,6 +233,24 @@ export function roll({ items, probability, size, limits }, effects = {}, rng = M
     result.price = sizedPrice(item, sizeKey, t, size)
   }
   return result
+}
+
+/** 下一个品级（神话已是最高） */
+export const NEXT_RARITY = { N: "R", R: "SR", SR: "SSR", SSR: "UR", UR: "EP", EP: "MR", MR: "MR" }
+
+/** 指定品级钓一条（宠物技能“品级 +1”用）；该品级没有物品时返回 null */
+export function rollOfRarity({ items, size }, rarity, effects = {}, rng = Math.random) {
+  const pool = items.filter(i => i.rarity === rarity)
+  if (!pool.length) return null
+  return itemResult(weightedPick(pool.map(i => [i, i.chance ?? 1]), rng), size, effects, rng)
+}
+
+/** 只在鱼（普通~神话）里按当前品级分布钓一条（宠物技能“多钓一条”用） */
+export function rollFish(ctx, effects = {}, rng = Math.random) {
+  const odds = buildOdds(ctx.probability, effects, ctx.limits)
+  const entries = FISH_TIERS.map(r => [r, odds[r] || 0]).filter(([r, v]) => v > 0 && ctx.items.some(i => i.rarity === r))
+  if (!entries.length) return null
+  return rollOfRarity(ctx, weightedPick(entries, rng), effects, rng)
 }
 
 /** 鱼类图鉴范围：除垃圾和隐藏款外的所有物品 */
