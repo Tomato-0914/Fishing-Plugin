@@ -3,7 +3,7 @@ import { plugin, puppeteer } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import {
-  effectText, progressText, ownedTier, titleName, tierEffects, titleDesc, statValue, tierNeed, checkTitles, getEffects, ROMAN,
+  effectText, progressText, ownedTier, titleName, tierEffects, titleDesc, statValue, tierNeed, checkTitles, getEffects, ROMAN, sortTitleCards,
 } from "../components/Titles.js"
 import { withButtons, B, fishRow } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
@@ -32,7 +32,8 @@ export class FishingTitle extends plugin {
     // 先补发已达成但还没记录的称号
     if (checkTitles(user, titles, items).length) UserData.save(user.user_id)
 
-    const cards = titles.map(t => {
+    // 未获得的放最上面，已获得按Ⅰ、Ⅱ级排，满级放最下面
+    const cards = sortTitleCards(titles.map(t => {
       const tier = ownedTier(user, t, items)
       const max = t.tiers?.length || 0
       const next = tier < max ? tier + 1 : 0
@@ -53,7 +54,7 @@ export class FishingTitle extends plugin {
           pct: Math.min(100, Math.round(value / need * 100)),
         },
       }
-    })
+    }))
     const owned = cards.filter(c => c.tier)
     const total = effectText(getEffects(user, titles, items))
     const data = {

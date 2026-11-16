@@ -146,3 +146,9 @@ export function mergeEffects(...list) {
   return out
 }
 
+
+/** 称号一览排序：未获得 → Ⅰ → Ⅱ → …，已满级放最后；同一组内保持配置顺序 */
+export function sortTitleCards(cards) {
+  const rank = c => !c.tier ? 0 : c.tier >= c.max ? Infinity : c.tier
+  return cards.map((c, i) => ({ c, i })).sort((a, b) => rank(a.c) - rank(b.c) || a.i - b.i).map(x => x.c)
+}
