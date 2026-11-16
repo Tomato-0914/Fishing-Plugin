@@ -1,4 +1,6 @@
 import Config from "./Config.js"
+import { multiLeft, hundredLeft } from "./Game.js"
+import { characterProgress } from "./Progression.js"
 
 /** 当前消息是否来自 QQBot 协议且支持按钮 */
 export function supportButton(e) {
@@ -15,6 +17,26 @@ export function withButtons(e, msg, ...rows) {
   rows = rows.filter(r => Array.isArray(r) ? r.length : r)
   if (!rows.length || !supportButton(e)) return msg
   return [msg, segment.button(...rows)].flat()
+}
+
+/**
+ * 钓鱼按钮行：按优先级 百连 > 十连 > 钓鱼
+ * - 百连：达到解锁等级且今天还有次数才显示
+ * - 十连：今天还有次数（含旧版攒下的额外机会）才显示
+ * - 钓鱼：单钓不限次数，总是显示
+ * @param short 短文字（十连 / 百连收网结果用）
+ */
+export function fishRow(user, { short = false } = {}) {
+  const f = Config.config.fishing || {}
+  const row = []
+  if (user) {
+    if (characterProgress(user).level >= Number(f.hundredLevel ?? 25) && hundredLeft(user, Number(f.hundredDaily ?? 10)) > 0)
+      row.push(short ? { ...B.hundred, text: "💯 百连" } : B.hundred)
+    const m = multiLeft(user, Number(f.multiDaily ?? 100))
+    if (m.free + m.bonus > 0) row.push(short ? { ...B.multi, text: "🔟 十连" } : B.multi)
+  }
+  row.push(short ? { ...B.fish, text: "🎣 钓鱼" } : B.cast)
+  return row
 }
 
 /** 常用按钮 */

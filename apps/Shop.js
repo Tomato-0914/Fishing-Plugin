@@ -8,7 +8,7 @@ import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, tierColor, te
 import { effectLines, rareTargetText, wearTitle, cnNumber } from "../components/GearText.js"
 import { gearIcon } from "../components/GearIcons.js"
 import { characterProgress } from "../components/Progression.js"
-import { withButtons, B } from "../components/Button.js"
+import { withButtons, B, fishRow } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
 import { groupAllowed, updateNickname, displayName } from "../components/common.js"
 
@@ -316,7 +316,7 @@ export class FishingShop extends plugin {
       `${bait.emoji} 成功购买${bait.name} ×${ret.count}，花费 ${ret.cost} 金币`,
       `🪱 ${bait.name}库存：${baitCount(user, bait.id)} · 👛 剩余金币：${user.gold}`,
     ]
-    const buttons = [B.start, B.multi]
+    const buttons = fishRow(user)
     if (cur.id !== bait.id) {
       lines.push(`💡 当前使用的是${cur.name}，发送 #使用鱼饵 ${bait.name} 切换`)
       buttons.unshift({ text: `使用${bait.name}`, callback: `#使用鱼饵 ${bait.name}` })
@@ -341,7 +341,7 @@ export class FishingShop extends plugin {
       return e.reply(withButtons(e, `🪱 你还没有${bait.name}，先买一些吧（${baitPrice(shop, bait.id, this.baitCfg)} 金币/个）`,
         [{ text: `买 10 个${bait.name}`, callback: `#购买鱼饵 ${bait.name} 10` }]))
     UserData.save(user.user_id)
-    return e.reply(withButtons(e, `${bait.emoji} 已换上${bait.name}（库存 ${baitCount(user, bait.id)}）\n✨ 效果：${effectText(bait.effects)}`, [B.start, B.multi]))
+    return e.reply(withButtons(e, `${bait.emoji} 已换上${bait.name}（库存 ${baitCount(user, bait.id)}）\n✨ 效果：${effectText(bait.effects)}`, fishRow(user)))
   }
 
   async bait(e) {

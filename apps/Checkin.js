@@ -5,7 +5,7 @@ import UserData from "../components/UserData.js"
 import { doCheckin, todayLuck, luckTier, randomLuck, addGroup, checkinReward } from "../components/Game.js"
 import { effectText } from "../components/Titles.js"
 import { periodKey } from "../components/Period.js"
-import { withButtons, B } from "../components/Button.js"
+import { withButtons, B, fishRow } from "../components/Button.js"
 import { groupAllowed, displayName, updateNickname } from "../components/common.js"
 import { addBait, baitCount, baitLevel, canUseBait, maxGearLevel } from "../components/Gear.js"
 
@@ -97,7 +97,7 @@ export class FishingCheckin extends plugin {
     else if (luck <= 10) lines.push("💪 幸运值有点低，不过不要丧失对生活的希望哦~")
 
     UserData.save(id)
-    return e.reply(withButtons(e, lines.filter(Boolean).join("\n"), [B.start, B.multi, B.luckRank]))
+    return e.reply(withButtons(e, lines.filter(Boolean).join("\n"), [...fishRow(user), B.luckRank]))
   }
 
   async king(e) {

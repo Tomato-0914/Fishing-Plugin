@@ -5,7 +5,7 @@ import UserData from "../components/UserData.js"
 import {
   effectText, progressText, ownedTier, titleName, tierEffects, titleDesc, statValue, tierNeed, checkTitles, getEffects, ROMAN,
 } from "../components/Titles.js"
-import { withButtons, B } from "../components/Button.js"
+import { withButtons, B, fishRow } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
 import { groupAllowed, displayName, updateNickname } from "../components/common.js"
 
@@ -74,6 +74,6 @@ export class FishingTitle extends plugin {
       "同一称号只按最高一级生效，不同称号效果叠加",
     ].join("\n"))
     if (!msg) return true
-    return e.reply(withButtons(e, msg, [B.cast, B.multi, B.info]))
+    return e.reply(withButtons(e, msg, [...fishRow(user), B.info]))
   }
 }
