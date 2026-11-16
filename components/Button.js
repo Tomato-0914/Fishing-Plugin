@@ -39,13 +39,13 @@ export function fishRow(user, { short = false } = {}) {
         row.push({ text: short ? `${c.emoji} ${c.label}` : `${c.emoji} ${c.label}钓鱼`, callback: c.cmd })
     }
   }
-  row.push(short ? { ...B.fish, text: "🎣 钓鱼" } : B.cast)
+  row.push(B.fish)
   return row
 }
 
 /** 常用按钮 */
 export const B = {
-  cast: { text: "🎣 再来一竿", callback: "#钓鱼" },
+  cast: { text: "🎣 钓鱼", callback: "#钓鱼" },
   start: { text: "🎣 开始钓鱼", callback: "#钓鱼" },
   multi: { text: "🔟 十连钓鱼", callback: "#十连钓鱼" },
   hundred: { text: "💯 百连钓鱼", callback: "#百连钓鱼" },
