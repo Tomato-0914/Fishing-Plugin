@@ -59,7 +59,7 @@ export function buyGear(user,shop,slot,tier) {
   if (user.gold<cost) return {ok:false,reason:"gold",cost}
   user.gold-=cost
   const inherited=inheritLevels(user,shop,slot,tier)
-  user.gearV2.items[gearKey(slot,tier)]={enhance:inherited.enhance,forge:inherited.forge,enhanceFails:0,forgeFails:0}
+  user.gearV2.items[gearKey(slot,tier)]={enhance:inherited.enhance,forge:inherited.forge,enhanceFails:0,forgeFails:0,spent:cost}
   user.stats ||= {}
   user.stats.gearSpent=(user.stats.gearSpent||0)+cost
   return {ok:true,cost,item:gearItem(shop,slot,tier),inherited}
@@ -99,7 +99,7 @@ export function buyGearSet(user, shop, tier) {
   const inherited = {}
   for (const slot of missing) {
     const inh = inherited[slot] = inheritLevels(user,shop,slot,tier)
-    user.gearV2.items[gearKey(slot,tier)] = {enhance:inh.enhance,forge:inh.forge,enhanceFails:0,forgeFails:0}
+    user.gearV2.items[gearKey(slot,tier)] = {enhance:inh.enhance,forge:inh.forge,enhanceFails:0,forgeFails:0,spent:tierPrice(shop,tier)}
   }
   user.stats ||= {}
   user.stats.gearSpent = (user.stats.gearSpent || 0) + cost
@@ -169,10 +169,83 @@ export function cultivateGear(user,shop,slot,tier,type,rng=Math.random) {
   user.gold-=cost
   user.stats ||= {}
   user.stats.gearSpent=(user.stats.gearSpent||0)+cost
+  item.spent=gearSpent(shop,slot,tier,item)+cost
   const success=rng()*100<chance
   if (success) { item[type]=target;item[failKey]=0 } else item[failKey]=(Number(item[failKey])||0)+1
   return {ok:true,success,chance,cost,target,failures:item[failKey]}
 }
+
+/** 回收设置：返还投入金币的 rate%；只回收比同部位最高阶低 minGap 阶以上的（更低的强化等级已经继承不到） */
+export const recycleCfg = shop => ({
+  rate: Math.min(100, Math.max(0, Number(shop?.gearV2?.recycle?.rate ?? 30) || 0)),
+  minGap: Math.max(0, Math.floor(Number(shop?.gearV2?.recycle?.minGap ?? 3) || 0)),
+})
+
+/**
+ * 这件渔具投入的金币（购买 + 强化 / 锻造，含失败）
+ * 有记录时用记录；旧存档没有记录，按阶位价格 + 强化 / 锻造到当前等级的费用估算
+ */
+export function gearSpent(shop,slot,tier,item) {
+  if (item?.spent != null) return Math.max(0,Number(item.spent)||0)
+  let sum=tier>1?tierPrice(shop,tier):0
+  for (let l=1;l<=(Number(item?.enhance)||0);l++) sum+=enhanceCost(shop,tier,l)
+  for (let l=1;l<=(Number(item?.forge)||0);l++) sum+=forgeCost(shop,tier,l)
+  return sum
+}
+
+/** 同部位已拥有的最高阶 */
+export const topOwnedTier = (user,slot) => {
+  for (let t=TIER_NAMES.length;t>=1;t--) if (ownedGear(user,slot,t)) return t
+  return 1
+}
+
+/**
+ * 能否回收：新手渔具、穿着的、离同部位最高阶不足 minGap 阶的（还能被继承）不能回收
+ * @returns {{ ok, reason?, value, keepUntil? }}  reason: not_owned / starter / equipped / keep
+ */
+export function recycleCheck(user,shop,slot,tier) {
+  ensureGear(user)
+  const item=ownedGear(user,slot,tier)
+  if (!SLOTS.includes(slot)||!item) return {ok:false,reason:"not_owned",value:0}
+  const {rate,minGap}=recycleCfg(shop)
+  const value=Math.floor(gearSpent(shop,slot,tier,item)*rate/100)
+  if (tier<=1) return {ok:false,reason:"starter",value}
+  if (gearLevel(user,slot)===tier) return {ok:false,reason:"equipped",value}
+  const top=topOwnedTier(user,slot)
+  if (tier>top-minGap) return {ok:false,reason:"keep",value,keepUntil:tier+minGap}
+  return {ok:true,value}
+}
+
+/** 当前所有可回收的渔具（高阶在前） */
+export function recyclableGear(user,shop) {
+  ensureGear(user)
+  const out=[]
+  for (let t=TIER_NAMES.length;t>=1;t--) for (const slot of SLOTS) {
+    if (!ownedGear(user,slot,t)) continue
+    const c=recycleCheck(user,shop,slot,t)
+    if (c.ok) out.push({slot,tier:t,value:c.value})
+  }
+  return out
+}
+
+/** 回收若干件（先逐件校验，不能回收的跳过），返回 { count, gold, items } */
+export function recycleGear(user,shop,list) {
+  const done=[]
+  for (const {slot,tier} of list) {
+    const c=recycleCheck(user,shop,slot,tier)
+    if (!c.ok) continue
+    delete user.gearV2.items[gearKey(slot,tier)]
+    user.gold+=c.value
+    done.push({slot,tier,value:c.value})
+  }
+  const gold=done.reduce((s,x)=>s+x.value,0)
+  if (done.length) {
+    user.stats ||= {}
+    user.stats.gearRecycled=(user.stats.gearRecycled||0)+done.length
+  }
+  return {count:done.length,gold,items:done}
+}
+
 export function upgradeGear(user,shop,slot) { return {ok:false,reason:"obsolete"} }
 
 /**

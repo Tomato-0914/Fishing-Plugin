@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="{{_res}}/common/common.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body { width:720px; margin:0; padding:0; font-family:"Microsoft YaHei","Noto Sans CJK SC",sans-serif; }
+    .container { width:720px; max-width:720px; padding:20px 16px 24px; margin:0 auto; overflow:hidden; }
+    .catalog-head { display:flex; justify-content:space-between; align-items:center; padding:17px 20px; border-radius:20px; background:linear-gradient(110deg,#124b55,#167f83); color:#fff; margin-bottom:18px; }
+    .catalog-title { font-size:27px; font-weight:800; letter-spacing:2px; }
+    .catalog-sub { font-size:13px; opacity:.9; margin-top:6px; }
+    .coins { font-size:19px; font-weight:700; text-align:right; }
+    .catalog-guide { display:flex; gap:14px; padding:10px 14px; margin-bottom:15px; border-radius:12px; background:rgba(85,130,140,.12); font-size:13px; }
+    .tier { margin-bottom:12px; padding:12px 11px 13px; border:1px solid rgba(110,130,145,.24); border-radius:16px; background:var(--card-bg,rgba(150,160,175,.10)); break-inside:avoid; }
+    .tier.locked { opacity:.72; }
+    .tier-head { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+    .tier-number { padding:5px 11px; border-radius:8px; background:#167f83; color:white; font-size:15px; font-weight:800; }
+    .tier-name { font-size:17px; font-weight:800; }
+    .tier-meta { margin-left:auto; font-size:12px; opacity:.8; }
+    .tier-price { font-size:15px; font-weight:800; color:#d18b20; }
+    .gear-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:6px; }
+    .gear-item { min-height:100px; min-width:0; padding:9px 3px; border-radius:12px; border:1px solid rgba(120,140,155,.2); background:rgba(130,150,165,.09); text-align:center; }
+    .gear-item.equipped { border:2px solid #23a58d; background:rgba(35,165,141,.13); }
+    .gear-item.owned:not(.equipped) { border-color:rgba(35,165,141,.55); }
+    .gear-icon { height:56px; display:flex; align-items:center; justify-content:center; }
+    .gear-icon .gear-art { width:56px; height:56px; object-fit:contain; filter:drop-shadow(0 2px 3px rgba(0,0,0,.25)); }
+    .tier.locked .gear-icon .gear-art { filter:grayscale(.75) brightness(.9); opacity:.6; }
+    .gear-name { font-size:13px; font-weight:700; margin:4px 0 5px; overflow-wrap:anywhere; }
+    .gear-status { font-size:12px; font-weight:700; color:#138b78; }
+    .gear-status.unavailable { color:#9a8c7e; }
+    .gear-status.poor { color:#ba7842; }
+    .gear-progress { font-size:11px; opacity:.75; margin-top:4px; }
+    .gear-item.empty { opacity:.35; border-style:dashed; }
+    .gear-item.empty .gear-art { filter:grayscale(1); }
+    .gear-item.recycle { border-color:rgba(209,139,32,.6); }
+    .gear-status.recycle { color:#c27a12; }
+    .gear-status.keep { color:#5f86a8; }
+    .gear-status.dim { color:#9a8c7e; }
+    .summary { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 16px; margin-bottom:15px; border-radius:12px; background:rgba(209,139,32,.12); border:1px solid rgba(209,139,32,.35); font-size:14px; }
+    .summary b { color:#c27a12; font-size:17px; }
+    .summary .cmd { font-size:13px; opacity:.85; }
+    .catalog-foot { text-align:center; padding:14px 8px 4px; font-size:12px; opacity:.8; }
+    body.dark .tier { background:#202b36; border-color:#394857; }
+    body.dark .gear-item { background:#293745; }
+    body.dark .tier-price { color:#f5bc59; }
+    body.dark .gear-status { color:#65d5b6; }
+    body.dark .gear-status.unavailable { color:#a9a8aa; }
+    body.dark .gear-status.poor { color:#e6a179; }
+    body.dark .gear-status.recycle, body.dark .summary b { color:#f5bc59; }
+    body.dark .gear-status.keep { color:#8fb8dc; }
+  </style>
+</head>
+<body class="{{theme}}">
+  <div class="container">
+    <div class="catalog-head" style="background:linear-gradient(110deg,#4a3a17,#8a6420)">
+      <div><div class="catalog-title">🎒 渔具背包</div><div class="catalog-sub">{{name}} · 已拥有 {{owned}} 件渔具</div></div>
+      <div class="coins">👛 {{gold}} 金币</div>
+    </div>
+    <div class="catalog-guide"><span>🟢 穿戴中</span><span>♻️ 可回收</span><span>📦 保留（买新渔具时还能继承）</span><span>🔰 新手渔具</span></div>
+    {{if recycleCount}}
+    <div class="summary"><span>♻️ 可回收 <b>{{recycleCount}}</b> 件，共 <b>{{recycleGold}}</b> 金币</span><span class="cmd">#一键回收渔具</span></div>
+    {{else}}
+    <div class="summary"><span>♻️ 暂时没有可以回收的渔具</span><span class="cmd">比同部位最高阶低 {{minGap}} 阶以上才能回收</span></div>
+    {{/if}}
+    {{each tiers t}}
+    <section class="tier">
+      <div class="tier-head">
+        <span class="tier-number" style="background:{{t.color}};color:{{t.textColor}}">Lv.{{t.needLevel}}</span>
+        <span class="tier-name">{{t.name}}系列 · {{t.tierCn}}阶</span>
+        <span class="tier-meta">已拥有 {{t.count}}/5</span>
+      </div>
+      <div class="gear-grid">
+        {{each t.items i}}
+        {{if i.owned}}
+        <div class="gear-item {{i.status === 'equipped' ? 'equipped' : i.status === 'recycle' ? 'recycle' : 'owned'}}">
+          <div class="gear-icon">{{@i.icon}}</div>
+          <div class="gear-name">{{i.name}}</div>
+          {{if i.status === 'equipped'}}<div class="gear-status">● 穿戴中</div>
+          {{else if i.status === 'recycle'}}<div class="gear-status recycle">♻️ {{i.value}}</div>
+          {{else if i.status === 'starter'}}<div class="gear-status dim">🔰 新手渔具</div>
+          {{else}}<div class="gear-status keep">📦 保留</div>{{/if}}
+          <div class="gear-progress">强化 +{{i.enhance}} · 锻造 +{{i.forge}}</div>
+        </div>
+        {{else}}
+        <div class="gear-item empty">
+          <div class="gear-icon">{{@i.icon}}</div>
+          <div class="gear-name">{{i.name}}</div>
+          <div class="gear-status dim">未拥有</div>
+        </div>
+        {{/if}}
+        {{/each}}
+      </div>
+    </section>
+    {{/each}}
+    <div class="catalog-foot">回收返还这件渔具投入金币（购买 + 强化 / 锻造）的 {{rate}}%　·　穿着的、新手渔具、离同部位最高阶不到 {{minGap}} 阶的不能回收<br/>#回收渔具 鱼竿 5　·　#回收渔具 寒玉套装　·　#一键回收渔具</div>
+  </div>
+  <script src="{{_res}}/common/twemoji.min.js"></script>
+  <script src="{{_res}}/common/emoji.js"></script>
+</body>
+</html>
