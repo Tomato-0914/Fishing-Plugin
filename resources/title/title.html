@@ -15,8 +15,10 @@
       </div>
     </div>
 
+    {{each groups g}}
+    <div class="divider"><span>{{g.label}}</span></div>
     <div class="grid">
-      {{each cards c}}
+      {{each g.cards c}}
       <div class="card t {{c.tier ? '' : 'lock'}}" style="--tc: {{c.color}}">
         <div class="top">
           <div class="emoji">{{c.emoji}}</div>
@@ -40,6 +42,7 @@
       </div>
       {{/each}}
     </div>
+    {{/each}}
 
     {{if sum}}
     <div class="card sum"><b>✨ 称号总加成</b><div>{{sum}}</div></div>

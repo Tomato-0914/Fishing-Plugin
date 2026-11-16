@@ -32,7 +32,7 @@ export class FishingTitle extends plugin {
     // 先补发已达成但还没记录的称号
     if (checkTitles(user, titles, items).length) UserData.save(user.user_id)
 
-    // 未获得的放最上面，已获得按Ⅰ、Ⅱ级排，满级放最下面
+    // 未获得的放最上面，已获得按Ⅰ、Ⅱ级排，满级放最下面；两组之间用分割线隔开
     const cards = sortTitleCards(titles.map(t => {
       const tier = ownedTier(user, t, items)
       const max = t.tiers?.length || 0
@@ -56,20 +56,24 @@ export class FishingTitle extends plugin {
       }
     }))
     const owned = cards.filter(c => c.tier)
+    const locked = cards.filter(c => !c.tier)
+    const groups = [
+      { label: `🔒 未获得 · ${locked.length} 个`, cards: locked },
+      { label: `🏅 已获得 · ${owned.length} 个`, cards: owned },
+    ].filter(g => g.cards.length)
     const total = effectText(getEffects(user, titles, items))
     const data = {
-      name: displayName(user), cards,
+      name: displayName(user), cards, groups,
       owned: owned.length, total: titles.length,
       tiers: cards.reduce((s, c) => s + c.tier, 0), maxTiers: cards.reduce((s, c) => s + c.max, 0),
       sum: owned.length ? total : "",
     }
     const msg = await renderOrText(puppeteer, "title", data, () => [
       `🏅 ${data.name} 的称号（${data.owned}/${data.total} · 共 ${data.tiers}/${data.maxTiers} 级）`,
-      "━━━━━━━━━━━━",
-      ...cards.flatMap(c => [
+      ...groups.flatMap(g => [`━━━ ${g.label} ━━━`, ...g.cards.flatMap(c => [
         `${c.tier ? "✅" : "🔒"} ${c.emoji}【${c.name}】${c.tier ? `　${c.effect}` : ""}`,
         c.next ? `　下一级 ${c.next.name}：${c.next.desc}（${c.next.progress}）→ ${c.next.effect}` : "　✨ 已满级",
-      ]),
+      ])]),
       "━━━━━━━━━━━━",
       data.sum ? `✨ 称号总加成：${data.sum}` : "还没有称号，快去钓鱼吧~",
       "同一称号只按最高一级生效，不同称号效果叠加",
