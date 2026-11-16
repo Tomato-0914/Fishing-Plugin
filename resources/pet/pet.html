@@ -77,7 +77,7 @@
             {{if main.waiting}}<span class="chip red">待选择进化方向</span>{{/if}}
           </div>
           <div class="row"><div class="lab"><span>📈 经验</span><span>{{main.xpText}}</span></div><div class="bar"><i style="width:{{main.xpPct}}%"></i></div></div>
-          <div class="row"><div class="lab"><span>🍖 饱食度 {{main.sat}}</span><span>{{main.hungry ? '已饥饿' : main.hungryIn + '后饥饿'}}</span></div><div class="bar sat {{main.warn ? 'low' : ''}}"><i style="width:{{main.satPct}}%"></i></div></div>
+          <div class="row"><div class="lab"><span>🍖 饱食度 {{main.sat}}</span><span>每天 -{{main.perDay}} · {{main.hungry ? '已饥饿' : main.hungryIn + '后饥饿'}}</span></div><div class="bar sat {{main.warn ? 'low' : ''}}"><i style="width:{{main.satPct}}%"></i></div></div>
         </div>
       </div>
     </div>
@@ -115,7 +115,7 @@
 
     {{if notices.length}}<div class="card notice">{{each notices t}}<div>{{t}}</div>{{/each}}</div>{{/if}}
 
-    <div class="footer">口粮 {{foodPrice}} 金币/份（+{{foodValue}} 饱食度）· 饱食度 ≤ {{hungry}} 技能失效，降到 0 会离家出走（{{recallDays}} 天内 {{recallPrice}}金币寻回）<br/>#喂食宠物 份数 · #宠物出战 名称（每天 1 次）· #宠物改名 名字 · #宠物商店</div>
+    <div class="footer">口粮 {{foodPrice}} 金币/份（+{{foodValue}} 饱食度）· 阶段越高饱食度消耗越多 · 饱食度 ≤ {{hungry}} 技能失效，降到 0 会离家出走（{{recallDays}} 天内 {{recallPrice}}金币寻回）<br/>#喂食宠物 份数 · #宠物出战 名称（每天 1 次）· #宠物改名 名字 · #宠物商店</div>
   </div>
   <script src="{{_res}}/common/twemoji.min.js"></script>
   <script src="{{_res}}/common/emoji.js"></script>

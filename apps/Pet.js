@@ -4,7 +4,7 @@ import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import {
   petCfg, petDefs, petDef, ensurePets, refreshPets, petLevel, rawPetLevel, petStage, needsBranch, branchLevel, branchDef,
-  formAt, currentForm, petName, petSkills, skillText, petThreshold, isHungry, satText, satHours, findOwnedPet, findPetDef,
+  formAt, currentForm, petName, satPerDay, petSkills, skillText, petThreshold, isHungry, satText, satHours, findOwnedPet, findPetDef,
   buyPet, setActivePet, feedPet, evolvePet, renamePet, recallPet, lostPets, petNotices,
 } from "../components/Pet.js"
 import { petIcon } from "../components/PetIcons.js"
@@ -131,7 +131,7 @@ export class FishingPet extends plugin {
       `💰 花费 ${money(ret.cost)} 金币（剩余 ${money(user.gold)}）`,
       `✨ 初始技能「${f.skill?.name}」：${skillText(f.skill?.effect, f.skill?.value)}`,
       ret.active ? "🎣 已自动出战：钓鱼时一起获得经验，Lv20 / Lv40 自动进化" : "💤 正在休息，可发送 #宠物出战 " + f.name + " 让它出战（每天限换 1 次）",
-      `🍖 饱食度 ${c.satiety.max}/${c.satiety.max}，出战每小时 -${c.satiety.active}，记得 #喂食宠物`,
+      `🍖 饱食度 ${c.satiety.max}/${c.satiety.max}，现在出战每天约 -${satPerDay(user.pets.owned[def.id], true, c)}（阶段越高消耗越多），记得 #喂食宠物`,
       ret.replaced ? `⚠️ 之前离家出走的${def.name}已无法再寻回` : "",
     ].filter(Boolean).join("\n"), [{ text: "🐾 我的宠物", callback: "#我的宠物" }, B.fish]))
   }
@@ -151,7 +151,7 @@ export class FishingPet extends plugin {
       xpText: max ? "已满级" : waiting ? `经验已够 Lv${rawPetLevel(d.xp, c)}，选择方向后升级` : `${money(d.xp - cur)} / ${money(next - cur)}`,
       xpPct: max || waiting ? 100 : Math.min(100, Math.floor((d.xp - cur) / (next - cur) * 100)),
       sat: satText(d, c), satPct: Math.max(0, Math.min(100, d.sat / c.satiety.max * 100)), hungry: isHungry(d, c), warn: d.sat < c.satiety.warn,
-      hungryIn: hoursText(hours.hungry), goneIn: hoursText(hours.gone),
+      hungryIn: hoursText(hours.hungry), goneIn: hoursText(hours.gone), perDay: satPerDay(d, user.pets.active === id, c),
     }
   }
 
@@ -241,7 +241,7 @@ export class FishingPet extends plugin {
     return e.reply(withButtons(e, [
       `🎣 ${name} 出战！钓鱼时一起获得经验，技能开始生效`,
       ret.free ? "" : `🔁 今天还能更换 ${ret.left} 次`,
-      `🍖 饱食度 ${satText(user.pets.owned[id], c)}（出战每小时 -${c.satiety.active}）`,
+      `🍖 饱食度 ${satText(user.pets.owned[id], c)}（出战每天约 -${satPerDay(user.pets.owned[id], true, c)}）`,
     ].filter(Boolean).join("\n"), [{ text: "🐾 我的宠物", callback: "#我的宠物" }, B.fish]))
   }
 

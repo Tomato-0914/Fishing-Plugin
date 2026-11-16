@@ -26,7 +26,10 @@ export function petCfg(cfg = Config.config?.pet) {
     stageLevels: Array.isArray(c.stageLevels) && c.stageLevels.length === 5 ? c.stageLevels.map(Number) : [1, 20, 40, 60, 80],
     skillGrowth: n0(c.skillGrowth ?? 25),
     switchPerDay: Math.max(1, Math.floor(Number(c.switchPerDay) || 1)),
-    satiety: { max: Math.max(1, Number(sat.max) || 100), hungry: n0(sat.hungry ?? 30), warn: n0(sat.warn ?? 50), active: n0(sat.active ?? 1), rest: n0(sat.rest ?? 0.2) },
+    satiety: {
+      max: Math.max(1, Number(sat.max) || 100), hungry: n0(sat.hungry ?? 30), warn: n0(sat.warn ?? 50), active: n0(sat.active ?? 1), rest: n0(sat.rest ?? 0.2),
+      stageRate: Array.isArray(sat.stageRate) && sat.stageRate.length === 5 ? sat.stageRate.map(n0) : [0.2, 1, 5, 25, 50],
+    },
     food: { price: n0(food.price ?? 10000), value: Math.max(0.1, Number(food.value) || 5) },
     recall: { price: n0(recall.price ?? 1000000), days: n0(recall.days ?? 7) },
   }
@@ -110,6 +113,14 @@ export const skillText = (effect, value) => (SKILL_TEXT[effect] || (v => `${effe
 
 /* ---------------- 饱食度 ---------------- */
 
+/** 每小时消耗的饱食度：出战 / 休息的基础消耗 × 当前阶段的消耗比例（阶段越低消耗越少） */
+export function satRate(data, active, c = petCfg()) {
+  const base = active ? c.satiety.active : c.satiety.rest
+  return base * (c.satiety.stageRate[petStage(data, c) - 1] ?? 100) / 100
+}
+/** 每天消耗多少饱食度（展示用） */
+export const satPerDay = (data, active, c = petCfg()) => Number((satRate(data, active, c) * 24).toFixed(2))
+
 /**
  * 按经过的时间扣饱食度（出战 / 休息消耗不同）；降到 0 的宠物离家出走，移入 lost
  * 改变出战宠物前要先调用，保证之前的时间按原来的状态结算
@@ -120,7 +131,7 @@ export function refreshPets(user, now = Date.now(), c = petCfg()) {
   const gone = []
   for (const [id, d] of Object.entries(p.owned)) {
     const t = Number(d.t) || now
-    const rate = id === p.active ? c.satiety.active : c.satiety.rest
+    const rate = satRate(d, id === p.active, c)
     const sat = Math.min(c.satiety.max, n0(d.sat))
     const left = sat - Math.max(0, now - t) / HOUR * rate
     if (rate > 0 && left <= 0) {
@@ -142,7 +153,7 @@ export const satText = (data, c = petCfg()) => `${Math.ceil(n0(data?.sat))}/${c.
 /** 饱食度还能撑多少小时（降到饥饿 / 降到 0） */
 export function satHours(user, id, c = petCfg()) {
   const d = user.pets?.owned?.[id]
-  const rate = id === user.pets?.active ? c.satiety.active : c.satiety.rest
+  const rate = d ? satRate(d, id === user.pets?.active, c) : 0
   if (!d || !rate) return { hungry: Infinity, gone: Infinity }
   return { hungry: Math.max(0, (n0(d.sat) - c.satiety.hungry) / rate), gone: n0(d.sat) / rate }
 }
