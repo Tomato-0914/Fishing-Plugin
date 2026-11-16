@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="{{_res}}/common/common.css" />
+  <style>
+    .hero { display:flex; gap:20px; align-items:center; }
+    .portrait { width:170px; height:170px; flex:none; border-radius:22px; display:flex; align-items:center; justify-content:center;
+      background:radial-gradient(circle at 50% 40%, rgba(255,214,102,.35), rgba(79,209,255,.08) 70%); border:2px solid rgba(255,200,90,.55); }
+    .portrait .pet-art { width:150px; height:150px; object-fit:contain; filter:drop-shadow(0 4px 8px rgba(0,0,0,.3)); }
+    .portrait .pet-emoji { font-size:104px; line-height:1; }
+    .portrait.hungry { filter:grayscale(.6); border-color:#d9534f; }
+    .info { flex:1; min-width:0; }
+    .pname { font-size:30px; font-weight:800; }
+    .pname small { font-size:15px; font-weight:600; color:var(--sub); margin-left:8px; }
+    .chips { margin:8px 0 10px; display:flex; flex-wrap:wrap; gap:6px; }
+    .chip { font-size:13px; font-weight:700; padding:3px 10px; border-radius:999px; background:var(--me); color:var(--accent); }
+    .chip.gold { background:#f2a900; color:#3b2500; }
+    .chip.red { background:#d9534f; color:#fff; }
+    .row { font-size:14px; margin-top:8px; }
+    .row .lab { display:flex; justify-content:space-between; font-weight:700; }
+    .row .lab span:last-child { color:var(--sub); font-weight:600; }
+    .bar { height:9px; border-radius:5px; background:var(--me); margin-top:4px; overflow:hidden; }
+    .bar i { display:block; height:100%; border-radius:5px; background:var(--accent); }
+    .bar.sat i { background:linear-gradient(90deg,#f0a742,#ffd36a); }
+    .bar.sat.low i { background:#d9534f; }
+    .skill { display:flex; gap:12px; align-items:center; padding:10px 12px; border-radius:12px; background:var(--me); margin-bottom:8px; }
+    .skill:last-child { margin-bottom:0; }
+    .skill .st { flex:none; width:46px; text-align:center; font-size:12px; font-weight:800; padding:3px 0; border-radius:8px; background:var(--accent); color:#fff; }
+    .skill .sn { font-weight:800; font-size:16px; }
+    .skill .sd { font-size:14px; color:var(--sub); }
+    .off .skill { opacity:.45; }
+    .path { display:flex; align-items:flex-start; justify-content:center; gap:4px; }
+    .node { width:96px; text-align:center; font-size:13px; opacity:.45; }
+    .node.on { opacity:1; }
+    .node .ic { height:62px; display:flex; align-items:center; justify-content:center; }
+    .node .pet-art { width:58px; height:58px; object-fit:contain; }
+    .node .pet-emoji { font-size:42px; line-height:1; }
+    .node.now .ic { border-radius:14px; background:rgba(255,200,90,.25); box-shadow:0 0 0 2px rgba(255,200,90,.7) inset; }
+    .node b { display:block; font-size:14px; }
+    .arrow { margin-top:22px; color:var(--sub); font-weight:800; }
+    .next { display:flex; gap:12px; align-items:center; padding:10px 12px; border-radius:12px; border:1px dashed var(--card-border); margin-bottom:8px; }
+    .next:last-child { margin-bottom:0; }
+    .next .ic { width:56px; flex:none; text-align:center; }
+    .next .pet-art { width:52px; height:52px; object-fit:contain; }
+    .next .pet-emoji { font-size:38px; }
+    .next .nt { font-weight:800; }
+    .next .nd { font-size:13px; color:var(--sub); margin-top:2px; }
+    .mini { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .m { display:flex; gap:10px; align-items:center; padding:10px; border-radius:12px; background:var(--me); }
+    .m .ic { width:48px; text-align:center; }
+    .m .pet-art { width:46px; height:46px; object-fit:contain; }
+    .m .pet-emoji { font-size:34px; }
+    .m .mn { font-weight:800; }
+    .m .md { font-size:12px; color:var(--sub); }
+    .notice { font-size:14px; line-height:1.7; color:#d9534f; font-weight:700; }
+  </style>
+</head>
+<body class="{{theme}}">
+  <div class="container">
+    <div class="head">
+      <div class="logo">🐾</div>
+      <div><div class="title">{{name}} 的宠物</div><div class="sub">👛 {{gold}} 金币</div></div>
+    </div>
+
+    {{if main}}
+    <div class="card">
+      <div class="hero">
+        <div class="portrait {{main.hungry ? 'hungry' : ''}}">{{@main.icon}}</div>
+        <div class="info">
+          <div class="pname">{{main.name}}{{if main.name !== main.form}}<small>{{main.form}}</small>{{/if}}</div>
+          <div class="chips">
+            <span class="chip gold">Lv.{{main.level}}</span>
+            <span class="chip">{{main.stageCn}}{{if main.branch}} · {{main.branch}}{{/if}}</span>
+            <span class="chip">🎣 出战中</span>
+            {{if main.hungry}}<span class="chip red">饥饿 · 技能失效</span>{{/if}}
+            {{if main.waiting}}<span class="chip red">待选择进化方向</span>{{/if}}
+          </div>
+          <div class="row"><div class="lab"><span>📈 经验</span><span>{{main.xpText}}</span></div><div class="bar"><i style="width:{{main.xpPct}}%"></i></div></div>
+          <div class="row"><div class="lab"><span>🍖 饱食度 {{main.sat}}</span><span>{{main.hungry ? '已饥饿' : main.hungryIn + '后饥饿'}}</span></div><div class="bar sat {{main.warn ? 'low' : ''}}"><i style="width:{{main.satPct}}%"></i></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card {{main.hungry ? 'off' : ''}}">
+      <div class="card-title">✨ 技能{{if main.hungry}}<span class="muted" style="font-size:14px"> · 饥饿中，暂时失效</span>{{/if}}</div>
+      {{each detail.skills s}}
+      <div class="skill"><div class="st">{{s.stageCn}}</div><div><div class="sn">「{{s.name}}」</div><div class="sd">{{s.text}}</div></div></div>
+      {{/each}}
+    </div>
+
+    <div class="card">
+      <div class="card-title">🧬 进化路线</div>
+      <div class="path">
+        {{each detail.path n i}}{{if i}}<span class="arrow">→</span>{{/if}}<div class="node {{n.on ? 'on' : ''}} {{n.now ? 'now' : ''}}"><div class="ic">{{@n.icon}}</div><b>{{n.name}}</b><span class="muted">Lv{{n.lv}}</span></div>{{/each}}
+        {{if detail.path.length < 4}}<span class="arrow">→</span><div class="node"><div class="ic"><span class="pet-emoji">🔀</span></div><b>选择方向</b><span class="muted">Lv{{branchLv}}</span></div>{{/if}}
+      </div>
+      {{if detail.next.length}}<div style="margin-top:12px">
+        {{each detail.next x}}<div class="next"><div class="ic">{{@x.icon}}</div><div><div class="nt">🔮 {{x.title}}</div><div class="nd">{{x.skill}}</div>{{if x.desc}}<div class="nd">{{x.desc}}</div>{{/if}}</div></div>{{/each}}
+      </div>{{/if}}
+    </div>
+    {{else}}
+    <div class="card"><div class="muted">💤 当前没有出战的宠物，发送 #宠物出战 名称</div></div>
+    {{/if}}
+
+    {{if rest.length || lost.length}}
+    <div class="card">
+      <div class="card-title">🏠 其他宠物</div>
+      <div class="mini">
+        {{each rest r}}<div class="m"><div class="ic">{{@r.icon}}</div><div><div class="mn">{{r.name}} · Lv{{r.level}}</div><div class="md">💤 休息中 · 🍖 {{r.sat}}</div></div></div>{{/each}}
+        {{each lost l}}<div class="m" style="opacity:.6"><div class="ic"><span class="pet-emoji">😢</span></div><div><div class="mn">{{l.name}} · Lv{{l.level}}</div><div class="md">离家出走 · 还剩 {{l.left}} 可寻回</div></div></div>{{/each}}
+      </div>
+    </div>
+    {{/if}}
+
+    {{if notices.length}}<div class="card notice">{{each notices t}}<div>{{t}}</div>{{/each}}</div>{{/if}}
+
+    <div class="footer">口粮 {{foodPrice}} 金币/份（+{{foodValue}} 饱食度）· 饱食度 ≤ {{hungry}} 技能失效，降到 0 会离家出走（{{recallDays}} 天内 {{recallPrice}}金币寻回）<br/>#喂食宠物 份数 · #宠物出战 名称（每天 1 次）· #宠物改名 名字 · #宠物商店</div>
+  </div>
+  <script src="{{_res}}/common/twemoji.min.js"></script>
+  <script src="{{_res}}/common/emoji.js"></script>
+</body>
+</html>

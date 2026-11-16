@@ -3,8 +3,9 @@ import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
 import { groupProtectedMax, cooldownLeft, setCooldown, cooldownText, COOLDOWN_LABELS, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier } from "../components/Game.js"
-import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, holdsOnTimeout, maxLevel, gearSummary } from "../components/Gear.js"
-import { resolveCast, summarize, formatMulti, formatHundred } from "../components/Catch.js"
+import { addBait, consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, holdsOnTimeout, maxLevel, gearSummary } from "../components/Gear.js"
+import { resolveCast, summarize, formatMulti, formatHundred, withExtras, petProcLine } from "../components/Catch.js"
+import { addPetXp, petGainLines, petNotices, skillFor } from "../components/Pet.js"
 import GroupDaily, { groupKey } from "../components/GroupDaily.js"
 import { experience, characterProgress, xpGainText } from "../components/Progression.js"
 import { checkTitles, getEffects, effectText, titleUpText } from "../components/Titles.js"
@@ -28,8 +29,22 @@ const WAITING_TEXT = [
 ]
 
 const sec = n => Math.max(0, Math.round(n))
-/** 经验由累计抛竿与钓获统计推导；此处仅展示，不重复发放。 */
-const xpSettlement = xpGainText
+/**
+ * 角色经验由累计抛竿与钓获统计推导（这里只展示）；出战宠物获得同样多的经验
+ * 返回：角色经验 + 宠物经验 / 进化 + 饥饿、离家出走提醒（满级时对应行不显示）
+ */
+function xpSettlement(user, before) {
+  const pet = addPetXp(user, experience(user) - before)
+  return [xpGainText(user, before), ...petGainLines(pet), ...petNotices(user)].filter(Boolean).join("\n")
+}
+
+/** 宠物技能“不消耗鱼饵”：按概率退回刚用掉的鱼饵 */
+function saveBait(user, bait, effects, rng = Math.random) {
+  const chance = Number(effects.baitSave) || 0
+  if (!bait || chance <= 0 || rng() * 100 >= chance) return false
+  addBait(user, bait.id, 1)
+  return true
+}
 
 export class Fishing extends plugin {
   constructor() {
@@ -53,6 +68,12 @@ export class Fishing extends plugin {
   }
 
   /** 本竿的全部效果：称号 + 今日幸运 + 渔具 + 本竿鱼饵 */
+  /** 宠物技能触发的一行：“🐉 龙「龙吟」：鱼价 ×3！” */
+  skillLine(user, effect, text) {
+    const s = skillFor(user, effect)
+    return s ? `${s.emoji} ${s.pet}「${s.name}」：${text}` : `🐾 宠物技能：${text}`
+  }
+
   /** 本群今日保护鱼类计数（私聊按个人单独计算） */
   protectedGroup(e) {
     const key = groupKey(e)
@@ -202,6 +223,7 @@ export class Fishing extends plugin {
     const used = consumeBait(user, shop)
     const bait = used.bait
     const effects = this.effectsFor(user, bait)
+    const saved = saveBait(user, bait, effects)
     const biteMin = Math.max(1, Number(fcfg.biteMin) || 3)
     const biteMax = Math.min(30, Math.max(biteMin, Number(fcfg.biteMax) || 18))
     const delay = Math.max(2, triangular(biteMin, biteMax) - (effects.biteReduce || 0)) * 1000
@@ -222,6 +244,7 @@ export class Fishing extends plugin {
       `🎣 ${name} ${pick(CAST_TEXT)}`,
       this.gearLine(user, shop),
       `🪱 ${bait.name}（剩 ${remain}）${warn}`,
+      saved ? this.skillLine(user, "baitSave", "这竿没有消耗鱼饵") : "",
       this.luckLine(user),
     ].filter(Boolean).join("\n"))
     // 新称号 / 称号升级（例如钓鱼佬Ⅰ）
@@ -387,17 +410,19 @@ export class Fishing extends plugin {
     const n = Math.min(c.count, usableBait(user, shop), limit - user.bag.length)
     const baits = []
     let lockNote = ""
+    let baitSaved = 0
     for (let i = 0; i < n; i++) {
       const used = consumeBait(user, shop)
       if (!used) break
       if (used.reason === "locked" && !lockNote) lockNote = this.switchText(used)
       baits.push(used.bait)
+      if (saveBait(user, used.bait, this.effectsFor(user, used.bait))) baitSaved++
     }
     user.stats.casts += baits.length
     addGroup(user, e.group_id)
     UserData.save(id)
 
-    const s = { stage: "multi", kind, label: c.label, castAt: Date.now(), xpBefore: experience(user) - baits.length }
+    const s = { stage: "multi", kind, label: c.label, castAt: Date.now(), xpBefore: experience(user) - baits.length, baitSaved }
     const delay = triangular(...c.delay) * 1000
     s.timer = setTimeout(() => this.batchSettle(e, id, baits, c).catch(err => logger.error(err)), delay)
     sessions.set(id, s)
@@ -432,13 +457,13 @@ export class Fishing extends plugin {
     // 百连降低保护鱼类出现概率；误钓后禁渔，后面的竿作废（鱼饵不退）
     const extra = { protectedScale: protectedScaleFor(c, cfg.probability) }
     const group = this.protectedGroup(e)
-    const rounds = baits.map(bait => resolveCast(user, { items: Config.items, cfg, shop, effects: { ...this.effectsFor(user, bait), ...extra }, group }))
+    const rounds = withExtras(baits.map(bait => resolveCast(user, { items: Config.items, cfg, shop, effects: { ...this.effectsFor(user, bait), ...extra }, group })))
     // 两次之间的最短间隔（防刷屏）
     const cd = this.startCooldown(id, user, c.cooldown, c.kind)
     UserData.save(id)
 
     const sum = summarize(rounds)
-    const xpLine = xpSettlement(user, s.xpBefore ?? experience(user) - baits.length)
+    const xpLine = [xpSettlement(user, s.xpBefore ?? experience(user) - baits.length), petProcLine(rounds, s.baitSaved)].filter(Boolean).join("\n")
     const markdown = e.bot?.adapter?.id === "QQBot"
     const sizeLabels = Object.fromEntries(Object.entries(cfg.size || {}).map(([k, v]) => [k, v.label]))
     const body = c.kind !== "multi"
@@ -523,6 +548,10 @@ export class Fishing extends plugin {
       "━━━━━━━━━━━━",
       `${item.emoji} 【${r.label}】${item.name}${sizeLabel ? `（${sizeLabel}）` : ""}${result.weight != null ? `  ${formatWeight(result.weight)}` : ""}`,
       `💰 价值：${result.price} 金币`,
+      round.pet?.up ? this.skillLine(user, "rarityUp", `品级从【${RARITY_INFO[round.pet.up]?.label || round.pet.up}】提升到了【${r.label}】！`) : "",
+      round.pet?.mult ? this.skillLine(user, round.pet.mult === 3 ? "triplePrice" : "doublePrice", `鱼价 ×${round.pet.mult}！`) : "",
+      ...(round.extras || []).map(x => this.skillLine(user, round.extras.length > 1 ? "extraFish2" : "extraFish",
+        `多钓了一条 ${x.result.item.emoji}【${RARITY_INFO[x.result.rarity]?.label || ""}】${x.result.item.name}${x.result.size ? `（${Config.config.size?.[x.result.size]?.label || ""}）` : ""} ${x.value} 金币`)),
       item.desc ? `💬 ${item.desc}` : "",
       "━━━━━━━━━━━━",
       "已放入鱼护，发送 #我的鱼护 查看",

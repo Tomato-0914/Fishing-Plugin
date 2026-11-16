@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="{{_res}}/common/common.css" />
+  <style>
+    .line { padding:18px 18px 16px; }
+    .top { display:flex; gap:14px; align-items:center; }
+    .top .ic { width:84px; height:84px; flex:none; display:flex; align-items:center; justify-content:center; border-radius:18px; background:var(--me); }
+    .top .pet-art { width:76px; height:76px; object-fit:contain; }
+    .top .pet-emoji { font-size:58px; line-height:1; }
+    .top .t { flex:1; }
+    .top .tt { font-size:22px; font-weight:800; }
+    .top .td { font-size:14px; color:var(--sub); margin-top:4px; }
+    .top .st { font-size:15px; font-weight:800; color:#d18b20; text-align:right; }
+    .dark .top .st { color:#f5bc59; }
+    .tree { margin-top:14px; }
+    .seg { display:flex; align-items:stretch; gap:6px; }
+    .f { flex:1; min-width:0; text-align:center; padding:8px 4px; border-radius:12px; background:var(--me); font-size:12px; }
+    .f.unseen { opacity:.5; }
+    .f .ic { height:52px; display:flex; align-items:center; justify-content:center; }
+    .f .pet-art { width:50px; height:50px; object-fit:contain; }
+    .f .pet-emoji { font-size:36px; line-height:1; }
+    .f b { display:block; font-size:14px; margin:2px 0; }
+    .f .sk { color:var(--sub); line-height:1.35; }
+    .f .lv { font-weight:800; color:var(--accent); }
+    .branches { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
+    .br { border:1px dashed var(--card-border); border-radius:14px; padding:8px; }
+    .br .bn { font-weight:800; font-size:15px; margin-bottom:6px; }
+    .br .bn span { font-weight:500; font-size:12px; color:var(--sub); margin-left:6px; }
+    .split { text-align:center; font-size:13px; font-weight:800; color:var(--sub); margin-top:10px; }
+  </style>
+</head>
+<body class="{{theme}}">
+  <div class="container">
+    <div class="head">
+      <div class="logo">🛒</div>
+      <div><div class="title">宠物商店</div><div class="sub">{{name}} · 👛 {{gold}} 金币 · 一阶宠物 {{price}}金币/只（角色 Lv{{unlock}} 开放）</div></div>
+    </div>
+    {{each lines l}}
+    <div class="card line">
+      <div class="top">
+        <div class="ic">{{@l.icon}}</div>
+        <div class="t"><div class="tt">{{l.title}} · {{l.first}}</div><div class="td">{{l.desc}}</div></div>
+        <div class="st">{{l.status}}</div>
+      </div>
+      <div class="tree">
+        <div class="seg">
+          {{each l.forms f}}<div class="f {{f.seen ? '' : 'unseen'}}"><div class="ic">{{@f.icon}}</div><b>{{f.name}}</b><div class="lv">{{f.stage}} · Lv{{stageLevels[$index]}}</div><div class="sk">{{f.skill}}</div></div>{{/each}}
+        </div>
+        <div class="split">🔀 Lv{{branchLv}} 选择进化方向（选定后不能更改）</div>
+        <div class="branches">
+          {{each l.branches b}}<div class="br"><div class="bn">{{b.name}}<span>{{b.desc}}</span></div><div class="seg">
+            {{each b.forms f j}}<div class="f {{f.seen ? '' : 'unseen'}}"><div class="ic">{{@f.icon}}</div><b>{{f.name}}</b><div class="lv">{{f.stage}} · Lv{{stageLevels[j + 3]}}</div><div class="sk">{{f.skill}}</div></div>{{/each}}
+          </div></div>{{/each}}
+        </div>
+      </div>
+    </div>
+    {{/each}}
+    <div class="footer">一阶在这里购买，二、三阶自动进化，Lv{{branchLv}} 选择方向 · 没见过的形态显示为 ？？？<br/>#购买宠物 小鲤鱼 · #我的宠物 · #喂食宠物 份数</div>
+  </div>
+  <script src="{{_res}}/common/twemoji.min.js"></script>
+  <script src="{{_res}}/common/emoji.js"></script>
+</body>
+</html>
