@@ -83,12 +83,10 @@ export class FishingShop extends plugin {
     return e.reply(withButtons(e, msg, quick, [B.myGear, B.shop]))
   }
   /**
-   * 强化 / 锻造按钮：作用于穿戴中的装备时不写阶位，谁点就强化谁自己穿着的那件；
-   * 养成的是没穿着的阶位时必须写明阶位，这种按钮只给本人点（别人点会对准他自己的同阶装备）
+   * 强化 / 锻造 / 切换方式按钮：只有触发者本人能点（别人点会提示无权限），按钮写明阶位，对准本人正在养成的那件
    */
   cultivateButton(e,user,text,typeName,slot,tier) {
-    const equipped=gearLevel(user,slot)===tier
-    return {text,callback:`#渔具${typeName} ${SLOT_NAMES[slot]}${equipped?"":` ${tier}`}`,...(equipped?{}:{permission:e.user_id})}
+    return {text,callback:`#渔具${typeName} ${SLOT_NAMES[slot]} ${tier}`,permission:e.user_id}
   }
   workshopButtons(e,user,slot="rod",tier=1) {
     return [
