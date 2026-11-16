@@ -4,7 +4,7 @@ import Config from "../components/Config.js"
 import { newUser } from "../components/UserData.js"
 import * as P from "../components/Pet.js"
 import { resolveCast, withExtras, petProcLine } from "../components/Catch.js"
-import { petGain } from "./income-model.js"
+import { petGain, incomePerCast, referenceEffects } from "./income-model.js"
 
 const c = P.petCfg()
 const H = 3600000
@@ -69,40 +69,63 @@ test("宠物技能：每阶解锁一个，之前的技能每进一阶提升 25%�
   assert.deepEqual(P.petEffects(u, T0), {})
 })
 
-test("饱食度：出战每小时 -1、休息 -0.2；口粮 +5，最多喂到 100，多余的不扣费", () => {
+test("饱食度：阶段越高消耗越多（出战 × 阶段比例，休息为出战的 1/5）；口粮 +5，最多喂到 100，多余的不扣费", () => {
   const u = rich("p5"); P.buyPet(u, "koi", T0); P.buyPet(u, "bird", T0)
-  P.refreshPets(u, T0 + 10 * H)
+  // 一阶：出战每小时 1 × 0.2%
+  P.refreshPets(u, T0 + 100 * H)
+  assert.equal(u.pets.owned.koi.sat, 99.8)
+  assert.equal(u.pets.owned.bird.sat, 99.96)
+  // 五阶：出战每小时 0.5，休息 0.1
+  for (const id of ["koi", "bird"]) Object.assign(u.pets.owned[id], { xp: P.petThreshold(85, c), branch: id === "koi" ? "dragon" : "phoenix", sat: 100, t: T0 })
+  assert.equal(P.satPerDay(u.pets.owned.koi, true, c), 12)
+  P.refreshPets(u, T0 + 20 * H)
   assert.equal(u.pets.owned.koi.sat, 90)
   assert.equal(u.pets.owned.bird.sat, 98)
   const gold = u.gold
-  const f = P.feedPet(u, "koi", 50, T0 + 10 * H)
+  const f = P.feedPet(u, "koi", 50, T0 + 20 * H)
   assert.deepEqual([f.units, f.cost, f.sat, f.capped], [2, 20000, 100, true])
   assert.equal(u.gold, gold - 20000)
-  assert.equal(P.feedPet(u, "koi", 1, T0 + 10 * H).reason, "full")
-  P.refreshPets(u, T0 + 13 * H)
-  assert.equal(P.feedPet(u, "koi", 1, T0 + 13 * H).sat, 100)   // 97 + 5 封顶 100
+  assert.equal(P.feedPet(u, "koi", 1, T0 + 20 * H).reason, "full")
+  P.refreshPets(u, T0 + 26 * H)
+  assert.equal(P.feedPet(u, "koi", 1, T0 + 26 * H).sat, 100)   // 97 + 5 封顶 100
+})
+
+test("养宠物不亏：每天钓 1000 竿、穿刚解锁的渔具时，每个阶段的口粮开销都低于宠物多赚的金币", () => {
+  const minTier = [3, 6, 11, 16, 18]
+  const perSat = c.food.price / c.food.value
+  for (let stage = 1; stage <= 5; stage++) {
+    const level = c.stageLevels[stage - 1], tier = minTier[stage - 1]
+    for (const def of Config.pets) for (const b of def.branches) {
+      const data = { xp: P.petThreshold(level, c), branch: stage >= 4 ? b.id : null }
+      const eff = {}
+      for (const s of P.petSkills(def, data, c)) eff[s.effect] = (eff[s.effect] || 0) + s.value
+      const earn = incomePerCast(referenceEffects(tier)) * 1000 * petGain(eff, tier) / 100
+      const food = P.satPerDay(data, true, c) * perSat
+      assert.ok(food < earn * 0.8, `${stage} 阶 ${def.name}/${b.id}：口粮 ${Math.round(food)} vs 多赚 ${Math.round(earn)}`)
+    }
+  }
 })
 
 test("离家出走：饱食度到 0 失去宠物，7 天内 100 万寻回（保留等级），超过 7 天不能寻回", () => {
   const u = rich("p6"); P.buyPet(u, "koi", T0)
-  u.pets.owned.koi.xp = P.petThreshold(30, c)
-  const gone = P.refreshPets(u, T0 + 101 * H)
+  Object.assign(u.pets.owned.koi, { xp: P.petThreshold(85, c), branch: "dragon" })   // 五阶：出战每小时 -0.5
+  const gone = P.refreshPets(u, T0 + 201 * H)
   assert.deepEqual(gone, ["koi"])
   assert.equal(u.pets.active, null)
-  assert.equal(u.pets.lost.koi.lostAt, T0 + 100 * H)
-  assert.ok(P.petNotices(u, T0 + 101 * H)[0].includes("离家出走"))
-  assert.equal(P.petNotices(u, T0 + 102 * H).length, 0)   // 只提醒一次
+  assert.equal(u.pets.lost.koi.lostAt, T0 + 200 * H)
+  assert.ok(P.petNotices(u, T0 + 201 * H)[0].includes("离家出走"))
+  assert.equal(P.petNotices(u, T0 + 202 * H).length, 0)   // 只提醒一次
   const gold = u.gold
-  const r = P.recallPet(u, "koi", T0 + 120 * H)
+  const r = P.recallPet(u, "koi", T0 + 220 * H)
   assert.ok(r.ok)
   assert.equal(u.gold, gold - 1000000)
-  assert.equal(P.petLevel(u.pets.owned.koi, c), 30)
+  assert.equal(P.petLevel(u.pets.owned.koi, c), 85)
   assert.equal(u.pets.owned.koi.sat, 100)
   assert.equal(u.pets.active, "koi")
   // 再饿跑一次，超过 7 天
-  P.refreshPets(u, T0 + 300 * H)
-  assert.equal(P.recallPet(u, "koi", T0 + 300 * H + 8 * 24 * H).reason, "expired")
-  assert.equal(P.lostPets(u, T0 + 300 * H + 8 * 24 * H).length, 0)
+  P.refreshPets(u, T0 + 500 * H)
+  assert.equal(P.recallPet(u, "koi", T0 + 500 * H + 8 * 24 * H).reason, "expired")
+  assert.equal(P.lostPets(u, T0 + 500 * H + 8 * 24 * H).length, 0)
 })
 
 test("更换出战：每天 1 次，没有出战宠物时不计次数，第二天恢复", () => {
