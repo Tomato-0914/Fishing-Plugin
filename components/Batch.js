@@ -4,7 +4,7 @@ import { multiLeft, useMulti, dailyLeft, useDaily, cooldownLeft } from "./Game.j
 
 /**
  * 每项：[config.yaml fishing 中的字段, 默认值]
- * protected：该玩法每一竿钓到保护鱼类的总概率（%），按物种比例分配；不写时用 probability.protected 原值
+ * protected：一次连钓（整次）碰到保护鱼类的概率（%），默认 0.35 与单钓一竿相同；每竿概率按竿数自动换算
  */
 export const BATCH = {
   multi:    { label: "十连", emoji: "🔟", cmd: "#十连钓鱼", delay: [3, 8],  count: ["multiCount", 10],      daily: ["multiDaily", 100],   cooldown: ["multiCooldown", 30],      level: [null, 0],               protected: ["multiProtected", 0.35] },
@@ -22,8 +22,15 @@ export function batchCfg(kind, fishing = Config.config.fishing || {}) {
   return {
     kind: BATCH[kind] ? kind : "multi", label: def.label, emoji: def.emoji, cmd: def.cmd, delay: def.delay,
     count: Math.max(1, int(get(def.count))), daily: int(get(def.daily)), cooldown: int(get(def.cooldown)),
-    level: int(get(def.level)), protectedRate: Math.max(0, Number(get(def.protected)) || 0),
+    level: int(get(def.level)), protectedPull: Math.min(100, Math.max(0, Number(get(def.protected)) || 0)),
+    get protectedRate() { return perCastRate(this.protectedPull, this.count) },
   }
+}
+
+/** 一次 n 竿里至少碰到一次的概率为 pull% 时，每竿的概率（%）：1 - (1 - pull)^(1/n) */
+export function perCastRate(pull, n) {
+  const p = Math.min(1, Math.max(0, Number(pull) / 100))
+  return p >= 1 ? 100 : (1 - (1 - p) ** (1 / Math.max(1, n))) * 100
 }
 
 /** 今日剩余次数（十连包含旧版攒下的额外机会） */
