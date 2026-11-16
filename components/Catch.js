@@ -1,19 +1,19 @@
 /** 一竿的结算：抽取结果 → 断线判定 → 记入存档（纯函数，#收杆 与十连钓鱼共用） */
 import { roll } from "./ItemPool.js"
-import { recordResult, protectedToday, protectedDailyMax } from "./Game.js"
+import { recordResult } from "./Game.js"
 import { breakChance } from "./Gear.js"
 
 /**
  * @param ctx.items 物品池  ctx.cfg config.yaml  ctx.shop shop.yaml  ctx.effects 本竿全部效果
+ * @param ctx.group 本群今日保护鱼类计数 { max, count(), add() }；达到 max 后本群今天不会再钓到保护鱼类
  * @returns {{ result, snapped:boolean, chance:number, reward:number, value:number }}
  *   snapped 为 true 时鱼已断线跑掉，不入鱼护、不计价值
  */
-export function resolveCast(user, { items, cfg, shop, effects = {}, rng = Math.random, now = new Date() }) {
-  // 禁渔中（十连途中钓到保护鱼类）后面的竿不再结算
+export function resolveCast(user, { items, cfg, shop, effects = {}, rng = Math.random, now = new Date(), group = null }) {
+  // 禁渔中（连钓途中钓到保护鱼类、被警察带走）后面的竿不再结算
   if (Number(user.banUntil) > now.getTime()) return { result: { type: "banned" }, snapped: false, chance: 0, reward: 0, value: 0, banned: true }
-  // 每天最多误钓 dailyMax 次保护鱼类：达到后今天不会再出现（概率归还给其他结果）
-  const max = protectedDailyMax(cfg.protectedPenalty)
-  if (max && protectedToday(user, now) >= max) effects = { ...effects, protectedScale: 0 }
+  // 每个群每天最多钓到 groupDailyMax 条保护鱼类：达到后本群今天不会再出现（概率归还给其他结果）
+  if (group?.max && group.count() >= group.max) effects = { ...effects, protectedScale: 0 }
   const result = roll({ items, probability: cfg.probability, size: cfg.size, limits: cfg.limits }, effects, rng)
   const chance = breakChance(result, shop?.lineBreak, effects)
   if (chance > 0 && rng() * 100 < chance) {
@@ -24,6 +24,7 @@ export function resolveCast(user, { items, cfg, shop, effects = {}, rng = Math.r
   const { reward, value, penalty, paimon } = recordResult(user, result, {
     policeReward: cfg.policeReward, protectedPenalty: cfg.protectedPenalty, paimonGift: cfg.paimonGift, now,
   })
+  if (penalty && group) Object.assign(penalty, { group: group.add(), groupMax: group.max || 0 })
   return { result, snapped: false, chance, reward, value, penalty, paimon }
 }
 
@@ -47,23 +48,25 @@ const RARITY_DOT = { N: "⚪", R: "🟢", SR: "🔵", SSR: "🟣", UR: "🟡", E
 const TIER_RANK = { hidden: 9, MR: 8, EP: 7, UR: 6, SSR: 5, SR: 4, R: 3, N: 2 }
 const FLASH = new Set(["UR", "EP", "MR", "hidden"])
 
+/** 误钓保护鱼类的处罚摘要：被警察带走 · 禁渔 60 分钟 · 罚款 500 · 本群今日 2/5 条 */
+export function protectedPenaltyText(p = {}) {
+  return [
+    `被警察带走 · 禁渔 ${p.minutes ?? 0} 分钟`,
+    p.fine ? `罚款 ${p.fine}` : "",
+    p.group ? `本群今日 ${p.group}${p.groupMax ? `/${p.groupMax}` : ""} 条` : "",
+  ].filter(Boolean).join(" · ")
+}
+
 /** 一竿的短格式：🟡🐠 石斑鱼王·中 341 */
-/**
- * @param protectedMax 每日误钓上限（显示“今日 2/3 次”；0 或不传时显示“今日第 2 次”）
- */
-export function roundLine(r, sizeLabels = {}, protectedMax = 0) {
-  if (r.banned) return "🚫 禁渔中，未钓"
+export function roundLine(r, sizeLabels = {}) {
+  if (r.banned) return "🚔 被警察带走了，未钓"
   if (r.result.type === "empty") return "🌊 空军"
   const { item, size } = r.result
   const name = `${item.name}${size && sizeLabels[size] ? `·${sizeLabels[size]}` : ""}`
   const dot = RARITY_DOT[item.rarity] || ""
   if (r.snapped) return `💥 ${dot}${item.emoji} ${name} 断线跑了`
   if (item.special === "police") return `🚨 ${item.emoji} ${item.name} 已报警 +${r.reward}`
-  if (item.special === "protected") {
-    const today = r.penalty?.today
-    const count = today ? ` · 今日${protectedMax ? ` ${today}/${protectedMax} 次` : `第 ${today} 次`}` : ""
-    return `🚫 ${item.emoji} ${item.name}（保护鱼类）已放生 · 罚款 ${r.penalty?.fine ?? 0} · 禁渔 ${r.penalty?.minutes ?? 0} 分钟${count}`
-  }
+  if (item.special === "protected") return `🚫 ${item.emoji} ${item.name}（保护鱼类）已放生 · 🚔 ${protectedPenaltyText(r.penalty)}`
   if (item.special === "paimon") return `🧚 ${item.name}：才不是应急食品！${r.paimon?.gift ? ` +${r.paimon.gift}` : ""}`
   if (item.rarity === "junk") return `🗑️ ${item.emoji} ${item.name}`
   return `${dot}${item.emoji} ${name} ${r.value}${FLASH.has(item.rarity) ? " ✨" : ""}`
@@ -75,7 +78,7 @@ export function roundLine(r, sizeLabels = {}, protectedMax = 0) {
  * - 普通、高级只给数量和总价；垃圾、空军、断线只给数量
  * @param markdown true 时（QQBot）使用 Markdown 加粗标题与分区；否则为纯文本
  */
-export function formatMulti(rounds, { sizeLabels = {}, markdown = false, xpLine = "", protectedMax = 0 } = {}) {
+export function formatMulti(rounds, { sizeLabels = {}, markdown = false, xpLine = "" } = {}) {
   const sum = summarize(rounds)
   const special = [], notable = new Map(), low = { N: [0, 0], R: [0, 0] }
   for (const r of rounds) {
@@ -91,7 +94,7 @@ export function formatMulti(rounds, { sizeLabels = {}, markdown = false, xpLine 
   const lines = []
   // 特殊事件在最前：保护鱼类 → 报警 → 派蒙 → 断线
   const order = r => r.snapped ? 3 : r.result.item.special === "protected" ? 0 : r.result.item.special === "police" ? 1 : 2
-  for (const r of special.sort((a, b) => order(a) - order(b))) lines.push(roundLine(r, sizeLabels, protectedMax))
+  for (const r of special.sort((a, b) => order(a) - order(b))) lines.push(roundLine(r, sizeLabels))
   // 高级鱼：稀有度高的在前，同稀有度按总价
   const groups = [...notable.values()].sort((a, b) =>
     (TIER_RANK[b.r.result.rarity] || 0) - (TIER_RANK[a.r.result.rarity] || 0) || b.value - a.value)
@@ -133,7 +136,7 @@ const RARITY_LABEL = { MR: "神话", EP: "史诗", UR: "传说", SSR: "神器", 
  * 百连结果文字：只给各品级数量；空军、垃圾、断线照常统计；
  * 特殊事件（报警、派蒙、保护鱼类、隐藏款）逐条列出
  */
-export function formatHundred(rounds, { markdown = false, xpLine = "", title = "💯 百连收网", protectedMax = 0 } = {}) {
+export function formatHundred(rounds, { markdown = false, xpLine = "", title = "💯 百连收网" } = {}) {
   const sum = summarize(rounds)
   const counts = {}, special = []
   for (const r of rounds) {
@@ -144,7 +147,7 @@ export function formatHundred(rounds, { markdown = false, xpLine = "", title = "
   }
   const order = r => r.result.item.special === "protected" ? 0 : r.result.item.special === "police" ? 1 : r.result.item.special === "paimon" ? 3 : 2
   const lines = [
-    ...special.sort((a, b) => order(a) - order(b)).map(r => roundLine(r, {}, protectedMax)),
+    ...special.sort((a, b) => order(a) - order(b)).map(r => roundLine(r, {})),
     ...Object.keys(RARITY_LABEL).filter(k => counts[k]).map(k => `${RARITY_DOT[k]} ${RARITY_LABEL[k]} ×${counts[k]}${FLASH.has(k) ? " ✨" : ""}`),
   ]
   const head = [

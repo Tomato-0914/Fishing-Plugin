@@ -49,16 +49,15 @@ export function recordResult(user, result, { now = new Date(), policeReward = 0,
   let reward = 0
   let stored = true
 
-  // 保护鱼类：自动放生，禁渔并罚款，不计入排行
+  // 保护鱼类：放生，钓鱼人被警察带走（禁渔）并罚款，不计入排行
   if (item.special === "protected") {
     s.protected = (s.protected || 0) + 1
-    const today = protectedToday(user, now) + 1
-    user.protectedDay = { day: periodKey("day", now), count: today }
+    delete user.protectedDay
     const fine = protectedFine(user.gold, protectedPenalty)
     user.gold -= fine
     const minutes = Math.max(0, Number(protectedPenalty.banMinutes) || 0)
     if (minutes) user.banUntil = Math.max(Number(user.banUntil) || 0, now.getTime() + minutes * 60000)
-    return { value: 0, reward: 0, stored: false, penalty: { fine, minutes, banUntil: user.banUntil, today } }
+    return { value: 0, reward: 0, stored: false, penalty: { fine, minutes, banUntil: user.banUntil } }
   }
 
   // 派蒙：不进鱼护；第一次钓到由称号「最好的伙伴」奖励，之后每次送一份谢礼
@@ -104,21 +103,15 @@ export function recordResult(user, result, { now = new Date(), policeReward = 0,
   return { value, reward, stored }
 }
 
+/** 每个群每天最多钓到几条保护鱼类（protectedPenalty.groupDailyMax，默认 5；0 为不限制） */
+export const groupProtectedMax = penalty => Math.max(0, Math.floor(Number(penalty?.groupDailyMax ?? 5) || 0))
+
 /**
  * 误钓保护鱼类的罚款
  * - goldRate > 0：按当前金币的 goldRate% 罚款，gold 为上限
  * - 未设置 goldRate：固定罚 gold
  * 都不会超过当前金币（扣到 0 为止）
  */
-/** 今天误钓保护鱼类的次数（跨天视为 0） */
-export function protectedToday(user, now = new Date()) {
-  const p = user?.protectedDay
-  return p && p.day === periodKey("day", now) ? Math.max(0, Number(p.count) || 0) : 0
-}
-
-/** 每天最多误钓保护鱼类的次数（protectedPenalty.dailyMax，默认 3；0 为不限制） */
-export const protectedDailyMax = penalty => Math.max(0, Math.floor(Number(penalty?.dailyMax ?? 3) || 0))
-
 export function protectedFine(gold, penalty = {}) {
   const have = Math.max(0, Number(gold) || 0)
   const cap = Math.max(0, Number(penalty.gold) || 0)
