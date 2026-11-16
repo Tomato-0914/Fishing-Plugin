@@ -6,7 +6,7 @@ import { groupBag, sellEntries, discardJunk, todayLuck, luckTier, repriceBag, pr
 import { checkTitles, getEffects, effectText, progressText, mergeEffects, ownedTier, ownedTitles, titleName, titleUpText } from "../components/Titles.js"
 import { gearEffects, bagCapacity, totalBait, gearItem, gearLevel, SLOTS, ownedGear, tierBadge } from "../components/Gear.js"
 import { gearIcon } from "../components/GearIcons.js"
-import { withButtons, B } from "../components/Button.js"
+import { withButtons, B, fishRow } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
 import { itemChance, formatChance, sizeTable, findItems, dexNo } from "../components/Dex.js"
 import { dayKey } from "../components/Period.js"
@@ -73,7 +73,7 @@ export class FishingBag extends plugin {
     const limit = bagCapacity(user, Config.shop, Config.config.fishing?.bagLimit)
 
     if (!list.length)
-      return e.reply(withButtons(e, `🎒 ${displayName(user)} 的鱼护空空如也~\n💰 金币：${user.gold}\n发送 #钓鱼 去钓几条吧！`, [B.start, B.multi]))
+      return e.reply(withButtons(e, `🎒 ${displayName(user)} 的鱼护空空如也~\n💰 金币：${user.gold}\n发送 #钓鱼 去钓几条吧！`, fishRow(user)))
 
     const msg = await renderOrText(puppeteer, "bag", {
       name: displayName(user), avatar: avatar(user.user_id), gold: user.gold,
@@ -90,7 +90,7 @@ export class FishingBag extends plugin {
     if (!msg) return true
     return e.reply(withButtons(e, msg,
       [B.sellAll, B.sell, ...(junk ? [B.discard] : [])],
-      [B.cast, B.multi],
+      fishRow(user),
       [B.dayRank, B.weekRank, B.monthRank]))
   }
 
@@ -132,14 +132,14 @@ export class FishingBag extends plugin {
       `👛 当前金币：${user.gold}`,
     ]
     if (junkLeft) lines.push(`🗑️ 鱼护里还有 ${junkLeft} 件垃圾，可发送 #清理垃圾 统一回收`)
-    return e.reply(withButtons(e, lines.join("\n"), [B.cast, B.multi], [B.bag, B.shop, ...(junkLeft ? [B.discard] : [])]))
+    return e.reply(withButtons(e, lines.join("\n"), fishRow(user), [B.bag, B.shop, ...(junkLeft ? [B.discard] : [])]))
   }
 
   async discard(e) {
     if (!groupAllowed(e)) return false
     const user = this.load(e)
     const n = discardJunk(user, itemMap())
-    if (!n) return e.reply(withButtons(e, "✨ 鱼护里没有垃圾，干干净净~", [B.cast, B.multi]))
+    if (!n) return e.reply(withButtons(e, "✨ 鱼护里没有垃圾，干干净净~", fishRow(user)))
     const guardian = (Config.titles || []).find(t => t.id === "guardian")
     const lines = [
       `♻️ 已将 ${n} 件海洋垃圾送去回收站，海洋又干净了一点~`,
@@ -153,7 +153,7 @@ export class FishingBag extends plugin {
         lines.push(`🏅 距离【${guardian.emoji} ${titleName(guardian, tier + 1)}】：${progressText(user, guardian, Config.items)}`)
     }
     if (got.length) lines.push("", titleUpText(got))
-    return e.reply(withButtons(e, lines.join("\n"), [B.cast, B.multi, B.bag]))
+    return e.reply(withButtons(e, lines.join("\n"), [...fishRow(user), B.bag]))
   }
 
   async gold(e) {

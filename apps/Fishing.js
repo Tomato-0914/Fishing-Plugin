@@ -7,7 +7,7 @@ import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gear
 import { resolveCast, summarize, formatMulti, formatHundred } from "../components/Catch.js"
 import { experience, characterProgress, xpGainText } from "../components/Progression.js"
 import { checkTitles, getEffects, effectText, titleUpText } from "../components/Titles.js"
-import { withButtons, B } from "../components/Button.js"
+import { withButtons, B, fishRow } from "../components/Button.js"
 import { groupAllowed, displayName, updateNickname, pick, itemMap, playerEffects } from "../components/common.js"
 
 /** 进行中的钓鱼：user_id → { stage: "waiting" | "bite" | "multi", timer, castAt, biteAt } */
@@ -246,7 +246,7 @@ export class Fishing extends plugin {
       "💨 鱼儿挣脱鱼钩跑掉了~ 下次要眼疾手快哦！",
       "💨 浮漂浮了上来……鱼已经溜走了~",
       "💨 太慢啦！鱼儿叼着鱼饵扬长而去~",
-    ]), canUpgrade ? "💡 更高阶的鱼钩（#渔具商店）或强化鱼钩（#渔具工坊），没及时收杆也不容易跑鱼" : ""].filter(Boolean).join("\n"), [B.cast, B.multi, B.help]))
+    ]), canUpgrade ? "💡 更高阶的鱼钩（#渔具商店）或强化鱼钩（#渔具工坊），没及时收杆也不容易跑鱼" : ""].filter(Boolean).join("\n"), [...fishRow(user), B.help]))
     await this.announceTitles(e, user)
   }
 
@@ -264,7 +264,7 @@ export class Fishing extends plugin {
     if (!groupAllowed(e)) return false
     const id = String(e.user_id)
     const s = sessions.get(id)
-    if (!s) return this.send(e, withButtons(e, "🤔 你还没有抛竿哦~ 发送 #钓鱼 开始吧！", [B.start, B.multi]))
+    if (!s) return this.send(e, withButtons(e, "🤔 你还没有抛竿哦~ 发送 #钓鱼 开始吧！", fishRow(UserData.get(id))))
     if (s.stage === "multi") return this.send(e, `🎣 ${s.label || "十连"}会自动收网，稍等一下就好~`)
 
     clearTimeout(s.timer)
@@ -280,7 +280,7 @@ export class Fishing extends plugin {
       await this.send(e, withButtons(e, pick([
         "😅 收杆太早啦，鱼饵被白白浪费……什么都没钓到~",
         "😅 太心急了！水面一片平静，鱼钩上空空如也~",
-      ]) + "\n" + xpLine, [B.cast, B.multi]))
+      ]) + "\n" + xpLine, fishRow(user)))
       return this.announceTitles(e, user)
     }
 
@@ -316,7 +316,7 @@ export class Fishing extends plugin {
         `${result.item.emoji} 一条【${r.label}】${result.item.name}${sizeLabel ? `（${sizeLabel}）` : ""}拖着鱼钩消失在水里……`,
         `🧵 当前鱼线：${line?.name || "—"}（本次断线概率 ${Number(snap.toFixed(1))}%）`,
         "💡 更高阶的鱼线（#渔具商店）或强化、锻造鱼线（#渔具工坊）可以降低断线概率",
-      ].join("\n"), [B.cast, B.multi], [B.workshop])))
+      ].join("\n"), fishRow(user), [B.workshop])))
       return this.announceTitles(e, user)
     }
 
@@ -440,9 +440,8 @@ export class Fishing extends plugin {
       ? formatHundred(rounds, { markdown, xpLine, protectedMax })
       : formatMulti(rounds, { sizeLabels, markdown, xpLine, protectedMax })
     const msg = body + `\n🎟️ 剩余${c.label}：${this.batchLeftText(user, c)}` + (cd ? `\n⏳ 冷却：${cd} 秒` : "")
-    const hundredOpen = characterProgress(user).level >= this.batchCfg("hundred").level
     await this.send(e, withButtons(e, msg,
-      [{ ...B.multi, text: "🔟 十连" }, ...(hundredOpen ? [{ ...B.hundred, text: "💯 百连" }] : []), { ...B.fish, text: "🎣 钓鱼" }],
+      fishRow(user, { short: true }),
       [{ ...B.bag, text: "🎒 鱼护" }, { ...B.sellAll, text: "💰 出售" }, ...(sum.junk ? [{ ...B.discard, text: "♻️ 清理" }] : [])]))
     await this.announceTitles(e, user)
   }
@@ -453,7 +452,7 @@ export class Fishing extends plugin {
         "🎣 收杆……什么都没钓到~ 🌊",
         "🎣 收杆……鱼钩上只挂着一根水草~ 🌿",
         "🎣 收杆……鱼饵被偷吃了，什么都没钓到~",
-      ]), [B.cast, B.multi], [B.bag])
+      ]), fishRow(user), [B.bag])
     }
     const { item } = result
     const r = RARITY_INFO[item.rarity] || {}
@@ -484,7 +483,7 @@ export class Fishing extends plugin {
         `🧚 又是派蒙！它从水里冒出来跟你打了个招呼`,
         `🎁 派蒙送了你 ${round.paimon?.gift ?? 0} 金币作为谢礼`,
         `👛 当前金币：${user.gold}`,
-      ].join("\n"), [B.cast, B.multi], [B.titles])
+      ].join("\n"), fishRow(user), [B.titles])
     }
 
     if (item.special === "police") {
@@ -497,7 +496,7 @@ export class Fishing extends plugin {
         `🏅 获得「见义勇为」奖励：${reward} 金币`,
         "━━━━━━━━━━━━",
         `💰 当前金币：${user.gold}`,
-      ].join("\n"), [B.cast, B.multi], [B.titles])
+      ].join("\n"), fishRow(user), [B.titles])
     }
 
     if (item.rarity === "junk") {
@@ -506,7 +505,7 @@ export class Fishing extends plugin {
         `${item.emoji} 【垃圾】${item.name}`,
         `💬 ${item.desc || "海洋垃圾"}`,
         "💰 价值：0 金币（已收进鱼护，可发送 #清理垃圾 统一回收）",
-      ].join("\n"), [B.cast, B.multi], [B.discard])
+      ].join("\n"), fishRow(user), [B.discard])
     }
 
     const sizeLabel = result.size ? (Config.config.size?.[result.size]?.label || "") : ""
@@ -522,7 +521,7 @@ export class Fishing extends plugin {
       "━━━━━━━━━━━━",
       "已放入鱼护，发送 #我的鱼护 查看",
     ].filter(Boolean)
-    return withButtons(e, lines.join("\n"), [B.cast, B.multi], [B.bag, B.sellAll])
+    return withButtons(e, lines.join("\n"), fishRow(user), [B.bag, B.sellAll])
   }
 
   async announceTitles(e, user) {

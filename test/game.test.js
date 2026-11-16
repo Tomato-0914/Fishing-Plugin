@@ -1204,3 +1204,20 @@ test("钓鱼信息：抛一竿的完整结果概率（空军、垃圾、各品�
   // 今日误钓达上限：保护鱼类为 0
   assert.equal(castBreakdown(cfg.probability, { ...playerEffects(u, null), protectedScale: 0 }).find(r => r.key === "protected").pct, 0)
 })
+
+test("钓鱼按钮：按今日剩余次数显示，优先级 百连 > 十连 > 钓鱼", async () => {
+  const { fishRow } = await import("../components/Button.js")
+  const { useHundred, useMulti } = await import("../components/Game.js")
+  const texts = u => fishRow(u, { short: true }).map(b => b.text)
+  const u = newUser("10130"); u.stats.casts = 25 * 29 * 30 // Lv30
+  assert.deepEqual(texts(u), ["💯 百连", "🔟 十连", "🎣 钓鱼"])
+  for (let i = 0; i < cfg.fishing.hundredDaily; i++) useHundred(u, cfg.fishing.hundredDaily)
+  assert.deepEqual(texts(u), ["🔟 十连", "🎣 钓鱼"])                // 百连用完
+  for (let i = 0; i < cfg.fishing.multiDaily; i++) useMulti(u, cfg.fishing.multiDaily)
+  assert.deepEqual(texts(u), ["🎣 钓鱼"])                          // 十连也用完
+  u.multi.bonus = 1
+  assert.deepEqual(texts(u), ["🔟 十连", "🎣 钓鱼"])                // 旧版额外机会还能十连
+  const low = newUser("10131"); low.stats.casts = 25 * 9 * 10       // Lv10：百连未解锁
+  assert.deepEqual(texts(low), ["🔟 十连", "🎣 钓鱼"])
+  assert.deepEqual(fishRow(low).map(b => b.callback), ["#十连钓鱼", "#钓鱼"])
+})
