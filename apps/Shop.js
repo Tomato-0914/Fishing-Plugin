@@ -3,17 +3,14 @@ import { plugin, puppeteer } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { effectText, getEffects, mergeEffects } from "../components/Titles.js"
-import { oddsPercent } from "../components/ItemPool.js"
 import { luckEffects } from "../components/Game.js"
 import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, tierColor, textOn, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait, baitLevel, canUseBait, maxGearLevel, unlockedTier, tierPrice, ownedGear, ensureGear, buyGear, buyGearSet, equipGear, equipGearSet, cultivateGear, tierNeedLevel, tierBadge, gearShopSuggest, enhanceCost, forgeCost, successRate, slotEffects, gearSet, setEffects, MAX_ENHANCE, MAX_FORGE } from "../components/Gear.js"
-import { FISH_RARITIES, gearRarityOdds } from "../components/GearOdds.js"
 import { effectLines, rareTargetText, wearTitle, cnNumber } from "../components/GearText.js"
 import { gearIcon } from "../components/GearIcons.js"
 import { characterProgress } from "../components/Progression.js"
-import { RARITY_INFO } from "../components/ItemPool.js"
 import { withButtons, B } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
-import { groupAllowed, updateNickname, displayName, playerEffects } from "../components/common.js"
+import { groupAllowed, updateNickname, displayName } from "../components/common.js"
 
 export class FishingShop extends plugin {
   constructor() {
@@ -378,7 +375,6 @@ export class FishingShop extends plugin {
     const hint=set.pieces>=5?`${setName} 5 件套已全部生效`
       :set.pieces>=3?`再穿 ${5-set.count} 件${setName}渔具即可触发 5 件套`
       :`穿戴同一阶的 3 件渔具触发套装（当前同阶最多 ${set.count} 件：${setName}）`
-    const odds=gearRarityOdds(playerEffects(user))
     return {
       name:displayName(user),gold:user.gold,level:characterProgress(user).level,unlocked:unlockedTier(user),
       capacity:bagCapacity(user,shop,Config.config.fishing?.bagLimit),items,wearTitle:wearTitle(set,setName),
@@ -386,7 +382,6 @@ export class FishingShop extends plugin {
         {label:"3 件",on:set.pieces>=3,lines:lines({},s3)},
         {label:"5 件",on:set.pieces>=5,lines:["含 3 件效果",...lines({},extra)]},
       ]},
-      odds:FISH_RARITIES.filter(k=>odds[k]>0).map(k=>({label:RARITY_INFO[k].label,color:RARITY_INFO[k].color,pct:odds[k],text:`${Number(odds[k].toFixed(odds[k]<1?2:1))}%`})),
       rareTargetText:rareTargetText(rodTier),
       totals:lines({},gearEffects(user,shop)),
     }

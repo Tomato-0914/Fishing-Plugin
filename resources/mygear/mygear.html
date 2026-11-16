@@ -63,11 +63,9 @@ img.emoji{display:inline-block;width:1em;height:1em;margin:0 .05em;vertical-alig
 {{each suit.rows r}}<div class="setrow {{r.on?'on':''}}"><div class="tag">{{r.label}}</div><div class="attrs">{{each r.lines l}}<span class="chip">{{l}}</span>{{/each}}</div></div>{{/each}}
 <div class="hint">{{suit.hint}}</div></div>
 
-<div class="panel"><div class="panel-title">钓到鱼时的品级分布 <small>含渔具、套装、称号</small></div>
-<div class="odds">{{each odds o}}<span style="width:{{o.pct}}%;background:{{o.color}}"></span>{{/each}}</div>
-<div class="legend">{{each odds o}}<span><b style="background:{{o.color}}"></b>{{o.label}} {{o.text}}</span>{{/each}}</div>
-<div class="hint">高品级加成分配：{{rareTargetText}}（由鱼竿阶位决定）</div>
-<div class="hint" style="margin-top:12px">渔具合计（含套装）</div><div class="totals" style="margin-top:6px">{{each totals t}}<span class="chip">{{t}}</span>{{/each}}</div></div>
+<div class="panel"><div class="panel-title">渔具合计 <small>含套装 · 钓鱼概率见 #钓鱼信息</small></div>
+<div class="totals" style="margin-top:0">{{each totals t}}<span class="chip">{{t}}</span>{{/each}}</div>
+<div class="hint">高品级加成分配：{{rareTargetText}}（由鱼竿阶位决定）</div></div>
 
 <div class="footer">#渔具商店 购买 · #渔具工坊 强化锻造 · #使用{{suit.name}}套装 一键穿戴</div>
 </div>
