@@ -4,7 +4,7 @@ import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { effectText, getEffects, mergeEffects } from "../components/Titles.js"
 import { luckEffects } from "../components/Game.js"
-import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, tierColor, textOn, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait, baitLevel, canUseBait, maxGearLevel, unlockedTier, tierPrice, ownedGear, ensureGear, buyGear, buyGearSet, equipGear, equipGearSet, cultivateGear, tierNeedLevel, tierBadge, gearShopSuggest, enhanceCost, forgeCost, successRate, slotEffects, gearSet, setEffects, MAX_ENHANCE, MAX_FORGE } from "../components/Gear.js"
+import { SLOTS, UPGRADE_NAMES, SLOT_NAMES, TIER_NAMES, levelColor, tierColor, textOn, gearLevel, gearItem, maxLevel, gearEffects, bagCapacity, baitList, findBait, baitPrice, baitCount, totalBait, currentBait, buyBait, useBait, baitLevel, canUseBait, maxGearLevel, unlockedTier, tierPrice, ownedGear, ensureGear, buyGear, buyGearSet, equipGear, equipGearSet, cultivateGear, tierNeedLevel, tierBadge, gearShopSuggest, enhanceCost, forgeCost, successRate, slotEffects, gearSet, setEffects, MAX_ENHANCE, MAX_FORGE, recycleCheck, recyclableGear, recycleGear, recycleCfg } from "../components/Gear.js"
 import { effectLines, rareTargetText, wearTitle, cnNumber } from "../components/GearText.js"
 import { gearIcon } from "../components/GearIcons.js"
 import { characterProgress } from "../components/Progression.js"
@@ -28,7 +28,12 @@ export class FishingShop extends plugin {
       {reg:/^#?购买鱼饵\s*(.*)$/,fnc:"buy"},
       {reg:/^#?使用鱼饵\s*(.+)$/,fnc:"use"},
       {reg:/^#?我的鱼饵$/,fnc:"bait"},
-      {reg:/^#?我的渔具$/,fnc:"gear"}
+      {reg:/^#?我的渔具$/,fnc:"gear"},
+      {reg:/^#?(?:我的)?渔具背包$/,fnc:"gearBag"},
+      {reg:/^#?回收渔具\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\s*(\d{1,2})$/,fnc:"recycle"},
+      {reg:/^#?回收渔具\s*(新手|青竹|精铁|玄木|寒玉|流云|沧浪|星砂|月影|玄冰|烈阳|深渊|龙鳞|凤羽|天罡|星辰|太虚|混元|鸿蒙|创世)套装$/,fnc:"recycleSet"},
+      {reg:/^#?一键回收渔具$/,fnc:"recycleAll"},
+      {reg:/^#?确认回收渔具$/,fnc:"recycleConfirm"}
     ]})
   }
   get shopCfg(){return Config.shop||{}}
@@ -392,7 +397,113 @@ export class FishingShop extends plugin {
     const user=this.load(e),shop=this.shopCfg
     const msg=await renderOrText(puppeteer,"mygear",this.gearImageData(user),()=>this.gearText(user))
     if(!msg)return true
-    return e.reply(withButtons(e,msg,[B.workshop,B.shop,B.start]))
+    return e.reply(withButtons(e,msg,[B.workshop,{text:"🎒 渔具背包",callback:"#渔具背包"},B.shop,B.start]))
+  }
+
+  /** #渔具背包：已拥有的全部渔具，按阶位从高到低，标出穿戴中 / 可回收 / 保留 */
+  gearBagData(user) {
+    const shop=this.shopCfg, {rate,minGap}=recycleCfg(shop)
+    const tiers=[]
+    let owned=0
+    for (let t=TIER_NAMES.length;t>=1;t--) {
+      if (!SLOTS.some(slot=>ownedGear(user,slot,t))) continue
+      const items=SLOTS.map(slot=>{
+        const d=ownedGear(user,slot,t), item=gearItem(shop,slot,t)
+        if (!d) return {slot,name:item.name,icon:gearIcon(slot,t),owned:false}
+        owned++
+        const c=recycleCheck(user,shop,slot,t)
+        return {slot,name:item.name,icon:gearIcon(slot,t),owned:true,enhance:Number(d.enhance)||0,forge:Number(d.forge)||0,
+          status:gearLevel(user,slot)===t?"equipped":c.ok?"recycle":c.reason,value:c.value,keepUntil:c.keepUntil}
+      })
+      tiers.push({tier:t,name:TIER_NAMES[t-1],tierCn:cnNumber(t),...tierBadge(t),items,count:items.filter(i=>i.owned).length})
+    }
+    const list=recyclableGear(user,shop)
+    return {name:displayName(user),gold:user.gold,owned,tiers,rate,minGap,
+      recycleCount:list.length,recycleGold:list.reduce((s,x)=>s+x.value,0)}
+  }
+
+  async gearBag(e){
+    if(!groupAllowed(e))return false
+    const user=this.load(e), data=this.gearBagData(user)
+    const label=i=>i.status==="equipped"?"穿戴中":i.status==="recycle"?`可回收 ${i.value}`:i.status==="starter"?"新手渔具":`保留（可被继承）`
+    const msg=await renderOrText(puppeteer,"gearbag",data,()=>[
+      `🎒 ${data.name} 的渔具背包 · 共 ${data.owned} 件 · 金币 ${data.gold}`,
+      ...data.tiers.map(t=>[`【Lv.${t.needLevel} · ${t.name}系列 · ${t.tierCn}阶】${t.count}/5`,
+        ...t.items.filter(i=>i.owned).map(i=>` ${i.name} +${i.enhance}/+${i.forge} · ${label(i)}`)].join("\n")),
+      LINE,
+      data.recycleCount?`♻️ 可回收 ${data.recycleCount} 件，共 ${data.recycleGold} 金币 · 发送 #一键回收渔具`:"♻️ 暂时没有可以回收的渔具",
+    ].join("\n"))
+    if(!msg)return true
+    return e.reply(withButtons(e,msg,
+      [...(data.recycleCount?[{text:`♻️ 一键回收（${data.recycleCount} 件）`,callback:"#一键回收渔具",permission:e.user_id}]:[]),{text:"♻️ 回收…",input:"#回收渔具 "}],
+      [B.myGear,{text:"🏪 渔具商店",callback:"#渔具商店"},{text:"🔨 渔具工坊",callback:"#渔具工坊"}]))
+  }
+
+  recycleReason(ret,name){
+    return {not_owned:`❓ 你还没有${name}`,starter:"🔰 新手渔具不能回收",equipped:`🎣 ${name}正穿在身上，先换下来再回收`,
+      keep:`📦 ${name}离你同部位的最高阶不到 ${recycleCfg(this.shopCfg).minGap} 阶，买新渔具时还能继承它的强化 / 锻造等级，暂时不能回收`}[ret.reason]||"回收失败"
+  }
+
+  recycleReply(e,user,ret){
+    const shop=this.shopCfg
+    return withButtons(e,[
+      `♻️ 回收了 ${ret.count} 件渔具，获得 ${ret.gold} 金币`,
+      LINE,
+      ...ret.items.slice(0,15).map(x=>`· ${gearItem(shop,x.slot,x.tier).name} → ${x.value} 金币`),
+      ...(ret.items.length>15?[`…… 还有 ${ret.items.length-15} 件`]:[]),
+      `👛 当前金币：${user.gold}`,
+    ].join("\n"),[{text:"🎒 渔具背包",callback:"#渔具背包"},B.myGear,{text:"🏪 渔具商店",callback:"#渔具商店"}])
+  }
+
+  async recycle(e){
+    if(!groupAllowed(e))return false
+    const user=this.load(e),[,slotName,tierText]=e.msg.match(/(鱼竿|鱼线|鱼钩|浮漂|鱼护)\s*(\d{1,2})/)
+    const slot=SLOTS.find(s=>SLOT_NAMES[s]===slotName),tier=Number(tierText)
+    const name=gearItem(this.shopCfg,slot,tier)?.name||`${tier}阶${slotName}`
+    const check=recycleCheck(user,this.shopCfg,slot,tier)
+    if(!check.ok)return e.reply(withButtons(e,this.recycleReason(check,name),[{text:"🎒 渔具背包",callback:"#渔具背包"}]))
+    const ret=recycleGear(user,this.shopCfg,[{slot,tier}])
+    UserData.save(user.user_id)
+    return e.reply(this.recycleReply(e,user,ret))
+  }
+
+  async recycleSet(e){
+    if(!groupAllowed(e))return false
+    const user=this.load(e),name=e.msg.match(/(新手|青竹|精铁|玄木|寒玉|流云|沧浪|星砂|月影|玄冰|烈阳|深渊|龙鳞|凤羽|天罡|星辰|太虚|混元|鸿蒙|创世)/)[1]
+    const tier=TIER_NAMES.indexOf(name)+1
+    const list=SLOTS.filter(slot=>recycleCheck(user,this.shopCfg,slot,tier).ok).map(slot=>({slot,tier}))
+    if(!list.length){
+      const first=SLOTS.map(slot=>recycleCheck(user,this.shopCfg,slot,tier)).find(c=>c.reason!=="not_owned")
+      return e.reply(withButtons(e,first?this.recycleReason(first,`${name}渔具`):`❓ 你没有${name}系列的渔具`,[{text:"🎒 渔具背包",callback:"#渔具背包"}]))
+    }
+    const ret=recycleGear(user,this.shopCfg,list)
+    UserData.save(user.user_id)
+    return e.reply(this.recycleReply(e,user,ret))
+  }
+
+  /** 一键回收先列出清单，点“确认回收”才执行 */
+  async recycleAll(e){
+    if(!groupAllowed(e))return false
+    const user=this.load(e),shop=this.shopCfg,list=recyclableGear(user,shop)
+    if(!list.length)return e.reply(withButtons(e,`♻️ 暂时没有可以回收的渔具\n（只能回收比同部位最高阶低 ${recycleCfg(shop).minGap} 阶以上、且没有穿着的渔具，新手渔具不能回收）`,[{text:"🎒 渔具背包",callback:"#渔具背包"}]))
+    const gold=list.reduce((s,x)=>s+x.value,0)
+    return e.reply(withButtons(e,[
+      `♻️ 一键回收将回收以下 ${list.length} 件渔具，共 ${gold} 金币：`,
+      LINE,
+      ...list.slice(0,15).map(x=>{const d=ownedGear(user,x.slot,x.tier)||{};return `· ${gearItem(shop,x.slot,x.tier).name}（强化 +${d.enhance||0} · 锻造 +${d.forge||0}）→ ${x.value} 金币`}),
+      ...(list.length>15?[`…… 还有 ${list.length-15} 件`]:[]),
+      LINE,
+      "⚠️ 回收后强化 / 锻造等级无法恢复，确认请点下方按钮或发送 #确认回收渔具",
+    ].join("\n"),[{text:"✅ 确认回收",callback:"#确认回收渔具",permission:e.user_id},{text:"🎒 渔具背包",callback:"#渔具背包"}]))
+  }
+
+  async recycleConfirm(e){
+    if(!groupAllowed(e))return false
+    const user=this.load(e),list=recyclableGear(user,this.shopCfg)
+    if(!list.length)return e.reply("♻️ 暂时没有可以回收的渔具")
+    const ret=recycleGear(user,this.shopCfg,list)
+    UserData.save(user.user_id)
+    return e.reply(this.recycleReply(e,user,ret))
   }
 
   /** #我的渔具 文字版（图片渲染失败时） */

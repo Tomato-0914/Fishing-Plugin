@@ -1333,3 +1333,39 @@ test("称号「史诗猎人」「神话猎人」：按钓到史诗 / 神话鱼�
   assert.equal(ownedTier(u, ep, items), 3)
   assert.equal(ownedTier(u, mr, items), 2)
 })
+
+test("渔具回收：返还投入的 30%，穿着的、新手的、还能被继承的不能回收；回收后不能刷金币", async () => {
+  const { buyGear, equipGear, cultivateGear, recycleCheck, recyclableGear, recycleGear, gearSpent, tierPrice, ownedGear } = await import("../components/Gear.js")
+  const shop = Config.shop
+  const u = newUser("10115"); u.gold = 10_000_000; u.stats.casts = 1e9
+  for (let t = 2; t <= 8; t++) assert.ok(buyGear(u, shop, "rod", t).ok, `买第 ${t} 阶`)
+  assert.ok(equipGear(u, "rod", 8).ok)
+  assert.equal(recycleCheck(u, shop, "rod", 1).reason, "starter")
+  assert.equal(recycleCheck(u, shop, "rod", 8).reason, "equipped")
+  assert.equal(recycleCheck(u, shop, "rod", 6).reason, "keep")
+  assert.equal(recycleCheck(u, shop, "rod", 9).reason, "not_owned")
+  const c5 = recycleCheck(u, shop, "rod", 5)
+  assert.ok(c5.ok)
+  assert.equal(c5.value, Math.floor(tierPrice(shop, 5) * 0.3))
+  // 强化花的钱也算进投入（含失败）
+  const before = gearSpent(shop, "rod", 4, ownedGear(u, "rod", 4))
+  const r = cultivateGear(u, shop, "rod", 4, "enhance", () => 0)
+  assert.equal(gearSpent(shop, "rod", 4, ownedGear(u, "rod", 4)), before + r.cost)
+  // 旧存档没有记录投入时按价格 + 强化费用估算
+  assert.ok(gearSpent(shop, "rod", 5, { enhance: 3, forge: 0 }) > tierPrice(shop, 5))
+  // 一键回收：2~5 阶可回收
+  const list = recyclableGear(u, shop)
+  assert.deepEqual(list.map(x => x.tier), [5, 4, 3, 2])
+  const gold = u.gold
+  const ret = recycleGear(u, shop, list)
+  assert.equal(ret.count, 4)
+  assert.equal(u.gold, gold + ret.gold)
+  assert.equal(ownedGear(u, "rod", 5), null)
+  assert.equal(recyclableGear(u, shop).length, 0)
+  // 重新买回来再回收，只能拿回 30%，不会赚钱
+  const g0 = u.gold
+  const b = buyGear(u, shop, "rod", 5)
+  assert.ok(b.ok)
+  recycleGear(u, shop, [{ slot: "rod", tier: 5 }])
+  assert.ok(u.gold < g0)
+})
