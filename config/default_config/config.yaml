@@ -45,11 +45,12 @@ fishing:
   thousandDaily: 3
   thousandCooldown: 3600
   thousandLevel: 60
-  # 连钓时每一竿钓到保护鱼类的总概率（%），按物种比例分配；单钓按 probability.protected
-  #   一次十连 / 百连 / 千连碰到保护鱼类的概率都约为 10%；误钓后照常罚款、禁渔，剩下的竿作废，鱼饵不退
-  multiProtected: 1
-  hundredProtected: 0.1
-  thousandProtected: 0.01
+  # 连钓时每一竿钓到保护鱼类的总概率（%），按物种比例分配；单钓按 probability.protected（合计 0.35%）
+  #   默认与单钓相同：一次十连约 3.4%、百连约 30%、千连约 97% 会碰到；误钓后照常罚款、禁渔，剩下的竿作废，鱼饵不退
+  #   每天最多误钓 protectedPenalty.dailyMax 次，达到后当天不再出现
+  multiProtected: 0.35
+  hundredProtected: 0.35
+  thousandProtected: 0.35
 
 # 概率 V2：普通至神话的全局基础概率为 0，鱼竿及培养决定条件品级分布。
 # 空军、垃圾、隐藏款、保护鱼类单独计算；鱼获品级占剩余概率。

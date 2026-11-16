@@ -1239,22 +1239,23 @@ test("冷却：各玩法独立计算并存进存档；剩余冷却 ≥ 1 分钟�
   assert.deepEqual([cooldownText(45), cooldownText(750), cooldownText(3600), cooldownText(3900)], ["45 秒", "12 分 30 秒", "1 小时", "1 小时 5 分"])
 })
 
-test("千连钓鱼：60 级、每天 3 次、间隔 1 小时；各连钓保护鱼类每竿概率分开设定", async () => {
+test("千连钓鱼：60 级、每天 3 次、间隔 1 小时；各连钓保护鱼类每竿概率可分开设定", async () => {
   const { batchCfg, batchRemaining, useBatch, protectedScaleFor, BATCH_ORDER } = await import("../components/Batch.js")
   const { fishRow } = await import("../components/Button.js")
   const { setCooldown } = await import("../components/Game.js")
   const t = batchCfg("thousand")
   assert.deepEqual([t.count, t.daily, t.cooldown, t.level], [1000, 3, 3600, 60])
   assert.deepEqual(BATCH_ORDER, ["thousand", "hundred", "multi"])
-  // 每竿保护鱼类总概率：十连 1%、百连 0.1%、千连 0.01%（单钓 0.35% 不变）
-  for (const [kind, rate] of [["multi", 1], ["hundred", 0.1], ["thousand", 0.01]]) {
+  // 每竿保护鱼类总概率：默认三种连钓都与单钓相同（0.35%）；可分别配置
+  for (const kind of ["multi", "hundred", "thousand"]) {
     const c = batchCfg(kind)
-    const odds = buildOdds(cfg.probability, { rarityTier: 10, protectedScale: protectedScaleFor(c, cfg.probability) })
-    const prot = Object.keys(cfg.probability.protected).reduce((a, id) => a + odds[`hidden:${id}`], 0)
-    assert.ok(Math.abs(prot - rate) < 1e-9, `${kind} ${prot}`)
-    // 一次连钓碰到保护鱼类约 10%
-    assert.ok(Math.abs(1 - (1 - rate / 100) ** c.count - 0.095) < 0.01, kind)
+    assert.equal(c.protectedRate, 0.35)
+    assert.ok(Math.abs(protectedScaleFor(c, cfg.probability) - 1) < 1e-9, kind)
   }
+  const custom = batchCfg("thousand", { thousandProtected: 0.01 })
+  const odds = buildOdds(cfg.probability, { rarityTier: 10, protectedScale: protectedScaleFor(custom, cfg.probability) })
+  const prot = Object.keys(cfg.probability.protected).reduce((a, id) => a + odds[`hidden:${id}`], 0)
+  assert.ok(Math.abs(prot - 0.01) < 1e-9, `${prot}`)
   // 次数与按钮
   const u = newUser("10150"); u.stats.casts = 25 * 59 * 60 // Lv60
   assert.deepEqual(fishRow(u, { short: true }).map(b => b.text), ["🌊 千连", "💯 百连", "🔟 十连", "🎣 钓鱼"])
