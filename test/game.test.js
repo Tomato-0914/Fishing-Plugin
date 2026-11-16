@@ -1295,3 +1295,23 @@ test("千连钓鱼：60 级、每天 3 次、间隔 1 小时；各连钓保护�
   // 鱼护容量扩大 10 倍
   assert.equal(cfg.fishing.bagLimit, 2000)
 })
+
+test("称号一览：未获得在最上面，已获得按等级排，满级在最下面", async () => {
+  const { sortTitleCards } = await import("../components/Titles.js")
+  const c = (name, tier, max = 3) => ({ name, tier, max })
+  const cards = [c("钓鱼佬", 2), c("熟练钓手", 3), c("空军司令", 1), c("深海之子", 0), c("监狱常客", 1), c("最好的伙伴", 1, 1), c("热心市民", 0)]
+  assert.deepEqual(sortTitleCards(cards).map(x => x.name), ["深海之子", "热心市民", "空军司令", "监狱常客", "钓鱼佬", "熟练钓手", "最好的伙伴"])
+})
+
+test("配置里用到的 emoji 都有本地图标（图片里不会显示成方框）", async () => {
+  const fs = await import("node:fs")
+  const YAML = (await import("yaml")).default
+  const have = new Set(fs.readdirSync(new URL("../resources/emoji/", import.meta.url)))
+  const code = s => [...s].map(ch => ch.codePointAt(0)).filter(n => n !== 0xfe0f).map(n => n.toString(16)).join("-")
+  for (const f of ["titles", "items", "shop"]) {
+    const missing = new Set()
+    JSON.stringify(YAML.parse(fs.readFileSync(new URL(`../config/default_config/${f}.yaml`, import.meta.url), "utf8")),
+      (k, v) => { if (k === "emoji" && typeof v === "string" && !have.has(`${code(v)}.svg`)) missing.add(v); return v })
+    assert.deepEqual([...missing], [], `${f}.yaml`)
+  }
+})
