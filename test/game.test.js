@@ -1183,3 +1183,19 @@ test("锅巴保存：只写入和默认值不同的项，已取消的配图选�
   assert.ok(!ret.msg.includes("概率总和"), ret.msg) // 渔具模式不提示概率总和
   assert.deepEqual(saved.config, { fishing: { cooldown: 3 } }) // 只写改过的项；没改的、已取消的都不写
 })
+
+test("按钮：操作类只给触发者点，查看类不限制", async () => {
+  const { isOwnAction, withButtons, B } = await import("../components/Button.js")
+  for (const c of ["#钓鱼", "#十连钓鱼", "#百连钓鱼", "#收杆", "#渔具强化 鱼竿 20", "#渔具锻造 鱼钩 5", "#购买渔具寒玉套装", "#购买渔具 鱼竿 6",
+    "#装备渔具 鱼竿 3", "#使用寒玉套装", "#购买鱼饵 普通饵 10", "#使用鱼饵 蚯蚓", "#一键出售", "#清理垃圾", "#打卡"]) assert.ok(isOwnAction(c), c)
+  for (const c of ["#我的渔具", "#我的鱼护", "#钓鱼图鉴", "#钓鱼图鉴 鲫鱼", "#钓鱼排行榜", "#钓鱼帮助", "#购买渔具", "#渔具商店", "#渔具工坊", "#渔具工坊 鱼竿", "#鱼饵商店", "#钓鱼信息", "#我的称号"]) assert.ok(!isOwnAction(c), c)
+  const prev = globalThis.segment
+  globalThis.segment = { button: (...rows) => ({ type: "button", rows }) }
+  const e = { user_id: "123", bot: { adapter: { id: "QQBot" } } }
+  const [, btn] = withButtons(e, "x", [{ text: "强化", callback: "#渔具强化 鱼竿 20" }, B.bag], [B.sell, { text: "迁移", callback: "#钓鱼数据迁移", permission: "master" }])
+  globalThis.segment = prev
+  assert.equal(btn.rows[0][0].permission, "123")
+  assert.equal(btn.rows[0][1].permission, undefined)   // 查看类
+  assert.equal(btn.rows[1][0].permission, undefined)   // 填入输入框
+  assert.equal(btn.rows[1][1].permission, "master")    // 已指定的不改
+})

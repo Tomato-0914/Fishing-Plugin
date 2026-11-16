@@ -8,12 +8,30 @@ export function supportButton(e) {
 }
 
 /**
+ * 会花金币 / 鱼饵或改动存档的指令：按钮只给触发这条消息的人点，避免别人代点
+ * 只是查看、跳转或填入输入框的按钮不限制
+ */
+const OWN_EXACT = new Set(["#钓鱼", "#十连钓鱼", "#百连钓鱼", "#收杆", "#一键出售", "#清理垃圾", "#打卡"])
+const OWN_PREFIX = [/^#渔具(强化|锻造)\s/, /^#购买渔具\s*\S/, /^#装备渔具/, /^#使用.+套装$/, /^#购买鱼饵\s/, /^#使用鱼饵\s/, /^#出售\s/]
+export const isOwnAction = cmd => {
+  cmd = String(cmd || "").trim()
+  return OWN_EXACT.has(cmd) || OWN_PREFIX.some(r => r.test(cmd))
+}
+
+/** 操作类回调按钮加上 permission（已指定 permission 的不改，如主人专用） */
+export function limitToSender(e, button) {
+  if (!button?.callback || button.permission || !e?.user_id || !isOwnAction(button.callback)) return button
+  return { ...button, permission: e.user_id }
+}
+
+/**
  * 给消息附加按钮；非 QQBot 协议原样返回，不发送按钮
  * @param rows 每个参数是一行按钮，如 [{text,callback}], [{text,input}]
  */
 export function withButtons(e, msg, ...rows) {
   rows = rows.filter(r => Array.isArray(r) ? r.length : r)
   if (!rows.length || !supportButton(e)) return msg
+  rows = rows.map(r => Array.isArray(r) ? r.map(b => limitToSender(e, b)) : limitToSender(e, r))
   return [msg, segment.button(...rows)].flat()
 }
 
