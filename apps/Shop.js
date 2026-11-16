@@ -73,19 +73,26 @@ export class FishingShop extends plugin {
       "购买：#购买渔具 鱼竿 9 · 装备：#装备渔具 鱼竿 9",
     ].join("\n"))
     if (!msg) return true
-    // 购买 / 穿戴按钮只给发指令的人点，避免别人误点替他花钱
     const { buyTier, equipTier } = gearShopSuggest(user)
     const quick = [
-      ...(buyTier ? [{ text: `🛒 购买${TIER_NAMES[buyTier - 1]}套装`, callback: `#购买渔具${TIER_NAMES[buyTier - 1]}套装`, permission: e.user_id }] : []),
-      ...(equipTier ? [{ text: `✅ 使用${TIER_NAMES[equipTier - 1]}套装`, callback: `#使用${TIER_NAMES[equipTier - 1]}套装`, permission: e.user_id }] : []),
+      ...(buyTier ? [{ text: `🛒 购买${TIER_NAMES[buyTier - 1]}套装`, callback: `#购买渔具${TIER_NAMES[buyTier - 1]}套装` }] : []),
+      ...(equipTier ? [{ text: `✅ 使用${TIER_NAMES[equipTier - 1]}套装`, callback: `#使用${TIER_NAMES[equipTier - 1]}套装` }] : []),
       // 没有更高阶可买（例如满级穿着创世套装）时，换成去工坊强化锻造
       buyTier ? { text: "🛒 购买单件…", input: "#购买渔具 " } : { text: "🔨 渔具工坊", callback: "#渔具工坊" },
     ]
     return e.reply(withButtons(e, msg, quick, [B.myGear, B.shop]))
   }
-  workshopButtons(slot="rod",tier=1) {
+  /**
+   * 强化 / 锻造按钮：作用于穿戴中的装备时不写阶位，谁点就强化谁自己穿着的那件；
+   * 养成的是没穿着的阶位时必须写明阶位，这种按钮只给本人点（别人点会对准他自己的同阶装备）
+   */
+  cultivateButton(e,user,text,typeName,slot,tier) {
+    const equipped=gearLevel(user,slot)===tier
+    return {text,callback:`#渔具${typeName} ${SLOT_NAMES[slot]}${equipped?"":` ${tier}`}`,...(equipped?{}:{permission:e.user_id})}
+  }
+  workshopButtons(e,user,slot="rod",tier=1) {
     return [
-      [{text:"⬆️ 强化",callback:`#渔具强化 ${SLOT_NAMES[slot]} ${tier}`},{text:"🔨 锻造",callback:`#渔具锻造 ${SLOT_NAMES[slot]} ${tier}`}],
+      [this.cultivateButton(e,user,"⬆️ 强化","强化",slot,tier),this.cultivateButton(e,user,"🔨 锻造","锻造",slot,tier)],
       SLOTS.map(s=>({text:SLOT_NAMES[s],callback:`#渔具工坊 ${SLOT_NAMES[s]}`})),
       [B.myGear,{text:"🏪 渔具商店",callback:"#渔具商店"},B.help]
     ]
@@ -136,7 +143,7 @@ export class FishingShop extends plugin {
       "使用下方按钮选择装备或强化/锻造"
     ].join("\n"))
     if(!msg)return true
-    return e.reply(withButtons(e,msg,...this.workshopButtons(slot,data.tier)))
+    return e.reply(withButtons(e,msg,...this.workshopButtons(e,user,slot,data.tier)))
   }
   parseSlotTier(e,verb) {
     const m=e.msg.match(new RegExp(verb+"\\s*(鱼竿|鱼线|鱼钩|浮漂|鱼护)\\s*(\\d{1,2})?"))
@@ -153,7 +160,7 @@ export class FishingShop extends plugin {
     if (!ret.ok) {
       if (ret.reason === "locked") return e.reply(`🔒 角色等级不足：${name}套装需要 Lv${ret.need}`)
       if (ret.reason === "gold") return e.reply([`👛 金币不足：${name}套装还差 ${ret.missing} 件，需要 ${ret.cost} 金币`, `当前 ${ret.have} 金币，还差 ${ret.cost-ret.have} 金币`].join("\n"))
-      if (ret.reason === "owned") return e.reply(withButtons(e, `✅ 你已拥有完整的${name}套装，无需重复购买`, [{ text: `✅ 使用${name}套装`, callback: `#使用${name}套装`, permission: e.user_id }]))
+      if (ret.reason === "owned") return e.reply(withButtons(e, `✅ 你已拥有完整的${name}套装，无需重复购买`, [{ text: `✅ 使用${name}套装`, callback: `#使用${name}套装` }]))
       return e.reply("❓ 没有这个套装，请查看 #渔具商店")
     }
     await UserData.save(user.user_id)
@@ -173,7 +180,7 @@ export class FishingShop extends plugin {
       "✨ 5 件套属性（穿上后生效）",
       ...setLines(tier, 5),
     ]
-    return e.reply(withButtons(e, lines.join("\n"), [{ text: `✅ 使用${name}套装`, callback: `#使用${name}套装`, permission: e.user_id }, B.myGear]))
+    return e.reply(withButtons(e, lines.join("\n"), [{ text: `✅ 使用${name}套装`, callback: `#使用${name}套装` }, B.myGear]))
   }
   async purchase(e) {
     if(!groupAllowed(e))return false
@@ -189,7 +196,7 @@ export class FishingShop extends plugin {
       ...(inheritText(ret.inherited,false)?[`🔁 继承：${inheritText(ret.inherited,false)}`]:[]),
       `💡 发送 ${equipCmd} 穿戴`,
     ]
-    return e.reply(withButtons(e,lines.join("\n"),[{text:`✅ 装备${ret.item.name}`,callback:equipCmd,permission:e.user_id},B.myGear]))
+    return e.reply(withButtons(e,lines.join("\n"),[{text:`✅ 装备${ret.item.name}`,callback:equipCmd},B.myGear]))
   }
   async equipSet(e) {
     if (!groupAllowed(e)) return false
@@ -200,7 +207,7 @@ export class FishingShop extends plugin {
     const ret = equipGearSet(user,tier)
     if (!ret.ok) {
       if (ret.reason === "locked") return e.reply(`🔒 角色等级不足：${name}套装需要 Lv${ret.need}`)
-      if (ret.reason === "incomplete") return e.reply(withButtons(e, [`❌ ${name}套装还没买齐`, `缺少：${ret.missing.map(slot => name + SLOT_NAMES[slot]).join("、")}`].join("\n"), [{ text: `🛒 购买${name}套装`, callback: `#购买渔具${name}套装`, permission: e.user_id }]))
+      if (ret.reason === "incomplete") return e.reply(withButtons(e, [`❌ ${name}套装还没买齐`, `缺少：${ret.missing.map(slot => name + SLOT_NAMES[slot]).join("、")}`].join("\n"), [{ text: `🛒 购买${name}套装`, callback: `#购买渔具${name}套装` }]))
       if (ret.reason === "equipped") return e.reply(`✅ 你已经穿着${name}套装（5）了`)
       return e.reply("❓ 没有这个套装，请查看 #渔具商店")
     }
@@ -252,9 +259,9 @@ export class FishingShop extends plugin {
     ].join("\n"))
     if(!msg)return true
     return e.reply(withButtons(e,msg,
-      [{text:`🔨 ${data.typeName}`,callback:`#渔具${data.typeName} ${SLOT_NAMES[p.slot]} ${tier}`},
+      [this.cultivateButton(e,user,`🔨 ${data.typeName}`,data.typeName,p.slot,tier),
        {text:"🏠 返回工坊",callback:`#渔具工坊 ${SLOT_NAMES[p.slot]}`}],
-      [B.myGear,{text:"🔄 切换方式",callback:`#渔具${type==="enhance"?"锻造":"强化"} ${SLOT_NAMES[p.slot]} ${tier}`}]))
+      [B.myGear,this.cultivateButton(e,user,"🔄 切换方式",type==="enhance"?"锻造":"强化",p.slot,tier)]))
   }
   async shop(e) {
     if (!groupAllowed(e)) return false
