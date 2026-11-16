@@ -40,7 +40,7 @@ test("失败补偿最多50个百分点且只穿戴装备生效",()=>{
   assert.equal(gearEffects(u,shop).rarityTier,1) // 买了不穿戴不生效
   equipGear(u,"rod",9)
   assert.equal(gearEffects(u,shop).rarityTier,9)
-  assert.equal(bagCapacity(u,shop,200),200)
+  assert.equal(bagCapacity(u,shop,2000),2000)
 })
 test("阶位解锁：Lv1~4 为 1 阶，之后每 5 级一阶，Lv95 解锁 20 阶",()=>{
   for(const [lv,tier] of [[1,1],[4,1],[5,2],[9,2],[10,3],[14,3],[15,4],[19,4],[24,5],[25,6],[90,19],[94,19],[95,20],[100,20]])

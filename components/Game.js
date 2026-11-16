@@ -294,34 +294,36 @@ export function useMulti(user, daily = 10, now = new Date()) {
   return null
 }
 
-/* ==================== 百连次数 ==================== */
+/* ==================== 百连 / 千连次数 ==================== */
 
-/** 今天的百连状态 { day, used }：跨天重置 */
-export function hundredState(user, now = new Date()) {
+/** 某个玩法今天的次数状态 user[key] = { day, used }：跨天重置（key 为 hundred / thousand …） */
+export function dailyState(user, key, now = new Date()) {
   const today = periodKey("day", now)
-  user.hundred ||= { day: today, used: 0 }
-  if (user.hundred.day !== today) { user.hundred.day = today; user.hundred.used = 0 }
-  user.hundred.used = Math.max(0, Number(user.hundred.used) || 0)
-  return user.hundred
+  user[key] ||= { day: today, used: 0 }
+  if (user[key].day !== today) { user[key].day = today; user[key].used = 0 }
+  user[key].used = Math.max(0, Number(user[key].used) || 0)
+  return user[key]
 }
 
-/** 今日剩余百连次数 */
-export function hundredLeft(user, daily = 10, now = new Date()) {
-  return Math.max(0, Number(daily) - hundredState(user, now).used)
-}
+/** 今日剩余次数 */
+export const dailyLeft = (user, key, daily, now = new Date()) => Math.max(0, Number(daily) - dailyState(user, key, now).used)
 
-/** 消耗一次百连，没有次数返回 false */
-export function useHundred(user, daily = 10, now = new Date()) {
-  const h = hundredState(user, now)
-  if (h.used >= Number(daily)) return false
-  h.used++
+/** 消耗一次，没有次数返回 false */
+export function useDaily(user, key, daily, now = new Date()) {
+  const d = dailyState(user, key, now)
+  if (d.used >= Number(daily)) return false
+  d.used++
   return true
 }
+
+export const hundredState = (user, now = new Date()) => dailyState(user, "hundred", now)
+export const hundredLeft = (user, daily = 10, now = new Date()) => dailyLeft(user, "hundred", daily, now)
+export const useHundred = (user, daily = 10, now = new Date()) => useDaily(user, "hundred", daily, now)
 
 /* ==================== 冷却 ==================== */
 
 /** 各玩法独立冷却，存在存档里（重启不丢）：cast 单钓 / multi 十连 / hundred 百连，以后的新玩法加一个 kind 即可 */
-export const COOLDOWN_LABELS = { cast: "钓鱼", multi: "十连", hundred: "百连" }
+export const COOLDOWN_LABELS = { cast: "钓鱼", multi: "十连", hundred: "百连", thousand: "千连" }
 
 /** 剩余冷却（秒，向上取整），没有冷却为 0 */
 export function cooldownLeft(user, kind, now = Date.now()) {
