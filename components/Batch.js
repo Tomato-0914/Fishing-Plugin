@@ -7,9 +7,9 @@ import { multiLeft, useMulti, dailyLeft, useDaily, cooldownLeft } from "./Game.j
  * protected：该玩法每一竿钓到保护鱼类的总概率（%），按物种比例分配；不写时用 probability.protected 原值
  */
 export const BATCH = {
-  multi:    { label: "十连", emoji: "🔟", cmd: "#十连钓鱼", delay: [3, 8],  count: ["multiCount", 10],      daily: ["multiDaily", 100],   cooldown: ["multiCooldown", 30],      level: [null, 0],               protected: ["multiProtected", 1] },
-  hundred:  { label: "百连", emoji: "💯", cmd: "#百连钓鱼", delay: [5, 10], count: ["hundredCount", 100],   daily: ["hundredDaily", 10],  cooldown: ["hundredCooldown", 60],    level: ["hundredLevel", 25],    protected: ["hundredProtected", 0.1] },
-  thousand: { label: "千连", emoji: "🌊", cmd: "#千连钓鱼", delay: [8, 15], count: ["thousandCount", 1000], daily: ["thousandDaily", 3], cooldown: ["thousandCooldown", 3600], level: ["thousandLevel", 60], protected: ["thousandProtected", 0.01] },
+  multi:    { label: "十连", emoji: "🔟", cmd: "#十连钓鱼", delay: [3, 8],  count: ["multiCount", 10],      daily: ["multiDaily", 100],   cooldown: ["multiCooldown", 30],      level: [null, 0],               protected: ["multiProtected", 0.35] },
+  hundred:  { label: "百连", emoji: "💯", cmd: "#百连钓鱼", delay: [5, 10], count: ["hundredCount", 100],   daily: ["hundredDaily", 10],  cooldown: ["hundredCooldown", 60],    level: ["hundredLevel", 25],    protected: ["hundredProtected", 0.35] },
+  thousand: { label: "千连", emoji: "🌊", cmd: "#千连钓鱼", delay: [8, 15], count: ["thousandCount", 1000], daily: ["thousandDaily", 3], cooldown: ["thousandCooldown", 3600], level: ["thousandLevel", 60], protected: ["thousandProtected", 0.35] },
 }
 /** 按钮优先级：千连 > 百连 > 十连 */
 export const BATCH_ORDER = ["thousand", "hundred", "multi"]
