@@ -2,7 +2,7 @@
 # 每个称号分 Ⅰ / Ⅱ / Ⅲ 三级，达到 need 即获得对应等级；同一称号只按最高一级生效（不与低级叠加），不同称号之间效果叠加
 # 称号按累计统计计算，统计只增不减，所以获得后不会失去
 # stat 可用：casts 抛竿次数 / catches 钓到的鱼 / junkCleaned 清理垃圾 / fails 空军+跑鱼+收杆过早
-#            police 人民碎片次数 / protected 误钓保护鱼类次数 / heart 海洋之心次数 / ur 传说鱼次数 / earned 累计钓获价值
+#            police 人民碎片次数 / protected 误钓保护鱼类次数 / heart 海洋之心次数 / ur 传说及以上鱼次数 / ep 史诗鱼次数 / mr 神话鱼次数 / earned 累计钓获价值
 #            dex 图鉴中已收集的鱼类种数（need 写 all 表示集齐） / checkinDays 累计打卡天数
 # desc 中的 {n} 会替换成该级的 need
 # 垃圾、空军会随渔具变好而越来越少（下限 5% / 3%），所以海洋卫士、空军司令的门槛比钓鱼次数类的低很多
@@ -89,6 +89,26 @@
     - { need: 5,    effects: { largeBoost: 5, rarePoints: 0.2 } }
     - { need: 100,  effects: { largeBoost: 10, emptyReduce: 1, rarePoints: 0.5 } }
     - { need: 1000, effects: { largeBoost: 20, emptyReduce: 1, rarePoints: 1 } }
+
+- id: epic
+  name: 史诗猎人
+  emoji: 🔱
+  stat: ep
+  desc: 累计钓到 {n} 条史诗鱼
+  tiers:
+    - { need: 3,   effects: { largeBoost: 5, rarePoints: 0.2 } }
+    - { need: 50,  effects: { largeBoost: 10, emptyReduce: 1, rarePoints: 0.5 } }
+    - { need: 500, effects: { largeBoost: 15, emptyReduce: 1, rarePoints: 0.8 } }
+
+- id: mythic
+  name: 神话猎人
+  emoji: 👑
+  stat: mr
+  desc: 累计钓到 {n} 条神话鱼
+  tiers:
+    - { need: 1,   effects: { largeBoost: 5, rarePoints: 0.3 } }
+    - { need: 20,  effects: { largeBoost: 10, emptyReduce: 1, rarePoints: 0.6 } }
+    - { need: 200, effects: { largeBoost: 20, emptyReduce: 1, rarePoints: 1 } }
 
 - id: citizen
   name: 热心市民

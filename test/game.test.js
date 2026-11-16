@@ -1315,3 +1315,21 @@ test("配置里用到的 emoji 都有本地图标（图片里不会显示成方�
     assert.deepEqual([...missing], [], `${f}.yaml`)
   }
 })
+
+test("称号「史诗猎人」「神话猎人」：按钓到史诗 / 神话鱼的条数分三级", async () => {
+  const { ownedTier } = await import("../components/Titles.js")
+  const { recordResult } = await import("../components/Game.js")
+  const ep = Config.titles.find(x => x.id === "epic"), mr = Config.titles.find(x => x.id === "mythic")
+  assert.equal(ep.name, "史诗猎人"); assert.equal(mr.name, "神话猎人")
+  assert.deepEqual(ep.tiers.map(x => x.need), [3, 50, 500])
+  assert.deepEqual(mr.tiers.map(x => x.need), [1, 20, 200])
+  const u = newUser("10114")
+  const epFish = items.find(i => i.rarity === "EP"), mrFish = items.find(i => i.rarity === "MR")
+  for (let i = 0; i < 3; i++) recordResult(u, { type: "item", item: epFish, rarity: "EP", price: 1 })
+  recordResult(u, { type: "item", item: mrFish, rarity: "MR", price: 1 })
+  assert.equal(ownedTier(u, ep, items), 1)
+  assert.equal(ownedTier(u, mr, items), 1)
+  u.stats.ep = 500; u.stats.mr = 20
+  assert.equal(ownedTier(u, ep, items), 3)
+  assert.equal(ownedTier(u, mr, items), 2)
+})
