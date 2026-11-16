@@ -2,12 +2,13 @@ import { plugin, puppeteer } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { RARITY_INFO, isDexFish, formatWeight, SIZE_ORDER, castBreakdown } from "../components/ItemPool.js"
-import { groupBag, sellEntries, discardJunk, todayLuck, luckTier, repriceBag, protectedFine, protectedToday, protectedDailyMax } from "../components/Game.js"
+import { groupBag, sellEntries, discardJunk, todayLuck, luckTier, repriceBag, protectedFine, groupProtectedMax } from "../components/Game.js"
 import { checkTitles, getEffects, effectText, progressText, mergeEffects, ownedTier, ownedTitles, titleName, titleUpText } from "../components/Titles.js"
 import { gearEffects, bagCapacity, totalBait, gearItem, gearLevel, SLOTS, ownedGear, tierBadge } from "../components/Gear.js"
 import { gearIcon } from "../components/GearIcons.js"
 import { withButtons, B, fishRow } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
+import GroupDaily, { groupKey } from "../components/GroupDaily.js"
 import { itemChance, formatChance, sizeTable, findItems, dexNo } from "../components/Dex.js"
 import { dayKey } from "../components/Period.js"
 import { groupAllowed, itemMap, displayName, updateNickname, avatar, playerEffects } from "../components/common.js"
@@ -188,9 +189,10 @@ export class FishingBag extends plugin {
       {label:"收杆过早",value:s.early,unit:"次"},
       {label:"最大一条",value:max ? `${max.name} ${formatWeight(user.maxFish.w)}` : "暂无",unit:""},
     ]
-    // 抛一竿的完整概率：渔具、套装、称号、今日运势（不含鱼饵）；今天误钓保护鱼类已达上限时不再出现
+    // 抛一竿的完整概率：渔具、套装、称号、今日运势（不含鱼饵）；本群今天保护鱼类已达上限时不再出现
     const cfg = Config.config
-    const capped = protectedDailyMax(cfg.protectedPenalty) && protectedToday(user) >= protectedDailyMax(cfg.protectedPenalty)
+    const groupMax = groupProtectedMax(cfg.protectedPenalty)
+    const capped = groupMax && GroupDaily.count(groupKey(e)) >= groupMax
     const odds = castBreakdown(cfg.probability, { ...playerEffects(user, null), ...(capped ? { protectedScale: 0 } : {}) }, cfg.limits)
       .filter(o => o.pct > 0).map(o => ({ ...o, text: `${Number(o.pct.toFixed(o.pct < 1 ? 2 : 1))}%` }))
     const data = {
@@ -275,7 +277,7 @@ export class FishingBag extends plugin {
     }))
     const pen = cfg.protectedPenalty || {}
     const fineText = Number(pen.goldRate) > 0 ? `当前金币的 ${pen.goldRate}%（最多 ${pen.gold ?? 0}，你现在会被罚 ${protectedFine(user.gold, pen)}）` : `${pen.gold ?? 0} 金币`
-    const price = item.special === "protected" ? `🚫 禁止捕捞（误钓罚款 ${fineText}、禁渔 ${pen.banMinutes ?? 0} 分钟）`
+    const price = item.special === "protected" ? `🚫 禁止捕捞（误钓会被警察带走，禁渔 ${pen.banMinutes ?? 0} 分钟，罚款 ${fineText}）`
       : item.special === "paimon" ? "不能卖！派蒙是伙伴"
       : item.special === "police" ? `警局奖励 ${cfg.policeReward} 金币`
       : item.rarity === "junk" ? "0 金币（可 #清理垃圾 统一回收）"

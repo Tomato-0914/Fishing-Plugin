@@ -1126,42 +1126,66 @@ test("抛竿提示的渔具：成套显示“阶名（件数）”，其余部�
   assert.equal(gearSummary(equip(newUser("10103"), { rod: 6, line: 6, hook: 5, float: 5 }), shop), "流云鱼竿 · 流云鱼线 · 寒玉鱼钩 · 寒玉浮漂 · 新手鱼护")
 })
 
-test("保护鱼类：每人每天最多误钓 3 次，达到后当天不再出现，跨天重置", async () => {
+test("保护鱼类：按群限制，每个群每天最多 5 条，个人不再限制次数，跨天重置", async () => {
   const { resolveCast } = await import("../components/Catch.js")
-  const { protectedToday, protectedDailyMax } = await import("../components/Game.js")
-  assert.equal(protectedDailyMax(cfg.protectedPenalty), 3)
+  const { groupProtectedMax } = await import("../components/Game.js")
+  const { GroupDaily, groupKey } = await import("../components/GroupDaily.js")
+  assert.equal(groupProtectedMax(cfg.protectedPenalty), 5)
+  assert.equal(groupProtectedMax({ groupDailyMax: 0 }), 0)
+  assert.equal(groupKey({ group_id: 123, user_id: 1 }), "g123")
+  assert.equal(groupKey({ user_id: 1 }), "p1")
   // 只会钓到保护鱼类的配置
   const only = { ...cfg, probability: { mode: "gear", empty: 0, junk: 0, hidden: {}, protected: { chinese_sturgeon: 100 } } }
-  const u = newUser("10110"); u.gold = 100000
+  const store = new GroupDaily()
+  const gate = (key, now) => ({ max: groupProtectedMax(only.protectedPenalty), count: () => store.count(key, "protected", now), add: () => store.add(key, "protected", now) })
   const day = new Date(2026, 10, 15, 10, 0)
-  const cast = (now, rng = seeded(3)) => { u.banUntil = 0; return resolveCast(u, { items, cfg: only, shop: Config.shop, rng, now }) }
-  for (let i = 1; i <= 3; i++) {
-    const r = cast(new Date(day.getTime() + i * 60000))
-    assert.equal(r.result.item?.special, "protected", `第 ${i} 次`)
-    assert.equal(r.penalty.today, i)
+  const cast = (u, key, now = day, rng = seeded(3)) => { u.banUntil = 0; return resolveCast(u, { items, cfg: only, shop: Config.shop, rng, now, group: gate(key, now) }) }
+  // 同一个人在一个群里钓到 4 条（个人不再限制 3 条）
+  const a = newUser("10110"); a.gold = 100000
+  for (let i = 1; i <= 4; i++) {
+    const r = cast(a, "g1")
+    assert.equal(r.result.item?.special, "protected", `第 ${i} 条`)
+    assert.equal(r.penalty.group, i)
+    assert.equal(r.penalty.groupMax, 5)
+    assert.equal(r.penalty.minutes, 60)
   }
-  assert.equal(protectedToday(u, day), 3)
-  // 第 4 次起当天不再出现保护鱼类
-  for (let i = 0; i < 20; i++) assert.notEqual(cast(new Date(day.getTime() + 600000)).result.item?.special, "protected")
-  assert.equal(u.stats.protected, 3)
+  // 群里另一个人钓到第 5 条后，本群今天不再出现
+  const b = newUser("10111")
+  assert.equal(cast(b, "g1").penalty.group, 5)
+  for (let i = 0; i < 20; i++) assert.notEqual(cast(a, "g1").result.item?.special, "protected")
+  // 其他群不受影响；同一个人换个群照样会钓到
+  assert.equal(cast(a, "g2").result.item?.special, "protected")
+  assert.equal(a.stats.protected, 5)
   // 第二天重置
   const next = new Date(2026, 10, 16, 9, 0)
-  assert.equal(protectedToday(u, next), 0)
-  assert.equal(cast(next).result.item?.special, "protected")
-  // dailyMax 为 0 时不限制
-  const free = { ...only, protectedPenalty: { ...cfg.protectedPenalty, dailyMax: 0 } }
-  const v = newUser("10111")
-  for (let i = 0; i < 5; i++) { v.banUntil = 0; assert.equal(resolveCast(v, { items, cfg: free, shop: Config.shop, rng: seeded(4), now: day }).result.item?.special, "protected") }
+  assert.equal(store.count("g1", "protected", next), 0)
+  assert.equal(cast(b, "g1", next).result.item?.special, "protected")
+  // groupDailyMax 为 0 时不限制
+  const free = { max: 0, count: () => 99, add: () => 100 }
+  const v = newUser("10112")
+  for (let i = 0; i < 3; i++) { v.banUntil = 0; assert.equal(resolveCast(v, { items, cfg: only, shop: Config.shop, rng: seeded(4), now: day, group: free }).result.item?.special, "protected") }
 })
 
-test("十连 / 百连结果里的保护鱼类显示今日误钓次数", async () => {
+test("保护鱼类：被警察带走禁渔 1 小时，结果里显示本群今日条数", async () => {
   const { roundLine, formatMulti, formatHundred } = await import("../components/Catch.js")
   const it = itemMap.get("chinese_sturgeon")
-  const r = { snapped: false, value: 0, reward: 0, penalty: { fine: 10000, minutes: 60, today: 2 }, result: { type: "item", item: it, rarity: "protected" } }
-  assert.equal(roundLine(r, {}, 3), `🚫 ${it.emoji} 中华鲟（保护鱼类）已放生 · 罚款 10000 · 禁渔 60 分钟 · 今日 2/3 次`)
-  assert.ok(roundLine(r).endsWith("今日第 2 次"))
-  assert.ok(formatMulti([r], { protectedMax: 3 }).includes("今日 2/3 次"))
-  assert.ok(formatHundred([r], { protectedMax: 3 }).includes("今日 2/3 次"))
+  const r = { snapped: false, value: 0, reward: 0, penalty: { fine: 10000, minutes: 60, group: 2, groupMax: 5 }, result: { type: "item", item: it, rarity: "protected" } }
+  assert.equal(roundLine(r), `🚫 ${it.emoji} 中华鲟（保护鱼类）已放生 · 🚔 被警察带走 · 禁渔 60 分钟 · 罚款 10000 · 本群今日 2/5 条`)
+  assert.ok(formatMulti([r]).includes("本群今日 2/5 条"))
+  assert.ok(formatHundred([r]).includes("被警察带走"))
+  assert.equal(cfg.protectedPenalty.banMinutes, 60)
+})
+
+test("称号「监狱常客」：按误钓保护鱼类次数分三级", async () => {
+  const { ownedTier } = await import("../components/Titles.js")
+  const t = Config.titles.find(x => x.id === "jailbird")
+  assert.equal(t.name, "监狱常客")
+  assert.deepEqual(t.tiers.map(x => x.need), [1, 5, 20])
+  const u = newUser("10113")
+  assert.equal(ownedTier(u, t, items), 0)
+  u.stats.protected = 1; assert.equal(ownedTier(u, t, items), 1)
+  u.stats.protected = 5; assert.equal(ownedTier(u, t, items), 2)
+  u.stats.protected = 20; assert.equal(ownedTier(u, t, items), 3)
 })
 
 test("锅巴保存：只写入和默认值不同的项，已取消的配图选项被清掉", async () => {

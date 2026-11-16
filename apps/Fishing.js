@@ -2,9 +2,10 @@ import { plugin } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js"
-import { protectedDailyMax, protectedToday, cooldownLeft, setCooldown, cooldownText, COOLDOWN_LABELS, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier } from "../components/Game.js"
+import { groupProtectedMax, cooldownLeft, setCooldown, cooldownText, COOLDOWN_LABELS, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier } from "../components/Game.js"
 import { consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, holdsOnTimeout, maxLevel, gearSummary } from "../components/Gear.js"
 import { resolveCast, summarize, formatMulti, formatHundred } from "../components/Catch.js"
+import GroupDaily, { groupKey } from "../components/GroupDaily.js"
 import { experience, characterProgress, xpGainText } from "../components/Progression.js"
 import { checkTitles, getEffects, effectText, titleUpText } from "../components/Titles.js"
 import { withButtons, B, fishRow } from "../components/Button.js"
@@ -52,6 +53,16 @@ export class Fishing extends plugin {
   }
 
   /** 本竿的全部效果：称号 + 今日幸运 + 渔具 + 本竿鱼饵 */
+  /** 本群今日保护鱼类计数（私聊按个人单独计算） */
+  protectedGroup(e) {
+    const key = groupKey(e)
+    return {
+      max: groupProtectedMax(this.cfg.protectedPenalty),
+      count: () => GroupDaily.count(key),
+      add: () => GroupDaily.add(key),
+    }
+  }
+
   effectsFor(user, bait) {
     return playerEffects(user, bait ?? null)
   }
@@ -105,16 +116,14 @@ export class Fishing extends plugin {
       return null
     }
 
-    // 误钓保护鱼类后禁渔
+    // 误钓保护鱼类后被警察带走，禁渔
     const ban = (Number(user.banUntil) || 0) - Date.now()
     if (ban > 0) {
       const until = new Date(user.banUntil)
       const hm = `${String(until.getHours()).padStart(2, "0")}:${String(until.getMinutes()).padStart(2, "0")}`
-      const max = protectedDailyMax(this.cfg.protectedPenalty)
       await this.send(e, [
-        "🚫 你误钓了保护鱼类，正在禁渔中~",
-        `⏳ 还剩 ${Math.ceil(ban / 60000)} 分钟（${hm} 解禁）`,
-        ...(max ? [`📅 今日已误钓 ${protectedToday(user)}/${max} 次`] : []),
+        "🚔 你因为误钓保护鱼类被警察带走了，正在派出所接受教育~",
+        `⏳ 禁渔还剩 ${Math.ceil(ban / 60000)} 分钟（${hm} 解禁）`,
       ].join("\n"))
       return null
     }
@@ -303,7 +312,7 @@ export class Fishing extends plugin {
     const cfg = this.cfg
     const shop = Config.shop
     const effects = this.effectsFor(user, baitDef(shop, s.bait))
-    const round = resolveCast(user, { items: Config.items, cfg, shop, effects })
+    const round = resolveCast(user, { items: Config.items, cfg, shop, effects, group: this.protectedGroup(e) })
     const { result, snapped, chance: snap, reward } = round
     const xpLine = xpSettlement(user, s.xpBefore ?? experience(user) - 1)
     const withPrefix = msg => {
@@ -422,7 +431,8 @@ export class Fishing extends plugin {
     const shop = Config.shop
     // 百连降低保护鱼类出现概率；误钓后禁渔，后面的竿作废（鱼饵不退）
     const extra = { protectedScale: protectedScaleFor(c, cfg.probability) }
-    const rounds = baits.map(bait => resolveCast(user, { items: Config.items, cfg, shop, effects: { ...this.effectsFor(user, bait), ...extra } }))
+    const group = this.protectedGroup(e)
+    const rounds = baits.map(bait => resolveCast(user, { items: Config.items, cfg, shop, effects: { ...this.effectsFor(user, bait), ...extra }, group }))
     // 两次之间的最短间隔（防刷屏）
     const cd = this.startCooldown(id, user, c.cooldown, c.kind)
     UserData.save(id)
@@ -431,10 +441,9 @@ export class Fishing extends plugin {
     const xpLine = xpSettlement(user, s.xpBefore ?? experience(user) - baits.length)
     const markdown = e.bot?.adapter?.id === "QQBot"
     const sizeLabels = Object.fromEntries(Object.entries(cfg.size || {}).map(([k, v]) => [k, v.label]))
-    const protectedMax = protectedDailyMax(cfg.protectedPenalty)
     const body = c.kind !== "multi"
-      ? formatHundred(rounds, { markdown, xpLine, protectedMax, title: `${c.emoji} ${c.label}收网` })
-      : formatMulti(rounds, { sizeLabels, markdown, xpLine, protectedMax })
+      ? formatHundred(rounds, { markdown, xpLine, title: `${c.emoji} ${c.label}收网` })
+      : formatMulti(rounds, { sizeLabels, markdown, xpLine })
     const msg = body + `\n🎟️ 剩余${c.label}：${batchLeftText(user, c)}` + (cd ? `\n⏳ 冷却：${cooldownText(cd)}` : "")
     await this.send(e, withButtons(e, msg,
       fishRow(user, { short: true }),
@@ -453,7 +462,7 @@ export class Fishing extends plugin {
     const { item } = result
     const r = RARITY_INFO[item.rarity] || {}
 
-    // 保护鱼类：放生 + 处罚
+    // 保护鱼类：放生，钓鱼人被警察带走（禁渔 + 罚款）
     if (item.special === "protected") {
       const p = round.penalty || {}
       const until = p.banUntil ? new Date(p.banUntil) : null
@@ -462,9 +471,10 @@ export class Fishing extends plugin {
         `🚫 糟糕！钓上来的是国家保护鱼类——${item.emoji}【${r.label}】${item.name}`,
         "━━━━━━━━━━━━",
         `💬 ${item.intro || item.desc}`,
-        "🕊️ 已经小心地把它放回水里了",
-        `⚖️ 处罚：罚款 ${p.fine ?? 0} 金币，禁渔 ${p.minutes ?? 0} 分钟${hm ? `（${hm} 解禁）` : ""}`,
-        ...(protectedDailyMax(this.cfg.protectedPenalty) ? [`📅 今日已误钓 ${p.today ?? 1}/${protectedDailyMax(this.cfg.protectedPenalty)} 次${(p.today ?? 1) >= protectedDailyMax(this.cfg.protectedPenalty) ? "，今天不会再钓到保护鱼类了" : ""}`] : []),
+        `🕊️ ${item.name}已经被放生回水里了`,
+        `🚔 闻讯赶来的警察把你带走了，禁渔 ${p.minutes ?? 0} 分钟${hm ? `（${hm} 解禁）` : ""}`,
+        ...(p.fine ? [`⚖️ 罚款 ${p.fine} 金币`] : []),
+        ...(p.group ? [`📅 本群今日已钓到保护鱼类 ${p.group}${p.groupMax ? `/${p.groupMax}` : ""} 条${p.groupMax && p.group >= p.groupMax ? "，今天本群不会再钓到了" : ""}`] : []),
         `👛 当前金币：${user.gold}`,
       ].join("\n"), [{ text: `📖 了解${item.name}`, callback: `#钓鱼图鉴 ${item.name}` }, B.bag])
     }
