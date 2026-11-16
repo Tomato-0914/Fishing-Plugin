@@ -1184,3 +1184,23 @@ test("锅巴保存：只写入和默认值不同的项，已取消的配图选�
   assert.deepEqual(saved.config, { fishing: { cooldown: 3 } }) // 只写改过的项；没改的、已取消的都不写
 })
 
+
+test("钓鱼信息：抛一竿的完整结果概率（空军、垃圾、各品级、隐藏款、保护鱼类）合计 100%", async () => {
+  const { castBreakdown } = await import("../components/ItemPool.js")
+  const { playerEffects } = await import("../components/common.js")
+  const u = equip(newUser("10120"), 20, { enhance: 15, forge: 8 })
+  u.titleLv = { airforce: 3, skilled: 3 }
+  const rows = castBreakdown(cfg.probability, playerEffects(u, null), cfg.limits)
+  assert.deepEqual(rows.map(r => r.key), ["empty", "junk", "N", "R", "SR", "SSR", "UR", "EP", "MR", "hidden", "protected"])
+  assert.ok(Math.abs(rows.reduce((a, r) => a + r.pct, 0) - 100) < 1e-9)
+  const get = k => rows.find(r => r.key === k).pct
+  assert.ok(Math.abs(get("protected") - 0.35) < 1e-9)   // 0.1+0.05+0.08+0.08+0.04
+  assert.ok(Math.abs(get("hidden") - 0.08) < 1e-9)      // 人民碎片 + 海洋之心 + 派蒙
+  assert.ok(get("empty") < cfg.probability.empty)       // 称号、套装减少空军
+  assert.ok(get("MR") > 0)
+  // 鱼饵不计入：当前用腥香饵（垃圾 -4%）时，不含鱼饵的效果正好少这 4%
+  u.baits = { scent: 5 }; u.baitUse = "scent"
+  assert.ok(Math.abs((playerEffects(u).junkReduce || 0) - (playerEffects(u, null).junkReduce || 0) - 4) < 1e-9)
+  // 今日误钓达上限：保护鱼类为 0
+  assert.equal(castBreakdown(cfg.probability, { ...playerEffects(u, null), protectedScale: 0 }).find(r => r.key === "protected").pct, 0)
+})

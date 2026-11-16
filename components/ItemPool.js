@@ -238,3 +238,23 @@ export function formatWeight(kg) {
   if (kg == null) return ""
   return kg < 1 ? `${Math.round(kg * 1000)}g` : `${Number(kg.toFixed(2))}kg`
 }
+
+/**
+ * 抛一竿的完整结果概率（%），用于展示：空军、垃圾、普通 ~ 神话、隐藏款、保护鱼类
+ * @returns [{ key, label, color, pct }]，按以上顺序，包含 0% 的项
+ */
+export function castBreakdown(prob, effects = {}, limits = {}) {
+  const odds = buildOdds(prob, effects, limits)
+  const total = Object.values(odds).reduce((a, v) => a + v, 0) || 1
+  const pct = v => v / total * 100
+  const protectedIds = new Set(Object.keys(prob?.protected || {}).map(id => `hidden:${id}`))
+  let hidden = 0, prot = 0
+  for (const [k, v] of Object.entries(odds)) if (k.startsWith("hidden:")) protectedIds.has(k) ? prot += v : hidden += v
+  return [
+    { key: "empty", label: "空军", color: "#6b7f93", pct: pct(odds.empty || 0) },
+    { key: "junk", label: "垃圾", color: "#8d6e63", pct: pct(odds.junk || 0) },
+    ...FISH_TIERS.map(k => ({ key: k, label: RARITY_INFO[k].label, color: RARITY_INFO[k].color, pct: pct(odds[k] || 0) })),
+    { key: "hidden", label: "隐藏款", color: RARITY_INFO.hidden.color, pct: pct(hidden) },
+    { key: "protected", label: "保护鱼类", color: RARITY_INFO.protected.color, pct: pct(prot) },
+  ]
+}
