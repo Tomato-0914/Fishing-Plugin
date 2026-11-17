@@ -4,12 +4,13 @@ import UserData from "../components/UserData.js"
 import { RARITY_INFO, isDexFish, formatWeight, SIZE_ORDER, castBreakdown } from "../components/ItemPool.js"
 import { groupBag, sellEntries, discardJunk, todayLuck, luckTier, repriceBag, protectedFine, groupProtectedMax } from "../components/Game.js"
 import { checkTitles, getEffects, effectText, progressText, mergeEffects, ownedTier, ownedTitles, titleName, titleUpText } from "../components/Titles.js"
-import { gearEffects, bagCapacity, totalBait, gearItem, gearLevel, SLOTS, ownedGear, tierBadge } from "../components/Gear.js"
+import { gearEffects, bagCapacity, totalBait, gearItem, gearLevel, SLOTS, ownedGear, tierBadge, currentBait, breakChance } from "../components/Gear.js"
 import { gearIcon } from "../components/GearIcons.js"
 import { withButtons, B, fishRow } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
 import GroupDaily, { groupKey } from "../components/GroupDaily.js"
-import { petEffects } from "../components/Pet.js"
+import { petEffects, petCfg, petDef, ensurePets, refreshPets, petLevel, petStage, petName, currentForm, branchDef, petAbilities, skillText, isHungry, satText } from "../components/Pet.js"
+import { petIcon } from "../components/PetIcons.js"
 import { itemChance, formatChance, sizeTable, findItems, dexNo } from "../components/Dex.js"
 import { dayKey } from "../components/Period.js"
 import { groupAllowed, itemMap, displayName, updateNickname, avatar, playerEffects } from "../components/common.js"
@@ -164,6 +165,38 @@ export class FishingBag extends plugin {
     return e.reply(`💰 ${displayName(user)} 当前金币：${user.gold}`)
   }
 
+  /** #钓鱼信息：出战宠物（形象、等级、饱食度、天赋与技能） */
+  petInfo(user) {
+    ensurePets(user); refreshPets(user)
+    const c = petCfg(), id = user.pets.active, d = id && user.pets.owned[id]
+    if (!d) return { none: true, count: Object.keys(user.pets.owned).length }
+    const def = petDef(id), form = currentForm(def, d, c), stage = petStage(d, c)
+    return {
+      icon: petIcon(id, form), name: petName(def, d, c), form: form?.name, level: petLevel(d, c),
+      stage: ["", "一阶", "二阶", "三阶", "四阶", "五阶"][stage], branch: branchDef(def, d.branch)?.name || "",
+      sat: satText(d, c), satPct: Math.max(0, Math.min(100, d.sat / c.satiety.max * 100)), hungry: isHungry(d, c), low: d.sat < c.satiety.warn,
+      skills: petAbilities(def, d, c).map(s => ({ name: s.name, text: skillText(s.effect, s.value), talent: !!s.talent })),
+    }
+  }
+
+  /** #钓鱼信息：综合属性（称号 + 渔具 + 宠物 + 今日运势 + 当前鱼饵） */
+  attrInfo(user) {
+    const shop = Config.shop, eff = playerEffects(user), bait = currentBait(user, shop)
+    const num = v => Number(Number(v || 0).toFixed(2))
+    const brk = r => num(breakChance({ type: "item", rarity: r, size: "medium" }, shop.lineBreak, eff))
+    const big = num(breakChance({ type: "item", rarity: "MR", size: "xlarge" }, shop.lineBreak, eff))
+    return [
+      { label: "出售金币加成", value: `+${num(this.sellBonus(user))}%`, sub: "称号 + 渔具 + 宠物" },
+      { label: "鱼价加成", value: `+${num(eff.priceBonus)}%`, sub: `当前鱼饵：${bait?.name || "普通饵"}` },
+      { label: "断线降低", value: `-${num(Math.min(100, eff.lineGuard || 0))}%`, sub: "鱼线 + 宠物天赋「护线」" },
+      { label: "没及时收杆不跑鱼", value: `${num(Math.min(100, eff.holdChance || 0))}%`, sub: "鱼钩" },
+      { label: "实际断线概率", value: `神器 ${brk("SSR")}% · 传说 ${brk("UR")}% · 史诗 ${brk("EP")}% · 神话 ${brk("MR")}%`, sub: `大体型更高，超大神话 ${big}%`, wide: true },
+      { label: "大体型概率", value: `+${num(eff.largeBoost)}%`, sub: "称号 + 套装 + 鱼饵" },
+      { label: "咬钩 / 收杆", value: `-${num(eff.biteReduce)}s / +${num(eff.reelWindow)}s`, sub: "等待咬钩更快 / 收杆时间更长" },
+      { label: "鱼护容量", value: `${user.bag.length} / ${bagCapacity(user, shop, Config.config.fishing?.bagLimit)}`, sub: "已用 / 总容量", wide: true },
+    ]
+  }
+
   async info(e) {
     if (!groupAllowed(e)) return false
     const user = this.load(e)
@@ -197,7 +230,7 @@ export class FishingBag extends plugin {
     const odds = castBreakdown(cfg.probability, { ...playerEffects(user, null), ...(capped ? { protectedScale: 0 } : {}) }, cfg.limits)
       .filter(o => o.pct > 0).map(o => ({ ...o, text: `${Number(o.pct.toFixed(o.pct < 1 ? 2 : 1))}%` }))
     const data = {
-      odds, protectedCapped: !!capped,
+      odds, protectedCapped: !!capped, pet: this.petInfo(user), attrs: this.attrInfo(user),
       name:displayName(user), avatar:avatar(user.user_id) || (typeof e.sender?.avatar === "string" && /^https:\/\//.test(e.sender.avatar) ? e.sender.avatar : ""),
       gold:user.gold, bait:totalBait(user), equipment, stats,
       luck:fortune?.name || "尚未打卡", luckValue:luck,
@@ -210,6 +243,9 @@ export class FishingBag extends plugin {
       "━━━━━━━━━━━━",
       `👛 金币：${data.gold} · 🪱 鱼饵：${data.bait}`,
       `🧰 ${equipment.map(i=>i.name).join(" · ")}`,
+      data.pet.none ? "🐾 出战宠物：无" : `🐾 ${data.pet.name} Lv${data.pet.level}（${data.pet.stage}）· 饱食度 ${data.pet.sat}${data.pet.hungry ? "（饥饿，技能失效）" : ""}`,
+      ...(data.pet.none ? [] : data.pet.skills.map(k => `　「${k.name}」${k.text}`)),
+      ...data.attrs.map(a => `${a.label}：${a.value}`),
       ...stats.map(i=>`${i.label}：${i.value}${i.unit}`),
       `今日运势：${data.luck}（幸运值 ${luck}）`,
       `连续打卡 ${data.streak} 天 · 累计 ${data.checkinTotal} 天`,
