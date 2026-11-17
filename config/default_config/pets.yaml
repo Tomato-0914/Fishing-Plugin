@@ -7,8 +7,8 @@
 # 技能效果（effect）只用按比例影响收益的效果，保证不同宠物、不同方向在同等级时收益接近：
 #   doublePrice 鱼价翻倍概率(%) / triplePrice 鱼价 ×3 概率(%) / extraFish 多钓一条概率(%) / extraFish2 多钓两条概率(%)
 #   rarityUp 鱼的品级 +1 概率(%) / baitSave 不消耗鱼饵概率(%) / sellBonus 出售金币 +%
-# 默认数值按收益模型配平：同等级的各条路线每竿平均收益相差约 ±3% 以内（测试会检查不超过 ±5%）。
-#   一阶约 +3%，二阶约 +8%，三阶约 +14%，四阶约 +22%，五阶约 +32%
+# 默认数值按收益模型配平：同等级的各条路线每竿平均收益相差在 ±5% 以内（测试会检查）。
+#   一阶约 +2%，二阶约 +4%，三阶约 +7%，四阶约 +11%，五阶约 +16%（不含鱼饵成本后的收益口径）
 #
 # 图片：resources/pets/<宠物 id>/<形态 id>.png（没有时显示 emoji）
 
@@ -55,3 +55,69 @@
       forms:
         - { id: red_crow,    name: 赤乌, emoji: 🐦‍⬛, skill: { name: 逐日, effect: rarityUp, value: 1.8 } }
         - { id: golden_crow, name: 金乌, emoji: ☀️, skill: { name: 烈日, effect: baitSave, value: 50 } }
+
+- id: deer
+  name: 鹿
+  title: 祥瑞之兆
+  desc: 林间饮水的小鹿，传说遇见它的人会有好运
+  forms:
+    - { id: fawn,        name: 小鹿, emoji: 🦌, skill: { name: 呦鸣, effect: doublePrice, value: 1.5 } }
+    - { id: white_deer,  name: 白鹿, emoji: 🫎, skill: { name: 白瑞, effect: extraFish,   value: 1.9 } }
+    - { id: spirit_deer, name: 灵鹿, emoji: 🌟, skill: { name: 灵角, effect: sellBonus,   value: 1.9 } }
+  branches:
+    - id: qilin
+      name: 化麟
+      desc: 踏上瑞兽之路，专精品级与丰收
+      forms:
+        - { id: jiaoduan, name: 角端, emoji: 🦏, skill: { name: 辟邪, effect: rarityUp,   value: 1.9 } }
+        - { id: qilin,    name: 麒麟, emoji: 🦄, skill: { name: 祥瑞, effect: extraFish2, value: 1.5 } }
+    - id: baize
+      name: 化泽
+      desc: 通晓万物的智慧之路，专精鱼价与品级
+      forms:
+        - { id: fuzhu, name: 夫诸, emoji: 🐐, skill: { name: 引水, effect: triplePrice, value: 1.4 } }
+        - { id: baize, name: 白泽, emoji: 🐏, skill: { name: 通晓, effect: rarityUp,    value: 2 } }
+
+- id: turtle
+  name: 乌龟
+  title: 镇海神龟
+  desc: 慢吞吞的小乌龟，背上总驮着几条小鱼
+  forms:
+    - { id: baby_turtle,   name: 小乌龟, emoji: 🐢, skill: { name: 驮鱼, effect: extraFish2,  value: 0.7 } }
+    - { id: spirit_turtle, name: 灵龟,   emoji: 🐚, skill: { name: 龟息, effect: sellBonus,   value: 2.2 } }
+    - { id: dark_turtle,   name: 玄龟,   emoji: 🌑, skill: { name: 玄甲, effect: doublePrice, value: 1.8 } }
+  branches:
+    - id: xuanwu
+      name: 化武
+      desc: 镇守北方的神兽之路，专精品级与鱼价
+      forms:
+        - { id: nether_turtle, name: 冥龟, emoji: 🌊, skill: { name: 冥水, effect: rarityUp,    value: 1.8 } }
+        - { id: xuanwu,        name: 玄武, emoji: 🐍, skill: { name: 镇北, effect: triplePrice, value: 1.5 } }
+    - id: ao
+      name: 化鳌
+      desc: 背负仙山的巨兽之路，专精丰收与品级
+      forms:
+        - { id: giant_turtle, name: 巨鼋, emoji: 🐊, skill: { name: 负山, effect: extraFish, value: 2.7 } }
+        - { id: divine_ao,    name: 神鳌, emoji: 🏔️, skill: { name: 擎天, effect: rarityUp,  value: 2 } }
+
+- id: fox
+  name: 狐狸
+  title: 灵狐修仙
+  desc: 机灵的小狐狸，总能从水里叼出值钱的好鱼
+  forms:
+    - { id: fox_kit,    name: 小狐,   emoji: 🦊, skill: { name: 狐步, effect: triplePrice, value: 0.7 } }
+    - { id: spirit_fox, name: 灵狐,   emoji: 🐺, skill: { name: 狐火, effect: extraFish,   value: 2 } }
+    - { id: three_tail, name: 三尾狐, emoji: 🔥, skill: { name: 幻尾, effect: sellBonus,   value: 2 } }
+  branches:
+    - id: celestial_fox
+      name: 化天狐
+      desc: 修炼成仙的天狐之路，专精鱼价与品级
+      forms:
+        - { id: seven_tail,     name: 七尾狐,   emoji: 🌙, skill: { name: 魅影, effect: doublePrice, value: 2.7 } }
+        - { id: celestial_fox,  name: 九尾天狐, emoji: 🌕, skill: { name: 天命, effect: rarityUp,    value: 2 } }
+    - id: dark_fox
+      name: 化玄狐
+      desc: 隐于暗夜的异兽之路，专精品级与丰收
+      forms:
+        - { id: dark_fox,  name: 玄狐, emoji: 🐈‍⬛, skill: { name: 夜行, effect: rarityUp,   value: 1.8 } }
+        - { id: chenghuang, name: 乘黄, emoji: 🐆, skill: { name: 寿禄, effect: extraFish2, value: 1.5 } }
