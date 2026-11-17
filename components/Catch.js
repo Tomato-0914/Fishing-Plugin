@@ -26,7 +26,8 @@ export function resolveCast(user, { items, cfg, shop, effects = {}, rng = Math.r
     }
     const x3 = Number(effects.triplePrice) || 0, x2 = Number(effects.doublePrice) || 0
     const mult = x3 > 0 && rng() * 100 < x3 ? 3 : x2 > 0 && rng() * 100 < x2 ? 2 : 1
-    if (mult > 1) { result.price *= mult; pet.mult = mult }
+    if (mult > 1) pet.mult = mult
+    applyPriceMult(result, mult * priceBonusMult(effects))
   }
   const chance = breakChance(result, shop?.lineBreak, effects)
   if (chance > 0 && rng() * 100 < chance) {
@@ -45,6 +46,7 @@ export function resolveCast(user, { items, cfg, shop, effects = {}, rng = Math.r
     for (let i = 0; i < n; i++) {
       const r = rollFish(ctx, effects, rng)
       if (!r) continue
+      applyPriceMult(r, priceBonusMult(effects))
       const rec = recordResult(user, r, opts)
       extras.push({ result: r, snapped: false, chance: 0, reward: 0, value: rec.value, extra: true })
     }
@@ -53,6 +55,16 @@ export function resolveCast(user, { items, cfg, shop, effects = {}, rng = Math.r
 }
 
 const FISH = new Set(FISH_TIERS)
+
+/** 鱼饵的“鱼价 +%” */
+const priceBonusMult = effects => 1 + Math.max(0, Number(effects.priceBonus) || 0) / 100
+
+/** 把售价倍率写进结果；倍率会随鱼获存进鱼护（entry.m），重新定价时保留 */
+function applyPriceMult(result, m) {
+  if (!(m > 0) || m === 1) return
+  result.price = Math.max(1, Math.round(result.price * m))
+  result.mult = Number(m.toFixed(4))
+}
 
 /** 把多钓到的鱼展开成独立的一竿，方便汇总 */
 export const withExtras = rounds => rounds.flatMap(r => [r, ...(r.extras || [])])

@@ -38,8 +38,9 @@ export function incomePerCast(eff) {
     fishEV += p * s.price
     upEV += p * (poolStats(NEXT_RARITY[r], eff).price - s.price)
   }
-  const sell = 1 + (eff.sellBonus || 0) / 100
   const pct = k => (eff[k] || 0) / 100
+  // 出售加成与鱼饵的“鱼价 +%”都按比例放大鱼的售价
+  const sell = (1 + pct("sellBonus")) * (1 + pct("priceBonus"))
   return fishEV * sell * (1 + pct("doublePrice") + 2 * pct("triplePrice") + pct("extraFish") + 2 * pct("extraFish2"))
     + upEV * sell * pct("rarityUp")
     - (eff._baitCost || 0) * (1 - pct("baitSave"))

@@ -61,9 +61,9 @@ test("宠物技能：每阶解锁一个，之前的技能每进一阶提升 25%�
   assert.deepEqual(skills.map(s => s.name), ["衔鱼", "报晓", "青羽", "逐日", "烈日"])
   assert.equal(skills[0].value, 1.5 * 2)
   assert.equal(skills[3].value, 1.8 * 1.25)
-  assert.equal(skills[4].value, 6)
+  assert.equal(skills[4].value, 50)
   const eff = P.petEffects(u, T0)
-  assert.equal(eff.baitSave, 6)
+  assert.equal(eff.baitSave, 50)
   assert.equal(eff.extraFish, 3)
   d.sat = c.satiety.hungry
   assert.deepEqual(P.petEffects(u, T0), {})
