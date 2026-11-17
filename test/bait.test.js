@@ -60,6 +60,8 @@ test("出售加成包含出战宠物的技能（饥饿时不算）", async () =>
   const u = newUser("b2"); u.gold = 1e8; u.stats.casts = 1e6
   P.buyPet(u, "koi")
   u.pets.owned.koi.xp = P.petThreshold(25)
-  assert.equal(P.petEffects(u).sellBonus, 2)
-  if (FishingBag) assert.equal(FishingBag.prototype.sellBonus.call({}, u), mergeEffects(gearEffects(u, shop)).sellBonus + 2 || 2)
+  const petSell = P.petSkills(P.petDef("koi"), u.pets.owned.koi).find(s => s.effect === "sellBonus").value
+  assert.ok(petSell > 0)
+  assert.equal(P.petEffects(u).sellBonus, petSell)
+  if (FishingBag) assert.equal(FishingBag.prototype.sellBonus.call({}, u), (mergeEffects(gearEffects(u, shop)).sellBonus || 0) + petSell)
 })

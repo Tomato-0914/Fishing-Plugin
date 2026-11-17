@@ -95,7 +95,8 @@ pet:
   maxLevel: 100
   xpFactor: 40           # 升到 Lv N 需要的总经验 = xpFactor × N × (N-1)；宠物经验 = 角色同时获得的经验
   stageLevels: [1, 20, 40, 60, 80]   # 一 ~ 五阶的起始等级；四阶开始（Lv60）需要玩家选择进化方向
-  skillGrowth: 25        # 每进一阶，之前解锁的技能提升 %
+  levelGrowth: 2         # 技能解锁后每升一级，提升基础值的 %（Lv1 解锁的技能到 Lv100 约为基础值的 3 倍）
+  lineGuardPerLevel: 0.3 # 所有宠物的天赋「护线」：每级断线概率 -0.3%（Lv100 为 -30%）
   switchPerDay: 1        # 每天可更换出战宠物的次数（没有出战宠物时不计次数）
   satiety:
     max: 100
