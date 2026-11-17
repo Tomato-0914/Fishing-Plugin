@@ -42,7 +42,7 @@ test("宠物：Lv20 / Lv40 自动进化，Lv60 必须选方向（经验照常累
   const ev = P.evolvePet(u, "koi", "化龙", T0)
   assert.ok(ev.ok)
   assert.equal(ev.after, 70)
-  assert.equal(P.currentForm(P.petDef("koi"), d, c).name, "蛟")
+  assert.equal(P.currentForm(P.petDef("koi"), d, c).name, "鱼化龙")
   assert.equal(P.evolvePet(u, "koi", "化鲲", T0).reason, "chosen")
   r = P.addPetXp(u, P.petThreshold(80, c) - d.xp, T0)
   assert.deepEqual(r.evolved.map(f => f.name), ["龙"])
