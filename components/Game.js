@@ -90,6 +90,7 @@ export function recordResult(user, result, { now = new Date(), policeReward = 0,
     const entry = { id: item.id, p: result.price || 0, t: now.getTime() }
     if (result.size) entry.s = result.size
     if (result.weight != null) entry.w = result.weight
+    if (result.mult && result.mult !== 1) entry.m = result.mult
     user.bag.push(entry)
     if (isDexFish(item) && result.weight != null && (!user.maxFish || result.weight > user.maxFish.w) && item.rarity !== "junk")
       user.maxFish = { id: item.id, w: result.weight, s: result.size }

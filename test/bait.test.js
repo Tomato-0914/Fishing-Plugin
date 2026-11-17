@@ -1,0 +1,65 @@
+import test from "node:test"
+import assert from "node:assert/strict"
+import Config from "../components/Config.js"
+import { SLOTS, gearEffects, baitPrice } from "../components/Gear.js"
+import { mergeEffects } from "../components/Titles.js"
+import { entryPrice } from "../components/ItemPool.js"
+import { resolveCast } from "../components/Catch.js"
+import { recordResult, repriceBag } from "../components/Game.js"
+import { newUser } from "../components/UserData.js"
+import { incomePerCast } from "./income-model.js"
+
+const shop = Config.shop, cfg = Config.config, items = Config.items
+const baits = [...shop.baits].sort((a, b) => (a.level || 1) - (b.level || 1))
+const KEYS = ["priceBonus", "largeBoost", "junkReduce", "biteReduce"]
+function gear(T) {
+  const u = { gearV2: { items: {}, equipped: {} }, stats: {} }
+  for (const s of SLOTS) { u.gearV2.items[`${s}:${T}`] = { enhance: 0, forge: 0 }; u.gearV2.items[`${s}:1`] ||= { enhance: 0, forge: 0 }; u.gearV2.equipped[s] = T }
+  return gearEffects(u, shop)
+}
+const TITLES = { emptyReduce: 13, rarePoints: 2.1, junkReduce: 6, sellBonus: 90, largeBoost: 40, rarityShift: 0.1 }
+
+test("鱼饵：等级越高，每项属性都不低于低一级，价格不降", () => {
+  for (let i = 1; i < baits.length; i++) {
+    const lo = baits[i - 1], hi = baits[i]
+    for (const k of KEYS) assert.ok((hi.effects?.[k] || 0) >= (lo.effects?.[k] || 0), `${hi.name} 的 ${k} 低于 ${lo.name}`)
+    assert.ok(baitPrice(shop, hi.id, cfg.bait) >= baitPrice(shop, lo.id, cfg.bait), `${hi.name} 比 ${lo.name} 便宜`)
+  }
+})
+
+test("鱼饵：任何渔具阶位下，能用的鱼饵等级越高越赚（扣掉鱼饵价格，有没有称号都一样）", () => {
+  for (const extra of [{}, TITLES]) for (let T = 1; T <= 20; T++) {
+    let prev = -Infinity
+    for (const b of baits.filter(b => (b.level || 1) <= T)) {
+      const net = incomePerCast({ ...mergeEffects(gear(T), extra, b.effects || {}), _baitCost: baitPrice(shop, b.id, cfg.bait) })
+      assert.ok(net >= prev - 1e-9, `渔具 ${T} 阶${extra.sellBonus ? "（称号多）" : ""}：${b.name} 每竿 ${net.toFixed(2)} 低于低一级 ${prev.toFixed(2)}`)
+      prev = net
+    }
+  }
+})
+
+test("鱼价 +% 计入售价，存进鱼护后重新定价也不会丢（宠物鱼价翻倍同理）", () => {
+  const u = newUser("b1")
+  const seeded = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(5)
+  let round
+  for (let i = 0; i < 200; i++) { round = resolveCast(u, { items, cfg, shop, effects: { priceBonus: 30, doublePrice: 100, rarityTier: 8 }, rng: seeded }); if (round.result.type === "item" && round.result.size && !round.snapped) break }
+  assert.equal(round.result.mult, 2.6)
+  const entry = u.bag.at(-1)
+  assert.equal(entry.m, 2.6)
+  const item = items.find(i => i.id === entry.id)
+  const base = entryPrice({ ...entry, m: undefined }, item, cfg.size)
+  assert.equal(entry.p, round.result.price)
+  assert.equal(entryPrice(entry, item, cfg.size), Math.round(base * 2.6))
+  assert.equal(repriceBag(u, new Map(items.map(i => [i.id, i])), cfg.size), 0)
+  assert.equal(entry.p, round.result.price)
+})
+
+test("出售加成包含出战宠物的技能（饥饿时不算）", async () => {
+  const { FishingBag } = await import("../apps/Bag.js").catch(() => ({}))
+  const P = await import("../components/Pet.js")
+  const u = newUser("b2"); u.gold = 1e8; u.stats.casts = 1e6
+  P.buyPet(u, "koi")
+  u.pets.owned.koi.xp = P.petThreshold(25)
+  assert.equal(P.petEffects(u).sellBonus, 2)
+  if (FishingBag) assert.equal(FishingBag.prototype.sellBonus.call({}, u), mergeEffects(gearEffects(u, shop)).sellBonus + 2 || 2)
+})

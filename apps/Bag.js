@@ -9,6 +9,7 @@ import { gearIcon } from "../components/GearIcons.js"
 import { withButtons, B, fishRow } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
 import GroupDaily, { groupKey } from "../components/GroupDaily.js"
+import { petEffects } from "../components/Pet.js"
 import { itemChance, formatChance, sizeTable, findItems, dexNo } from "../components/Dex.js"
 import { dayKey } from "../components/Period.js"
 import { groupAllowed, itemMap, displayName, updateNickname, avatar, playerEffects } from "../components/common.js"
@@ -36,9 +37,9 @@ export class FishingBag extends plugin {
     })
   }
 
-  /** 出售加成：称号 + 鱼护 */
+  /** 出售加成：称号 + 渔具 + 出战宠物（饥饿时不算） */
   sellBonus(user) {
-    return mergeEffects(getEffects(user, Config.titles, Config.items), gearEffects(user, Config.shop)).sellBonus || 0
+    return mergeEffects(getEffects(user, Config.titles, Config.items), gearEffects(user, Config.shop), petEffects(user)).sellBonus || 0
   }
 
   load(e) {

@@ -123,6 +123,7 @@ const EFFECT_TEXT = {
   extraFish2: ["多钓两条概率", "%", false],
   rarityUp: ["品级 +1 概率", "%", false],
   baitSave: ["不消耗鱼饵概率", "%", false],
+  priceBonus: ["鱼价", "%", false],
 }
 
 const TIER_NAMES = { boostN: "普通", boostR: "高级", boostSR: "稀有", boostSSR: "神器", boostUR: "传说", boostEP: "史诗", boostMR: "神话" }
