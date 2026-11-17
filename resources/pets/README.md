@@ -10,7 +10,7 @@
 | `koi_fry.png` | 小鲤鱼 | 一阶 |
 | `koi.png` | 锦鲤 | 二阶 |
 | `golden_koi.png` | 金鳞鲤 | 三阶 |
-| `yuhualong.png` | 鱼化龙（龙头鱼身） | 四阶 · 化龙 |
+| `jiao.png` | 蛟 | 四阶 · 化龙 |
 | `dragon.png` | 龙 | 五阶 · 化龙 |
 | `kun.png` | 鲲 | 四阶 · 化鲲 |
 | `peng.png` | 鹏 | 五阶 · 化鲲 |
