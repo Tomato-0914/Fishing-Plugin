@@ -53,18 +53,27 @@ test("宠物：Lv20 / Lv40 自动进化，Lv60 必须选方向（经验照常累
   assert.deepEqual(P.petGainLines(null), [])
 })
 
-test("宠物技能：每阶解锁一个，之前的技能每进一阶提升 25%；饥饿时全部失效", () => {
+test("宠物技能：每阶解锁一个，解锁后每升一级提升基础值的 2%；天赋「护线」每级断线 -0.3%；饥饿时全部失效", () => {
   const u = rich("p4"); P.buyPet(u, "bird", T0)
   const d = u.pets.owned.bird
+  const def = P.petDef("bird")
+  const base = k => (k <= 3 ? def.forms[k - 1] : def.branches.find(b => b.id === "crow").forms[k - 4]).skill.value
   d.xp = P.petThreshold(85, c); d.branch = "crow"
-  const skills = P.petSkills(P.petDef("bird"), d, c)
+  const skills = P.petSkills(def, d, c)
   assert.deepEqual(skills.map(s => s.name), ["衔鱼", "报晓", "青羽", "逐日", "烈日"])
-  assert.equal(skills[0].value, 1.5 * 2)
-  assert.equal(skills[3].value, 1.8 * 1.25)
-  assert.equal(skills[4].value, 50)
+  const at = (k, lv) => Number((base(k) * (1 + 0.02 * (lv - c.stageLevels[k - 1]))).toFixed(3))
+  assert.equal(skills[0].value, at(1, 85))   // Lv1 解锁，成长 84 级
+  assert.equal(skills[3].value, at(4, 85))   // Lv60 解锁，成长 25 级
+  assert.equal(skills[4].value, at(5, 85))   // Lv80 解锁，成长 5 级
+  // 每升一级都会变强，并提示变化
+  const r = P.addPetXp(u, P.petThreshold(86, c) - d.xp, T0)
+  assert.equal(r.after, 86)
+  assert.ok(P.petSkills(def, d, c)[0].value > skills[0].value)
+  const lines = P.petGainLines(r, c)
+  assert.ok(lines.some(l => l.startsWith("📈 能力提升：") && l.includes("「护线」-25.5% → -25.8%") && l.includes("「衔鱼」")), lines.join("\n"))
   const eff = P.petEffects(u, T0)
-  assert.equal(eff.baitSave, 50)
-  assert.equal(eff.extraFish, 3)
+  assert.equal(eff.lineGuard, 25.8)
+  assert.equal(eff.extraFish, at(1, 86))
   d.sat = c.satiety.hungry
   assert.deepEqual(P.petEffects(u, T0), {})
 })
@@ -158,23 +167,22 @@ test("宠物技能在钓鱼里生效：品级 +1、鱼价翻倍、多钓的鱼�
   assert.deepEqual(plain.extras || [], [])
 })
 
-test("宠物配平：同等级的各条路线每竿收益相差不超过 ±5%", () => {
+test("宠物配平：同等级的各条路线每竿收益相差不超过 ±5%（Lv1~Lv100 各级）", () => {
   const defs = Config.pets
-  // 宠物经验与角色同步，宠物等级越高，角色等级（渔具阶位）至少越高：按各阶对应的合理渔具阶位检查
-  const tiers = { 1: [3, 20], 2: [6, 20], 3: [11, 20], 4: [16, 20], 5: [18, 20] }
+  // 宠物经验与角色同步，宠物等级越高，角色等级（渔具阶位）至少越高：按等级对应的合理渔具阶位检查
+  const minTier = L => L < 20 ? 3 : L < 40 ? 6 : L < 60 ? 11 : L < 80 ? 16 : 18
   const paths = defs.flatMap(def => def.branches.map(b => ({ def, branch: b.id })))
-  for (let stage = 1; stage <= 5; stage++) {
-    const level = c.stageLevels[stage - 1]
-    for (let tier = tiers[stage][0]; tier <= tiers[stage][1]; tier++) {
+  for (const level of [1, 10, 19, 20, 30, 39, 40, 50, 59, 60, 70, 79, 80, 90, 100]) {
+    for (let tier = minTier(level); tier <= 20; tier++) {
       const gains = paths.map(({ def, branch }) => {
-        const data = { xp: P.petThreshold(level, c), branch: stage >= 4 ? branch : null }
+        const data = { xp: P.petThreshold(level, c), branch: level >= c.stageLevels[3] ? branch : null }
         const eff = {}
-        for (const s of P.petSkills(def, data, c)) eff[s.effect] = (eff[s.effect] || 0) + s.value
+        for (const s of [...P.petTalents(data, c), ...P.petSkills(def, data, c)]) eff[s.effect] = (eff[s.effect] || 0) + s.value
         return { name: `${def.name}/${branch}`, gain: petGain(eff, tier) }
       })
       const avg = gains.reduce((s, g) => s + g.gain, 0) / gains.length
       for (const g of gains)
-        assert.ok(Math.abs(g.gain / avg - 1) <= 0.05, `${stage} 阶 · 渔具 ${tier} 阶：${g.name} ${g.gain.toFixed(2)}% vs 平均 ${avg.toFixed(2)}%`)
+        assert.ok(Math.abs(g.gain / avg - 1) <= 0.05, `Lv${level} · 渔具 ${tier} 阶：${g.name} ${g.gain.toFixed(2)}% vs 平均 ${avg.toFixed(2)}%`)
     }
   }
 })

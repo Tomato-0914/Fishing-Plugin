@@ -4,7 +4,7 @@ import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import {
   petCfg, petDefs, petDef, ensurePets, refreshPets, petLevel, rawPetLevel, petStage, needsBranch, branchLevel, branchDef,
-  formAt, currentForm, petName, satPerDay, petSkills, skillText, petThreshold, isHungry, satText, satHours, findOwnedPet, findPetDef,
+  formAt, currentForm, petName, satPerDay, petAbilities, petSkills, skillText, petThreshold, isHungry, satText, satHours, findOwnedPet, findPetDef,
   buyPet, setActivePet, feedPet, evolvePet, renamePet, recallPet, lostPets, petNotices,
 } from "../components/Pet.js"
 import { petIcon } from "../components/PetIcons.js"
@@ -158,7 +158,7 @@ export class FishingPet extends plugin {
     let detail = null
     if (main) {
       const { def, data } = main
-      const skills = petSkills(def, data, c).map(s => ({ ...s, stageCn: STAGE_CN[s.stage], text: skillText(s.effect, s.value) }))
+      const skills = petAbilities(def, data, c).map(s => ({ ...s, stageCn: s.talent ? "天赋" : STAGE_CN[s.stage], text: skillText(s.effect, s.value) }))
       // 下一阶预告：没选方向时列出两个方向
       const next = []
       if (main.stage < 5) {

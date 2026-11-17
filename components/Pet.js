@@ -24,7 +24,8 @@ export function petCfg(cfg = Config.config?.pet) {
     maxLevel: Math.max(1, Math.floor(Number(c.maxLevel) || 100)),
     xpFactor: Math.max(1, Number(c.xpFactor) || 40),
     stageLevels: Array.isArray(c.stageLevels) && c.stageLevels.length === 5 ? c.stageLevels.map(Number) : [1, 20, 40, 60, 80],
-    skillGrowth: n0(c.skillGrowth ?? 25),
+    levelGrowth: n0(c.levelGrowth ?? 2),             // 技能每升一级提升基础值的 %
+    lineGuardPerLevel: n0(c.lineGuardPerLevel ?? 0.3), // 天赋「护线」：每级断线概率 -%
     switchPerDay: Math.max(1, Math.floor(Number(c.switchPerDay) || 1)),
     satiety: {
       max: Math.max(1, Number(sat.max) || 100), hungry: n0(sat.hungry ?? 30), warn: n0(sat.warn ?? 50), active: n0(sat.active ?? 1), rest: n0(sat.rest ?? 0.2),
@@ -86,18 +87,31 @@ export const petName = (def, data, c = petCfg()) => data?.name || currentForm(de
 
 /* ---------------- 技能 ---------------- */
 
-/** 已解锁的技能及当前数值：[{ stage, form, name, effect, value, base }] */
-export function petSkills(def, data, c = petCfg(), stage = petStage(data, c)) {
+/**
+ * 已解锁的技能及当前数值：[{ stage, form, name, effect, value, base }]
+ * 技能在解锁那一级为基础值，之后每升一级再提升基础值的 levelGrowth%
+ */
+export function petSkills(def, data, c = petCfg(), stage = petStage(data, c), level = petLevel(data, c)) {
   const out = []
   for (let k = 1; k <= stage; k++) {
     const form = formAt(def, k, data?.branch)
     const s = form?.skill
     if (!s?.effect) continue
-    const value = Number((Number(s.value) * (1 + c.skillGrowth / 100 * (stage - k))).toFixed(3))
+    const grow = Math.max(0, level - (c.stageLevels[k - 1] || 1))
+    const value = Number((Number(s.value) * (1 + c.levelGrowth / 100 * grow)).toFixed(3))
     out.push({ stage: k, form: form.name, name: s.name, effect: s.effect, base: Number(s.value), value })
   }
   return out
 }
+
+/** 所有宠物都有的天赋：「护线」每级降低断线概率 */
+export function petTalents(data, c = petCfg(), level = petLevel(data, c)) {
+  const v = Number((c.lineGuardPerLevel * level).toFixed(3))
+  return v > 0 ? [{ stage: 0, name: "护线", effect: "lineGuard", value: v, talent: true }] : []
+}
+
+/** 天赋 + 技能（展示、成长提示用） */
+export const petAbilities = (def, data, c = petCfg()) => [...petTalents(data, c), ...petSkills(def, data, c)]
 
 const SKILL_TEXT = {
   doublePrice: v => `${v}% 概率鱼价翻倍`,
@@ -107,6 +121,7 @@ const SKILL_TEXT = {
   rarityUp: v => `${v}% 概率鱼的品级 +1`,
   baitSave: v => `${v}% 概率不消耗鱼饵`,
   sellBonus: v => `出售金币 +${v}%`,
+  lineGuard: v => `断线概率 -${v}%`,
 }
 const fmt = v => Number(Number(v).toFixed(2))
 export const skillText = (effect, value) => (SKILL_TEXT[effect] || (v => `${effect} ${v}`))(fmt(value))
@@ -168,7 +183,7 @@ export function petEffects(user, now = Date.now(), c = petCfg(), defs = petDefs(
   const data = id && user.pets.owned[id]
   if (!data || isHungry(data, c)) return {}
   const out = {}
-  for (const s of petSkills(petDef(id, defs), data, c)) out[s.effect] = (out[s.effect] || 0) + s.value
+  for (const s of [...petTalents(data, c), ...petSkills(petDef(id, defs), data, c)]) out[s.effect] = (out[s.effect] || 0) + s.value
   return out
 }
 
@@ -348,12 +363,13 @@ export function addPetXp(user, gain, now = Date.now(), c = petCfg(), defs = petD
   if (n0(d.xp) >= cap) return null
   const def = petDef(id, defs)
   const before = petLevel(d, c), stageBefore = petStage(d, c), waiting = needsBranch(d, c)
+  const abilitiesBefore = petAbilities(def, d, c)
   const add = Math.min(gain, cap - n0(d.xp))
   d.xp = n0(d.xp) + add
   const after = petLevel(d, c), stageAfter = petStage(d, c)
   const evolved = []
   for (let k = stageBefore + 1; k <= stageAfter; k++) { const f = formAt(def, k, d.branch); if (f) { evolved.push(f); markSeen(user, f) } }
-  return { id, def, data: d, gain: add, before, after, evolved, branchReady: !waiting && needsBranch(d, c), max: after >= c.maxLevel }
+  return { id, def, data: d, gain: add, before, after, evolved, branchReady: !waiting && needsBranch(d, c), max: after >= c.maxLevel, abilitiesBefore }
 }
 
 /** 宠物经验一行（满级时不显示）+ 升级 / 进化 / 待选方向 */
@@ -372,7 +388,11 @@ export function petGainLines(r, c = petCfg()) {
     ? "等待选择进化方向"
     : `距离 Lv${r.after + 1} 还需 ${(petThreshold(r.after + 1, c) - data.xp).toLocaleString("en-US")}`
   lines.push(`${emoji} ${name} 经验 +${r.gain}（Lv${r.after} · ${next}）`)
-  if (r.after > r.before) lines.push(`🎉 宠物升级：Lv${r.before} → Lv${r.after}${r.max ? " 🏆 已满级" : ""}`)
+  if (r.after > r.before) {
+    lines.push(`🎉 宠物升级：Lv${r.before} → Lv${r.after}${r.max ? " 🏆 已满级" : ""}`)
+    const grown = growthText(r.abilitiesBefore || [], petAbilities(def, data, c))
+    if (grown) lines.push(`📈 能力提升：${grown}`)
+  }
   let prev = formAt(def, petStage(data, c) - r.evolved.length, data.branch)
   for (const f of r.evolved) {
     lines.push(`✨ ${prev?.name || name} 进化成了 ${f.emoji} ${f.name}！解锁技能「${f.skill?.name}」：${skillText(f.skill?.effect, f.skill?.value)}`)
@@ -380,6 +400,17 @@ export function petGainLines(r, c = petCfg()) {
   }
   if (r.branchReady) lines.push(`🔀 ${name} 达到 Lv${branchLevel(c)}，可以选择进化方向了：${choose}（选择前经验继续累积，等级暂停）`)
   return lines
+}
+
+/** 升级前后同一能力的变化：「护线」-6.9% → -7.2% · 「逆流」2.1% → 2.2% */
+export function growthText(before, after) {
+  const fmt2 = v => Number(Number(v).toFixed(2))
+  const sign = e => e === "lineGuard" ? "-" : e === "sellBonus" ? "+" : ""
+  return after.map(a => {
+    const b = before.find(x => x.name === a.name && x.effect === a.effect)
+    if (!b || fmt2(b.value) === fmt2(a.value)) return ""
+    return `「${a.name}」${sign(a.effect)}${fmt2(b.value)}% → ${sign(a.effect)}${fmt2(a.value)}%`
+  }).filter(Boolean).join(" · ")
 }
 
 /** 饥饿 / 离家出走提醒（钓鱼结果、我的宠物等处显示；离家出走只提醒一次） */

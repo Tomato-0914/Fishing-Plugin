@@ -83,7 +83,7 @@
     </div>
 
     <div class="card {{main.hungry ? 'off' : ''}}">
-      <div class="card-title">✨ 技能{{if main.hungry}}<span class="muted" style="font-size:14px"> · 饥饿中，暂时失效</span>{{/if}}</div>
+      <div class="card-title">✨ 技能<span class="muted" style="font-size:14px"> · {{main.hungry ? '饥饿中，暂时失效' : (main.max ? '已满级' : '每升一级都会提升')}}</span></div>
       {{each detail.skills s}}
       <div class="skill"><div class="st">{{s.stageCn}}</div><div><div class="sn">「{{s.name}}」</div><div class="sd">{{s.text}}</div></div></div>
       {{/each}}
