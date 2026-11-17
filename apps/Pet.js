@@ -98,7 +98,9 @@ export class FishingPet extends plugin {
     ].join("\n"))
     if (!msg) return true
     const buy = data.lines.filter(l => l.canBuy).map(l => ({ text: `🛒 购买${l.first}`, callback: `#购买宠物 ${l.first}` }))
-    return e.reply(withButtons(e, msg, ...(buy.length ? [buy] : []), [{ text: "🐾 我的宠物", callback: "#我的宠物" }, B.fish]))
+    const rows = []
+    for (let i = 0; i < buy.length; i += 3) rows.push(buy.slice(i, i + 3))
+    return e.reply(withButtons(e, msg, ...rows, [{ text: "🐾 我的宠物", callback: "#我的宠物" }, B.fish]))
   }
 
   async buy(e) {
