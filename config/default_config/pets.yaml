@@ -26,7 +26,7 @@
       name: 化龙
       desc: 跃过龙门，踏上化龙之路，专精品级与鱼价
       forms:
-        - { id: jiao,   name: 蛟, emoji: 🐍, skill: { name: 化蛟, effect: rarityUp,    value: 1.9 } }
+        - { id: yuhualong, name: 鱼化龙, emoji: 🐲, skill: { name: 跃门, effect: rarityUp,    value: 1.9 } }
         - { id: dragon, name: 龙, emoji: 🐉, skill: { name: 龙吟, effect: triplePrice, value: 0.9 } }
     - id: kun
       name: 化鲲
