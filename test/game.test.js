@@ -634,20 +634,15 @@ test("十连结果：简洁格式，高级鱼逐条、低级鱼合并", async ()
     "🐟 鱼获 7｜垃圾 1｜空军 1",
     "",
   ])
-  // 明细：断线最前，稀有度高的在前，同一种合并为 ×N；普通、高级只给数量和合计
-  assert.deepEqual(md.slice(5, 14), [
-    "> **✨ 稀有鱼获 / 特殊事件**",
+  // 明细：断线最前；只逐条列出最高品级的鱼，其余品级合成一行
+  assert.deepEqual(md.slice(5, 9), [
     "> 💥 🟣🐟 金枪鱼·大 断线跑了",
+    "> **✨ 本次最高：传说**",
     "> 🟡🐠 石斑鱼王·中 341 ✨",
-    "> 🔵🦐 对虾 ×2 74",
-    "> 🔵🦀 梭子蟹·中 38",
-    "> 📦 其他鱼获",
-    "> ⚪ 普通 ×2",
-    "> 🟢 高级 ×1",
-    "> 合计 24 金币",
+    "> 📦 其他：🔵 稀有 ×3 · 🟢 高级 ×1 · ⚪ 普通 ×2 · 合计 136 金币",
   ])
-  assert.equal(md[14], "") // 引用块后空行
-  assert.equal(md[15], "💥 断线 1")
+  assert.equal(md[9], "") // 引用块后空行
+  assert.equal(md[10], "💥 断线 1")
   // 纯文本：与 QQBot 同样的行，但没有 Markdown 标记
   const plain = formatMulti(rounds, { sizeLabels, xpLine })
   assert.ok(!plain.includes(">") && !plain.includes("**"))

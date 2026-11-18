@@ -34,9 +34,13 @@ const sec = n => Math.max(0, Math.round(n))
  * 角色经验由累计抛竿与钓获统计推导（这里只展示）；出战宠物获得同样多的经验
  * 返回：角色经验 + 宠物经验 / 进化 + 饥饿、离家出走提醒（满级时对应行不显示）
  */
-function xpSettlement(user, before) {
+function xpParts(user, before) {
   const pet = addPetXp(user, experience(user) - before)
-  return [xpGainText(user, before), ...petGainLines(pet), ...petNotices(user)].filter(Boolean).join("\n")
+  return { xp: xpGainText(user, before), pet: [...petGainLines(pet), ...petNotices(user)].filter(Boolean) }
+}
+function xpSettlement(user, before) {
+  const { xp, pet } = xpParts(user, before)
+  return [xp, ...pet].filter(Boolean).join("\n")
 }
 
 /** 宠物技能“不消耗鱼饵”：按概率退回刚用掉的鱼饵 */
@@ -474,12 +478,14 @@ export class Fishing extends plugin {
     UserData.save(id)
 
     const sum = summarize(rounds)
-    const xpLine = [xpSettlement(user, s.xpBefore ?? experience(user) - baits.length), petProcLine(rounds, s.baitSaved)].filter(Boolean).join("\n")
+    const parts = xpParts(user, s.xpBefore ?? experience(user) - baits.length)
+    const xpLine = parts.xp
+    const petLines = [...parts.pet, petProcLine(rounds, s.baitSaved)].filter(Boolean)
     const markdown = e.bot?.adapter?.id === "QQBot"
     const sizeLabels = Object.fromEntries(Object.entries(cfg.size || {}).map(([k, v]) => [k, v.label]))
     const body = c.kind !== "multi"
-      ? formatHundred(rounds, { markdown, xpLine, title: `${c.emoji} ${c.label}收网`, sellBonus: sellBonusOf(user) })
-      : formatMulti(rounds, { sizeLabels, markdown, xpLine, sellBonus: sellBonusOf(user) })
+      ? formatHundred(rounds, { markdown, xpLine, petLines, title: `${c.emoji} ${c.label}收网`, sellBonus: sellBonusOf(user) })
+      : formatMulti(rounds, { sizeLabels, markdown, xpLine, petLines, sellBonus: sellBonusOf(user) })
     const msg = body + `\n🎟️ 剩余${c.label}：${batchLeftText(user, c)}` + (cd ? `\n⏳ 冷却：${cooldownText(cd)}` : "")
     await this.send(e, withButtons(e, msg,
       this.branchRow(e, user),
