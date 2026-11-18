@@ -1,5 +1,5 @@
 /** 一竿的结算：抽取结果 → 断线判定 → 记入存档（纯函数，#收杆 与十连钓鱼共用） */
-import { roll, rollOfRarity, rollFish, NEXT_RARITY, FISH_TIERS } from "./ItemPool.js"
+import { roll, rollOfRarity, rollFish, NEXT_RARITY, FISH_TIERS, autoSellable } from "./ItemPool.js"
 import { recordResult } from "./Game.js"
 import { breakChance } from "./Gear.js"
 
@@ -96,7 +96,7 @@ export function saleLine(value, sellBonus = 0, markdown = false) {
 
 /** 十连汇总 */
 export function summarize(rounds) {
-  // value：本次鱼获总价值（含报警奖励）；sale：放进鱼护、能拿去出售的部分（报警奖励当场已发，不算）
+  // value：本次鱼获总价值（含报警奖励）；sale：一键出售能卖到的部分（报警奖励当场已发、海洋之心要手动卖，都不算）
   const s = { fish: 0, junk: 0, empty: 0, snapped: 0, banned: 0, protected: 0, value: 0, sale: 0, best: null }
   for (const r of rounds) {
     if (r.banned) { s.banned++; continue }
@@ -106,7 +106,7 @@ export function summarize(rounds) {
     if (r.result.rarity === "junk") s.junk++
     else s.fish++
     s.value += r.value
-    if (!r.result.item.special) s.sale += r.value
+    if (!r.result.item.special && autoSellable(r.result.item)) s.sale += r.value
     if (r.result.rarity !== "junk" && (!s.best || r.value > s.best.value)) s.best = r
   }
   return s

@@ -262,6 +262,9 @@ export function rollFish(ctx, effects = {}, rng = Math.random) {
   return rollOfRarity(ctx, weightedPick(entries, rng), effects, rng)
 }
 
+/** 一键出售会卖的物品：垃圾不卖；autoSell 为 false 的（如海洋之心）留在鱼护，只能手动出售 */
+export const autoSellable = item => !!item && item.rarity !== "junk" && item.autoSell !== false
+
 /** 鱼类图鉴范围：除垃圾和隐藏款外的所有物品 */
 export const isDexFish = item => item && !["junk", "hidden", "protected"].includes(item.rarity)
 

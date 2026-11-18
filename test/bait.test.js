@@ -144,3 +144,14 @@ test("报警奖励当场发放，不算进“售出预计”", async () => {
   assert.equal(summarize(rounds).sale, 600)
   assert.ok(formatMulti(rounds, { sellBonus: 100 }).includes("售出预计获得金币：1200"))
 })
+
+test("海洋之心不参与一键出售，只能手动出售", async () => {
+  const { autoSellable } = await import("../components/ItemPool.js")
+  const it = id => Config.items.find(i => i.id === id)
+  assert.equal(autoSellable(it("ocean_heart")), false)
+  assert.equal(autoSellable(it("can")), false)
+  assert.equal(autoSellable(it("tuna")), true)
+  // 一键出售按 autoSellable 挑选：海洋之心留在鱼护
+  const bag = [{ id: "tuna", p: 600 }, { id: "ocean_heart", p: 18888 }, { id: "can", p: 0 }]
+  assert.deepEqual(bag.filter(x => autoSellable(it(x.id))).map(x => x.id), ["tuna"])
+})
