@@ -4,7 +4,7 @@ import UserData from "../components/UserData.js"
 import { RARITY_INFO, isDexFish, formatWeight, SIZE_ORDER, castBreakdown, buildSizeOdds } from "../components/ItemPool.js"
 import { groupBag, sellEntries, discardJunk, todayLuck, luckTier, repriceBag, protectedFine, groupProtectedMax } from "../components/Game.js"
 import { checkTitles, getEffects, effectText, progressText, mergeEffects, ownedTier, ownedTitles, titleName, titleUpText } from "../components/Titles.js"
-import { gearEffects, bagCapacity, totalBait, gearItem, gearLevel, SLOTS, ownedGear, tierBadge, currentBait, breakChance } from "../components/Gear.js"
+import { gearEffects, bagCapacity, totalBait, gearItem, gearLevel, SLOTS, ownedGear, tierBadge, currentBait, breakChance, MAX_ENHANCE, MAX_FORGE } from "../components/Gear.js"
 import { gearIcon } from "../components/GearIcons.js"
 import { withButtons, B, fishRow } from "../components/Button.js"
 import { renderOrText } from "../components/Render.js"
@@ -221,7 +221,9 @@ export class FishingBag extends plugin {
       const tier = gearLevel(user, slot)
       const item = ownedGear(user, slot, tier)
       return {slot, name:gearItem(Config.shop, slot, tier)?.name || slot,
-        tier, ...tierBadge(tier), icon:gearIcon(slot, tier), enhance:item?.enhance || 0, forge:item?.forge || 0}
+        tier, ...tierBadge(tier), icon:gearIcon(slot, tier), enhance:item?.enhance || 0, forge:item?.forge || 0,
+        // 强化、锻造都满级：名字显示金色
+        maxed:(item?.enhance || 0) >= MAX_ENHANCE && (item?.forge || 0) >= MAX_FORGE}
     })
     const stats = [
       {label:"抛竿次数",value:s.casts,unit:"次"},
