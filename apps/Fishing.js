@@ -5,11 +5,12 @@ import { triangular, formatWeight, RARITY_INFO } from "../components/ItemPool.js
 import { groupProtectedMax, cooldownLeft, setCooldown, cooldownText, COOLDOWN_LABELS, addGroup, welcome, isNewPlayer, reliefBait, todayLuck, luckTier } from "../components/Game.js"
 import { addBait, consumeBait, totalBait, usableBait, baitLevel, baitCount, baitDef, gearEffects, gearItem, gearLevel, bagCapacity, holdsOnTimeout, maxLevel, gearSummary } from "../components/Gear.js"
 import { resolveCast, summarize, formatMulti, formatHundred, withExtras, petProcLine } from "../components/Catch.js"
-import { addPetXp, petGainLines, petNotices, skillFor } from "../components/Pet.js"
+import { addPetXp, petGainLines, petNotices, skillFor, needsBranch, petDef } from "../components/Pet.js"
 import GroupDaily, { groupKey } from "../components/GroupDaily.js"
 import { experience, characterProgress, xpGainText } from "../components/Progression.js"
 import { checkTitles, getEffects, effectText, titleUpText } from "../components/Titles.js"
 import { withButtons, B, fishRow } from "../components/Button.js"
+const withButtonsBase = withButtons
 import { batchCfg, batchLeftText, useBatch, protectedScaleFor } from "../components/Batch.js"
 import { groupAllowed, displayName, updateNickname, pick, itemMap, playerEffects } from "../components/common.js"
 
@@ -68,6 +69,16 @@ export class Fishing extends plugin {
   }
 
   /** 本竿的全部效果：称号 + 今日幸运 + 渔具 + 本竿鱼饵 */
+  /**
+   * 出战宠物等待选择进化方向（Lv60）时的按钮行：每个方向一个按钮，只有宠物主人能点
+   */
+  branchRow(e, user) {
+    const id = user?.pets?.active
+    const d = id && user.pets.owned?.[id]
+    if (!d || !needsBranch(d)) return []
+    return (petDef(id)?.branches || []).map(b => ({ text: `🔀 ${b.name}`, callback: `#宠物进化 ${b.name}`, permission: e.user_id }))
+  }
+
   /** 宠物技能触发的一行：“🐉 龙「龙吟」：鱼价 ×3！” */
   skillLine(user, effect, text) {
     const s = skillFor(user, effect)
@@ -320,7 +331,7 @@ export class Fishing extends plugin {
       await this.send(e, withButtons(e, pick([
         "😅 收杆太早啦，鱼饵被白白浪费……什么都没钓到~",
         "😅 太心急了！水面一片平静，鱼钩上空空如也~",
-      ]) + (xpLine ? "\n" + xpLine : ""), fishRow(user)))
+      ]) + (xpLine ? "\n" + xpLine : ""), this.branchRow(e, user), fishRow(user)))
       return this.announceTitles(e, user)
     }
 
@@ -356,7 +367,7 @@ export class Fishing extends plugin {
         `${result.item.emoji} 一条【${r.label}】${result.item.name}${sizeLabel ? `（${sizeLabel}）` : ""}拖着鱼钩消失在水里……`,
         `🧵 当前鱼线：${line?.name || "—"}（本次断线概率 ${Number(snap.toFixed(1))}%）`,
         "💡 更高阶的鱼线（#渔具商店）或强化、锻造鱼线（#渔具工坊）可以降低断线概率",
-      ].join("\n"), fishRow(user), [B.workshop])))
+      ].join("\n"), this.branchRow(e, user), fishRow(user), [B.workshop])))
       return this.announceTitles(e, user)
     }
 
@@ -471,12 +482,16 @@ export class Fishing extends plugin {
       : formatMulti(rounds, { sizeLabels, markdown, xpLine })
     const msg = body + `\n🎟️ 剩余${c.label}：${batchLeftText(user, c)}` + (cd ? `\n⏳ 冷却：${cooldownText(cd)}` : "")
     await this.send(e, withButtons(e, msg,
+      this.branchRow(e, user),
       fishRow(user, { short: true }),
       [{ ...B.bag, text: "🎒 鱼护" }, { ...B.sellAll, text: "💰 出售" }, ...(sum.junk ? [{ ...B.discard, text: "♻️ 清理" }] : [])]))
     await this.announceTitles(e, user)
   }
 
   resultMsg(e, user, result, reward, round = {}) {
+    // 宠物等待选择进化方向时，在按钮最上面加一行方向按钮
+    const branch = this.branchRow(e, user)
+    const withButtons = (e, msg, ...rows) => withButtonsBase(e, msg, branch, ...rows)
     if (result.type === "empty") {
       return withButtons(e, pick([
         "🎣 收杆……什么都没钓到~ 🌊",

@@ -252,7 +252,7 @@ export function upgradeGear(user,shop,slot) { return {ok:false,reason:"obsolete"
  * 单件渔具的效果（阶位 + 强化 + 锻造）。gearEffects 与工坊预览共用
  * - 鱼竿：阶位决定概率表；强化 +1~+7 高品级 0.15 点/级，+8~+15 概率表向下一阶靠拢 6.25%/级；锻造高品级 0.5 点/级
  * - 鱼线：断线 -2%/阶；强化断线 -1%/级；锻造断线 -1.5%/级、高品级 0.1 点/级（断线降低合计最多 85%）
- * - 鱼钩：防跑鱼 2%/阶；强化防跑鱼 +1%/级；锻造高品级 0.25 点/级（防跑鱼合计最多 85%）
+ * - 鱼钩：防跑鱼 2%/阶、超大体型 0.2%/阶；强化防跑鱼 +1%/级；锻造高品级 0.25 点/级、超大体型 0.5%/级（防跑鱼合计最多 85%）
  * - 浮漂：咬钩 -0.1s/阶、收杆 +0.2s/阶；强化咬钩 -0.1s/级、垃圾 -0.2%/级；锻造收杆 +0.25s/级、高品级 0.25 点/级
  * - 鱼护：容量 +500/阶、出售 +0.25%/阶；强化容量 +50/级；锻造出售 +0.5%/级
  */
@@ -260,7 +260,7 @@ export function slotEffects(slot,tier,enhance=0,forge=0) {
   const t=Math.max(0,tier-1), e=Math.max(0,Number(enhance)||0), f=Math.max(0,Number(forge)||0)
   if (slot==="rod") return {rarityTier:tier,rarePoints:0.15*Math.min(e,7)+0.5*f,rarityShift:0.0625*Math.max(0,e-7)}
   if (slot==="line") return {lineGuard:Math.min(85,2*t+e+1.5*f),rarePoints:0.1*f}
-  if (slot==="hook") return {holdChance:Math.min(85,2*t+e),rarePoints:0.25*f}
+  if (slot==="hook") return {holdChance:Math.min(85,2*t+e),rarePoints:0.25*f,xlBoost:0.2*t+0.5*f}
   if (slot==="float") return {biteReduce:Math.min(8,0.1*t+0.1*e),junkReduce:0.2*e,reelWindow:Math.min(10,0.2*t+0.25*f),rarePoints:0.25*f}
   if (slot==="net") return {capacity:500*t+50*e,sellBonus:Math.min(30,0.25*t+0.5*f)}
   return {}
@@ -269,7 +269,7 @@ export function slotEffects(slot,tier,enhance=0,forge=0) {
 /**
  * 套装：穿戴中同一阶的件数（4 件按 3 件算）
  * - 3 件：空军 -(1+0.1t)%、垃圾 -(1+0.1t)%、大体型 +(2+0.2t)%
- * - 5 件：再加概率表靠拢 15%、高品级 0.1t 点、出售 +0.5t%
+ * - 5 件：再加概率表靠拢 15%、高品级 0.1t 点、出售 +0.5t%、超大体型 +0.25t%
  * @returns {{ tier, count, pieces: 0|3|5, effects }}
  */
 export function gearSet(user) {
@@ -294,7 +294,7 @@ export function gearSummary(user,shop) {
 export function setEffects(tier,pieces) {
   if (pieces<3) return {}
   const out={emptyReduce:1+0.1*tier,junkReduce:1+0.1*tier,largeBoost:2+0.2*tier}
-  if (pieces>=5) Object.assign(out,{rarityShift:0.15,rarePoints:0.1*tier,sellBonus:0.5*tier})
+  if (pieces>=5) Object.assign(out,{rarityShift:0.15,rarePoints:0.1*tier,sellBonus:0.5*tier,xlBoost:0.25*tier})
   return out
 }
 

@@ -1,7 +1,7 @@
 import { plugin, puppeteer } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
-import { RARITY_INFO, isDexFish, formatWeight, SIZE_ORDER, castBreakdown } from "../components/ItemPool.js"
+import { RARITY_INFO, isDexFish, formatWeight, SIZE_ORDER, castBreakdown, buildSizeOdds } from "../components/ItemPool.js"
 import { groupBag, sellEntries, discardJunk, todayLuck, luckTier, repriceBag, protectedFine, groupProtectedMax } from "../components/Game.js"
 import { checkTitles, getEffects, effectText, progressText, mergeEffects, ownedTier, ownedTitles, titleName, titleUpText } from "../components/Titles.js"
 import { gearEffects, bagCapacity, totalBait, gearItem, gearLevel, SLOTS, ownedGear, tierBadge, currentBait, breakChance } from "../components/Gear.js"
@@ -185,13 +185,14 @@ export class FishingBag extends plugin {
     const num = v => Number(Number(v || 0).toFixed(2))
     const brk = r => num(breakChance({ type: "item", rarity: r, size: "medium" }, shop.lineBreak, eff))
     const big = num(breakChance({ type: "item", rarity: "MR", size: "xlarge" }, shop.lineBreak, eff))
+    const sizes = buildSizeOdds(Config.config.size || {}, eff), sizeTotal = Object.values(sizes).reduce((x, y) => x + y, 0) || 1
     return [
       { label: "出售金币加成", value: `+${num(this.sellBonus(user))}%`, sub: "称号 + 渔具 + 宠物" },
       { label: "鱼价加成", value: `+${num(eff.priceBonus)}%`, sub: `当前鱼饵：${bait?.name || "普通饵"}` },
       { label: "断线降低", value: `-${num(Math.min(100, eff.lineGuard || 0))}%`, sub: "鱼线 + 宠物天赋「护线」" },
       { label: "没及时收杆不跑鱼", value: `${num(Math.min(100, eff.holdChance || 0))}%`, sub: "鱼钩" },
       { label: "实际断线概率", value: `神器 ${brk("SSR")}% · 传说 ${brk("UR")}% · 史诗 ${brk("EP")}% · 神话 ${brk("MR")}%`, sub: `大体型更高，超大神话 ${big}%`, wide: true },
-      { label: "大体型概率", value: `+${num(eff.largeBoost)}%`, sub: "称号 + 套装 + 鱼饵" },
+      { label: "大鱼 / 超大鱼", value: `${num(sizes.large / sizeTotal * 100)}% / ${num(sizes.xlarge / sizeTotal * 100)}%`, sub: `大体型 +${num(eff.largeBoost)}% · 超大体型 +${num(eff.xlBoost)}%` },
       { label: "咬钩 / 收杆", value: `-${num(eff.biteReduce)}s / +${num(eff.reelWindow)}s`, sub: "等待咬钩更快 / 收杆时间更长" },
       { label: "鱼护容量", value: `${user.bag.length} / ${bagCapacity(user, shop, Config.config.fishing?.bagLimit)}`, sub: "已用 / 总容量", wide: true },
     ]

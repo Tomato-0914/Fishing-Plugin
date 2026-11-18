@@ -42,6 +42,7 @@ const LINES = [
   ["emptyReduce", "空军", "%", 1, true],
   ["junkReduce", "垃圾", "%", 1, true],
   ["largeBoost", "大体型", "%", 1, false],
+  ["xlBoost", "超大体型", "%", 1, false],
   ["lineGuard", "断线", "%", 1, true],
   ["holdChance", "没及时收杆不跑鱼", "%", 1, false],
   ["biteReduce", "咬钩等待", "s", 1, true],

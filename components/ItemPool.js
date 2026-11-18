@@ -156,11 +156,13 @@ export function oddsPercent(prob, effects = {}, limits = {}) {
 /** 体型概率（已叠加 largeBoost） */
 export function buildSizeOdds(size, effects = {}) {
   const odds = Object.fromEntries(Object.entries(size).map(([k, v]) => [k, Number(v.chance) || 0]))
-  // largeBoost：小 → 大；xlBoost：小 → 超大（小体型扣完再扣中体型）
+  // largeBoost：小 → 大（小体型扣完再扣中体型）
+  // xlBoost：小 → 中 → 大 依次升为超大；大体型加成叠满后，超大加成照样有效（把大鱼升成超大）
+  const SOURCES = { large: ["small", "medium"], xlarge: ["small", "medium", "large"] }
   for (const [key, target] of [["largeBoost", "large"], ["xlBoost", "xlarge"]]) {
     let want = Math.max(0, Number(effects[key]) || 0)
     if (!want || !(target in odds)) continue
-    for (const from of ["small", "medium"]) {
+    for (const from of SOURCES[target]) {
       const take = Math.min(odds[from] ?? 0, want)
       odds[from] -= take
       odds[target] += take

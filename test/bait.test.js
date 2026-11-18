@@ -11,7 +11,7 @@ import { incomePerCast } from "./income-model.js"
 
 const shop = Config.shop, cfg = Config.config, items = Config.items
 const baits = [...shop.baits].sort((a, b) => (a.level || 1) - (b.level || 1))
-const KEYS = ["priceBonus", "largeBoost", "junkReduce", "biteReduce"]
+const KEYS = ["priceBonus", "largeBoost", "xlBoost", "junkReduce", "biteReduce"]
 function gear(T) {
   const u = { gearV2: { items: {}, equipped: {} }, stats: {} }
   for (const s of SLOTS) { u.gearV2.items[`${s}:${T}`] = { enhance: 0, forge: 0 }; u.gearV2.items[`${s}:1`] ||= { enhance: 0, forge: 0 }; u.gearV2.equipped[s] = T }
@@ -64,4 +64,25 @@ test("出售加成包含出战宠物的技能（饥饿时不算）", async () =>
   assert.ok(petSell > 0)
   assert.equal(P.petEffects(u).sellBonus, petSell)
   if (FishingBag) assert.equal(FishingBag.prototype.sellBonus.call({}, u), (mergeEffects(gearEffects(u, shop)).sellBonus || 0) + petSell)
+})
+
+test("超大体型：大体型叠满后，超大加成把大鱼升成超大；鱼钩、五件套、高级鱼饵提供超大体型", async () => {
+  const { buildSizeOdds } = await import("../components/ItemPool.js")
+  const { slotEffects, setEffects } = await import("../components/Gear.js")
+  const size = cfg.size
+  // 大体型 +100：小、中全部变成大
+  const full = buildSizeOdds(size, { largeBoost: 100 })
+  assert.equal(full.small + full.medium, 0)
+  const xl = buildSizeOdds(size, { largeBoost: 100, xlBoost: 15 })
+  assert.equal(xl.xlarge, full.xlarge + 15)
+  assert.equal(xl.large, full.large - 15)
+  // 没有大体型加成时，先从小体型升为超大
+  const plain = buildSizeOdds(size, { xlBoost: 5 })
+  assert.equal(plain.small, size.small.chance - 5)
+  assert.equal(plain.large, size.large.chance)
+  // 来源
+  assert.equal(slotEffects("hook", 20, 0, 8).xlBoost, 0.2 * 19 + 0.5 * 8)
+  assert.equal(setEffects(20, 5).xlBoost, 5)
+  assert.equal(setEffects(20, 3).xlBoost, undefined)
+  assert.equal(shop.baits.find(b => b.id === "creation").effects.xlBoost, 5)
 })
