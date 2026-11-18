@@ -833,6 +833,7 @@
   emoji: 💎
   rarity: hidden
   price: 18888
+  autoSell: false   # 一键出售时保留，只能 #出售 海洋之心 手动卖
   desc: 传说沉睡在海底的蓝色宝石
   habitat: 深海
   intro: "传说沉睡在海底的蓝色宝石，散发着幽幽的蓝光。没人知道它是怎么挂到你的鱼钩上的。"

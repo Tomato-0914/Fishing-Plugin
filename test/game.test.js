@@ -1102,7 +1102,8 @@ test("百连：保护鱼类出现概率降低；结果只显示品级数量，�
   const msg = formatHundred(rounds, { markdown: true, xpLine: "✨ 获得经验：+300（距离 Lv29 还需 300）" }).split("\n")
   assert.equal(msg[0], `**💯 百连收网** · ${rounds.length} 竿`)
   assert.equal(msg[1], "✨ 获得经验：+300（距离 Lv29 还需 300）")
-  assert.equal(msg[2], `💰 **售出预计获得金币：${30 * 10 + 20 * 30 + 280 + 900 + 18888}**`)
+  // 海洋之心不参与一键出售，不算进售出预计（仍在稀有列表里单独列出）
+  assert.equal(msg[2], `💰 **售出预计获得金币：${30 * 10 + 20 * 30 + 280 + 900}**`)
   assert.equal(msg[3], "🐟 鱼获 53｜垃圾 1｜空军 5")
   assert.ok(msg.includes("> 🌈💎 海洋之心 18888 ✨"))
   for (const line of ["> 🟡 传说 ×1 ✨", "> 🟣 神器 ×1", "> 🟢 高级 ×20", "> ⚪ 普通 ×30", "💥 断线 1"]) assert.ok(msg.includes(line), line)

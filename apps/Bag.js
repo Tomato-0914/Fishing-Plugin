@@ -1,7 +1,7 @@
 import { plugin, puppeteer } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
-import { RARITY_INFO, isDexFish, formatWeight, SIZE_ORDER, castBreakdown, buildSizeOdds } from "../components/ItemPool.js"
+import { RARITY_INFO, isDexFish, formatWeight, SIZE_ORDER, castBreakdown, buildSizeOdds, autoSellable } from "../components/ItemPool.js"
 import { groupBag, sellEntries, discardJunk, todayLuck, luckTier, repriceBag, protectedFine, groupProtectedMax } from "../components/Game.js"
 import { checkTitles, getEffects, effectText, progressText, mergeEffects, ownedTier, ownedTitles, titleName, titleUpText } from "../components/Titles.js"
 import { gearEffects, bagCapacity, totalBait, gearItem, gearLevel, SLOTS, ownedGear, tierBadge, currentBait, breakChance, MAX_ENHANCE, MAX_FORGE } from "../components/Gear.js"
@@ -71,8 +71,9 @@ export class FishingBag extends plugin {
       total: g.total,
       sizes: SIZE_ORDER.filter(s => g.sizes[s]).map(s => `${sizeCfg[s]?.label || s}×${g.sizes[s]}`).join(" "),
     }))
-    const value = groups.reduce((s, g) => s + g.total, 0)
+    const value = groups.filter(g => autoSellable(g.item)).reduce((s, g) => s + g.total, 0)
     const sellValue = Math.round(value * (1 + bonus / 100))
+    const kept = this.keptText(user, items)
     const junk = groups.filter(g => g.item.rarity === "junk").reduce((s, g) => s + g.count, 0)
     const limit = bagCapacity(user, Config.shop, Config.config.fishing?.bagLimit)
 
@@ -81,13 +82,14 @@ export class FishingBag extends plugin {
 
     const msg = await renderOrText(puppeteer, "bag", {
       name: displayName(user), avatar: avatar(user.user_id), gold: user.gold,
-      list, value, sellValue, bonus, junk, count: user.bag.length, limit,
+      list, value, sellValue, bonus, junk, kept, count: user.bag.length, limit,
     }, () => [
       `🎒 ${displayName(user)} 的鱼护（${user.bag.length}/${limit}）`,
       "━━━━━━━━━━━━",
       ...list.map(i => `${i.emoji}【${i.label}】${i.name} ×${i.count}${i.sizes ? `（${i.sizes}）` : ""}  ${i.rarity === "junk" ? "0" : i.total} 金币`),
       "━━━━━━━━━━━━",
-      `💰 全部出售可得：${sellValue} 金币${bonus ? `（加成 +${bonus}%）` : ""}`,
+      `💰 一键出售可得：${sellValue} 金币${bonus ? `（加成 +${bonus}%）` : ""}`,
+      kept,
       junk ? `🗑️ 垃圾 ${junk} 件，可发送 #清理垃圾 统一回收` : "",
       `👛 当前金币：${user.gold}`,
     ].filter(Boolean).join("\n"))
@@ -102,11 +104,12 @@ export class FishingBag extends plugin {
     if (!groupAllowed(e)) return false
     const user = this.load(e)
     const items = itemMap()
-    const entries = user.bag.filter(x => items.get(x.id)?.rarity !== "junk")
-    const junk = user.bag.length - entries.length
+    const entries = user.bag.filter(x => autoSellable(items.get(x.id)))
+    const junk = user.bag.filter(x => items.get(x.id)?.rarity === "junk").length
+    const kept = this.keptText(user, items)
     if (!entries.length)
-      return e.reply(withButtons(e, junk ? `🗑️ 鱼护里只剩 ${junk} 件垃圾，卖不了钱哦~ 发送 #清理垃圾 统一回收吧` : "🎒 鱼护里没有可以出售的鱼~", junk ? [B.discard, B.cast] : [B.start]))
-    return this.doSell(e, user, entries, junk)
+      return e.reply(withButtons(e, [junk ? `🗑️ 鱼护里只剩 ${junk} 件垃圾，卖不了钱哦~ 发送 #清理垃圾 统一回收吧` : "🎒 鱼护里没有可以一键出售的鱼~", kept].filter(Boolean).join("\n"), junk ? [B.discard, B.cast] : [B.start]))
+    return this.doSell(e, user, entries, junk, kept)
   }
 
   async sell(e) {
@@ -126,7 +129,14 @@ export class FishingBag extends plugin {
     return this.doSell(e, user, entries)
   }
 
-  async doSell(e, user, entries, junkLeft = 0) {
+  /** 一键出售保留的物品：💎 海洋之心 ×2 留在鱼护，需手动 #出售 海洋之心 */
+  keptText(user, items = itemMap()) {
+    const kept = new Map()
+    for (const x of user.bag) { const it = items.get(x.id); if (it && it.rarity !== "junk" && it.autoSell === false) kept.set(it, (kept.get(it) || 0) + 1) }
+    return [...kept].map(([it, n]) => `${it.emoji} ${it.name} ×${n} 留在鱼护，需要手动 #出售 ${it.name}`).join("\n")
+  }
+
+  async doSell(e, user, entries, junkLeft = 0, kept = "") {
     const bonus = this.sellBonus(user)
     const { count, base, gold } = sellEntries(user, entries, bonus)
     UserData.save(user.user_id)
@@ -135,6 +145,7 @@ export class FishingBag extends plugin {
       `获得 ${gold} 金币${bonus ? `（${base} + 加成 ${bonus}%）` : ""}`,
       `👛 当前金币：${user.gold}`,
     ]
+    if (kept) lines.push(kept)
     if (junkLeft) lines.push(`🗑️ 鱼护里还有 ${junkLeft} 件垃圾，可发送 #清理垃圾 统一回收`)
     return e.reply(withButtons(e, lines.join("\n"), fishRow(user), [B.bag, B.shop, ...(junkLeft ? [B.discard] : [])]))
   }
