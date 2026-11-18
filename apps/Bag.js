@@ -245,6 +245,7 @@ export class FishingBag extends plugin {
       odds, protectedCapped: !!capped, pet: this.petInfo(user), attrs: this.attrInfo(user), level: this.levelInfo(user),
       name:displayName(user), avatar:avatar(user.user_id) || (typeof e.sender?.avatar === "string" && /^https:\/\//.test(e.sender.avatar) ? e.sender.avatar : ""),
       gold:user.gold, bait:totalBait(user), equipment, stats,
+      goldText:Number(user.gold || 0).toLocaleString("en-US"), baitText:Number(totalBait(user)).toLocaleString("en-US"),
       luck:fortune?.name || "尚未打卡", luckValue:luck,
       checkedIn:!!fortune,
       streak:user.checkin.streak, checkinTotal:user.checkin.total,
