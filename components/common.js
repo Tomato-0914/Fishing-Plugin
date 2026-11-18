@@ -19,6 +19,11 @@ export function playerEffects(user, bait = currentBait(user, Config.shop)) {
   })
 }
 
+/** 出售加成（%）：称号 + 渔具 + 出战宠物（饥饿时不算）；出售与连钓“售出预计”共用 */
+export function sellBonusOf(user) {
+  return mergeEffects(getEffects(user, Config.titles, Config.items), gearEffects(user, Config.shop), petEffects(user)).sellBonus || 0
+}
+
 /** 本群是否可用 */
 export function groupAllowed(e) {
   const cfg = Config.config

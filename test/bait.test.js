@@ -86,3 +86,28 @@ test("超大体型：大体型叠满后，超大加成把大鱼升成超大；�
   assert.equal(setEffects(20, 3).xlBoost, undefined)
   assert.equal(shop.baits.find(b => b.id === "creation").effects.xlBoost, 5)
 })
+
+test("图鉴的各体型概率按玩家的大体型 / 超大体型加成计算", async () => {
+  const { sizeTable } = await import("../components/Dex.js")
+  const tuna = Config.items.find(i => i.id === "tuna")
+  const base = sizeTable(tuna, cfg.size)
+  assert.deepEqual(base.map(s => s.chance), ["small", "medium", "large", "xlarge"].map(k => cfg.size[k].chance))
+  const maxed = Object.fromEntries(sizeTable(tuna, cfg.size, { largeBoost: 86, xlBoost: 17.8 }).map(s => [s.key, s.chance]))
+  assert.equal(maxed.small + maxed.medium, 0)
+  assert.equal(maxed.xlarge, 20.8)
+  assert.equal(maxed.large, 79.2)
+})
+
+test("连钓“售出预计获得金币”包含出售加成，与实际出售一致", async () => {
+  const { saleLine, formatMulti, formatHundred } = await import("../components/Catch.js")
+  const { sellEntries } = await import("../components/Game.js")
+  assert.equal(saleLine(1000), "💰 售出预计获得金币：1000")
+  assert.equal(saleLine(1000, 214.43, true), "💰 **售出预计获得金币：3144**（含出售加成 +214.43%）")
+  const it = Config.items.find(i => i.id === "tuna")
+  const rounds = [{ snapped: false, value: 600, reward: 0, result: { type: "item", item: it, rarity: it.rarity, size: "large", price: 600 } }]
+  assert.ok(formatMulti(rounds, { sellBonus: 50 }).includes("售出预计获得金币：900（含出售加成 +50%）"))
+  assert.ok(formatHundred(rounds, { sellBonus: 50 }).includes("售出预计获得金币：900"))
+  // 和真正出售算出来的一样
+  const u = { gold: 0, bag: [{ id: "tuna", p: 600 }], stats: { sold: 0 } }
+  assert.equal(sellEntries(u, u.bag.slice(), 50).gold, 900)
+})

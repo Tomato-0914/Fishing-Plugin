@@ -1,5 +1,5 @@
 /** 图鉴：物品详情计算（纯函数） */
-import { buildOdds, SIZE_RANGE, isDexFish } from "./ItemPool.js"
+import { buildOdds, buildSizeOdds, SIZE_RANGE, isDexFish } from "./ItemPool.js"
 
 /**
  * 物品单次出现概率（%），已按总和归一化
@@ -21,10 +21,15 @@ export function formatChance(pct) {
   return `${Number(pct.toPrecision(2))}%`
 }
 
-/** 各体型的重量与售价区间（与 roll 的算法一致） */
-export function sizeTable(item, size = {}) {
+/**
+ * 各体型的概率、重量与售价区间（与 roll 的算法一致）
+ * @param effects 玩家效果：概率按大体型 / 超大体型加成计算；不传时为基础概率
+ */
+export function sizeTable(item, size = {}, effects = {}) {
   if (!Array.isArray(item.weight)) return []
   const [wMin, wMax] = item.weight
+  const odds = buildSizeOdds(size, effects)
+  const total = Object.values(odds).reduce((a, b) => a + b, 0) || 1
   return ["small", "medium", "large", "xlarge"].filter(k => size[k]).map(k => {
     const [lo, hi] = SIZE_RANGE[k]
     const mult = Number(size[k].price) || 1
@@ -32,7 +37,7 @@ export function sizeTable(item, size = {}) {
     return {
       key: k,
       label: size[k].label || k,
-      chance: Number(size[k].chance) || 0,
+      chance: Number(((odds[k] || 0) / total * 100).toFixed(2)),
       wMin: wMin + (wMax - wMin) * lo,
       wMax: wMin + (wMax - wMin) * hi,
       pMin: Math.max(1, Math.round(base * mult * 0.95)),

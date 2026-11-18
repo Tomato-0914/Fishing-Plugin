@@ -12,7 +12,7 @@ import { checkTitles, getEffects, effectText, titleUpText } from "../components/
 import { withButtons, B, fishRow } from "../components/Button.js"
 const withButtonsBase = withButtons
 import { batchCfg, batchLeftText, useBatch, protectedScaleFor } from "../components/Batch.js"
-import { groupAllowed, displayName, updateNickname, pick, itemMap, playerEffects } from "../components/common.js"
+import { groupAllowed, displayName, updateNickname, pick, itemMap, playerEffects, sellBonusOf } from "../components/common.js"
 
 /** 进行中的钓鱼：user_id → { stage: "waiting" | "bite" | "multi", timer, castAt, biteAt } */
 const sessions = new Map()
@@ -478,8 +478,8 @@ export class Fishing extends plugin {
     const markdown = e.bot?.adapter?.id === "QQBot"
     const sizeLabels = Object.fromEntries(Object.entries(cfg.size || {}).map(([k, v]) => [k, v.label]))
     const body = c.kind !== "multi"
-      ? formatHundred(rounds, { markdown, xpLine, title: `${c.emoji} ${c.label}收网` })
-      : formatMulti(rounds, { sizeLabels, markdown, xpLine })
+      ? formatHundred(rounds, { markdown, xpLine, title: `${c.emoji} ${c.label}收网`, sellBonus: sellBonusOf(user) })
+      : formatMulti(rounds, { sizeLabels, markdown, xpLine, sellBonus: sellBonusOf(user) })
     const msg = body + `\n🎟️ 剩余${c.label}：${batchLeftText(user, c)}` + (cd ? `\n⏳ 冷却：${cooldownText(cd)}` : "")
     await this.send(e, withButtons(e, msg,
       this.branchRow(e, user),

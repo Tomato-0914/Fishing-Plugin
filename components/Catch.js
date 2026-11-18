@@ -86,6 +86,14 @@ export function petProcLine(rounds, baitSaved = 0) {
   return parts.length ? `🐾 宠物技能：${parts.join(" · ")}` : ""
 }
 
+/** “售出预计获得金币”：按出售时的加成（称号 + 渔具 + 宠物）估算，与实际出售一致 */
+export function saleLine(value, sellBonus = 0, markdown = false) {
+  const b = Math.max(0, Number(sellBonus) || 0)
+  const gold = Math.round(value * (1 + b / 100))
+  const text = `售出预计获得金币：${gold}`
+  return (markdown ? `💰 **${text}**` : `💰 ${text}`) + (b ? `（含出售加成 +${Number(b.toFixed(2))}%）` : "")
+}
+
 /** 十连汇总 */
 export function summarize(rounds) {
   const s = { fish: 0, junk: 0, empty: 0, snapped: 0, banned: 0, protected: 0, value: 0, best: null }
@@ -137,7 +145,7 @@ export function roundLine(r, sizeLabels = {}) {
  * - 普通、高级只给数量和总价；垃圾、空军、断线只给数量
  * @param markdown true 时（QQBot）使用 Markdown 加粗标题与分区；否则为纯文本
  */
-export function formatMulti(rounds, { sizeLabels = {}, markdown = false, xpLine = "" } = {}) {
+export function formatMulti(rounds, { sizeLabels = {}, markdown = false, xpLine = "", sellBonus = 0 } = {}) {
   const sum = summarize(rounds)
   const special = [], notable = new Map(), low = { N: [0, 0], R: [0, 0] }
   for (const r of rounds) {
@@ -170,7 +178,7 @@ export function formatMulti(rounds, { sizeLabels = {}, markdown = false, xpLine 
   const head = [
     markdown ? "**🎣 十连收网**" : "🎣 十连收网",
     ...(xpLine ? [xpLine] : []),
-    markdown ? `💰 **售出预计获得金币：${sum.value}**` : `💰 售出预计获得金币：${sum.value}`,
+    saleLine(sum.value, sellBonus, markdown),
     `🐟 鱼获 ${sum.fish}｜垃圾 ${sum.junk}｜空军 ${sum.empty}`,
   ]
   const tail = [
@@ -195,7 +203,7 @@ const RARITY_LABEL = { MR: "神话", EP: "史诗", UR: "传说", SSR: "神器", 
  * 百连结果文字：只给各品级数量；空军、垃圾、断线照常统计；
  * 特殊事件（报警、派蒙、保护鱼类、隐藏款）逐条列出
  */
-export function formatHundred(rounds, { markdown = false, xpLine = "", title = "💯 百连收网" } = {}) {
+export function formatHundred(rounds, { markdown = false, xpLine = "", title = "💯 百连收网", sellBonus = 0 } = {}) {
   const sum = summarize(rounds)
   const counts = {}, special = []
   for (const r of rounds) {
@@ -212,7 +220,7 @@ export function formatHundred(rounds, { markdown = false, xpLine = "", title = "
   const head = [
     markdown ? `**${title}** · ${rounds.filter(r => !r.extra).length} 竿` : `${title} · ${rounds.filter(r => !r.extra).length} 竿`,
     ...(xpLine ? [xpLine] : []),
-    markdown ? `💰 **售出预计获得金币：${sum.value}**` : `💰 售出预计获得金币：${sum.value}`,
+    saleLine(sum.value, sellBonus, markdown),
     `🐟 鱼获 ${sum.fish}｜垃圾 ${sum.junk}｜空军 ${sum.empty}`,
   ]
   const tail = [
