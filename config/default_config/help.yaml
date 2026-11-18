@@ -8,9 +8,8 @@
     - { icon: 📚, title: "#钓鱼图鉴", desc: 查看鱼类图鉴与详情 }
 - group: ⭐ 角色
   list:
-    - { icon: ⭐, title: "#我的等级", desc: 同 #钓鱼信息，等级与经验进度在最上面 }
     - { icon: 💰, title: "#我的金币", desc: 查看当前金币 }
-    - { icon: 👤, title: "#钓鱼信息", desc: 查看钓鱼统计与角色信息 }
+    - { icon: 👤, title: "#钓鱼信息", desc: 查看等级经验、渔具、宠物、综合属性与钓鱼统计 }
     - { icon: 🏅, title: "#我的称号", desc: 查看称号及加成 }
 - group: 🔧 渔具工坊
   list:
