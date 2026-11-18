@@ -241,10 +241,17 @@ export class FishingBag extends plugin {
     const cfg = Config.config
     const groupMax = groupProtectedMax(cfg.protectedPenalty)
     const capped = groupMax && GroupDaily.count(groupKey(e)) >= groupMax
-    const odds = castBreakdown(cfg.probability, { ...playerEffects(user, null), ...(capped ? { protectedScale: 0 } : {}) }, cfg.limits)
-      .filter(o => o.pct > 0).map(o => ({ ...o, text: `${Number(o.pct.toFixed(o.pct < 1 ? 2 : 1))}%` }))
+    const pctText = pct => `${Number(pct.toFixed(pct < 1 ? 2 : 1))}%`
+    const noBait = castBreakdown(cfg.probability, { ...playerEffects(user, null), ...(capped ? { protectedScale: 0 } : {}) }, cfg.limits)
+    const odds = noBait.filter(o => o.pct > 0).map(o => ({ ...o, text: pctText(o.pct) }))
+    // 当前鱼饵会改变的结果（如垃圾降低），单独列一行实际概率
+    const bait = currentBait(user, Config.shop)
+    const withBait = castBreakdown(cfg.probability, { ...playerEffects(user), ...(capped ? { protectedScale: 0 } : {}) }, cfg.limits)
+    // 鱼饵直接影响的是空军和垃圾，鱼获各品级按比例跟着变化
+    const changed = withBait.filter((o, i) => ["empty", "junk"].includes(o.key) && Math.abs(o.pct - noBait[i].pct) >= 0.05)
+    const oddsBait = changed.length ? `用当前鱼饵（${bait?.name || "普通饵"}）时：${changed.map(o => `${o.label} ${pctText(o.pct)}`).join(" · ")}，鱼获相应增加` : ""
     const data = {
-      odds, protectedCapped: !!capped, pet: this.petInfo(user), attrs: this.attrInfo(user), level: this.levelInfo(user),
+      odds, oddsBait, protectedCapped: !!capped, pet: this.petInfo(user), attrs: this.attrInfo(user), level: this.levelInfo(user),
       name:displayName(user), avatar:avatar(user.user_id) || (typeof e.sender?.avatar === "string" && /^https:\/\//.test(e.sender.avatar) ? e.sender.avatar : ""),
       gold:user.gold, bait:totalBait(user), equipment, stats,
       goldText:Number(user.gold || 0).toLocaleString("en-US"), baitText:Number(totalBait(user)).toLocaleString("en-US"),

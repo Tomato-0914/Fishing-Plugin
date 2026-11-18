@@ -1313,6 +1313,19 @@ test("称号一览：未获得在最上面，已获得按等级排，满级在�
   assert.deepEqual(sortTitleCards(cards).map(x => x.name), ["深海之子", "热心市民", "空军司令", "监狱常客", "钓鱼佬", "熟练钓手", "最好的伙伴"])
 })
 
+test("图片模板都引入了 emoji 脚本（否则 emoji 会显示成方框）", async () => {
+  const fs = await import("node:fs")
+  const path = await import("node:path")
+  const dir = new URL("../resources/", import.meta.url).pathname
+  for (const name of fs.readdirSync(dir)) {
+    const file = path.join(dir, name, `${name}.html`)
+    if (!fs.existsSync(file)) continue
+    const html = fs.readFileSync(file, "utf8")
+    assert.ok(html.includes("common/emoji.js") && html.includes("common/twemoji.min.js"), `${name}.html 没有引入 emoji 脚本`)
+    assert.ok(/img\.emoji\s*\{/.test(html) || html.includes("common/common.css"), `${name}.html 没有 img.emoji 尺寸样式`)
+  }
+})
+
 test("用到的 emoji 都有本地图标（图片里不会显示成方框）", async () => {
   const fs = await import("node:fs")
   const path = await import("node:path")
