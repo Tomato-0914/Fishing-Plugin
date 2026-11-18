@@ -14,7 +14,7 @@ import { petIcon } from "../components/PetIcons.js"
 import { itemChance, formatChance, sizeTable, findItems, dexNo } from "../components/Dex.js"
 import { dayKey } from "../components/Period.js"
 import { characterProgress } from "../components/Progression.js"
-import { groupAllowed, itemMap, displayName, updateNickname, avatar, playerEffects } from "../components/common.js"
+import { groupAllowed, itemMap, displayName, updateNickname, avatar, playerEffects, sellBonusOf } from "../components/common.js"
 
 /** 鱼护展示顺序：隐藏 → 传说 → … → 普通 → 垃圾 */
 /** 鱼护 / 图鉴展示顺序：隐藏 → 神话 → 史诗 → 传说 → … → 普通 → 垃圾 → 保护鱼类 */
@@ -41,7 +41,7 @@ export class FishingBag extends plugin {
 
   /** 出售加成：称号 + 渔具 + 出战宠物（饥饿时不算） */
   sellBonus(user) {
-    return mergeEffects(getEffects(user, Config.titles, Config.items), gearEffects(user, Config.shop), petEffects(user)).sellBonus || 0
+    return sellBonusOf(user)
   }
 
   load(e) {
@@ -324,7 +324,8 @@ export class FishingBag extends plugin {
     const cfg = Config.config
     const r = RARITY_INFO[item.rarity] || {}
     const rec = user.records?.[item.id] || {}
-    const sizes = sizeTable(item, cfg.size).map(s => ({
+    // 各体型概率按玩家当前的大体型、超大体型加成计算
+    const sizes = sizeTable(item, cfg.size, playerEffects(user)).map(s => ({
       ...s, weight: `${formatWeight(s.wMin)} ~ ${formatWeight(s.wMax)}`, price: s.pMin === s.pMax ? `${s.pMin}` : `${s.pMin} ~ ${s.pMax}`,
     }))
     const pen = cfg.protectedPenalty || {}
