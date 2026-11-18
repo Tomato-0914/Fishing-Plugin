@@ -32,7 +32,7 @@ export class FishingBag extends plugin {
         { reg: /^#?一键出售$/, fnc: "sellAll" },
         { reg: /^#?(出售)\s*(\S+?)\s*(\d+)?$/, fnc: "sell" },
         { reg: /^#?清理垃圾$/, fnc: "discard" },
-        { reg: /^#?(?:钓鱼信息|我的等级)$/, fnc: "info" },
+        { reg: /^#?钓鱼信息$/, fnc: "info" },
         { reg: /^#?我的金币$/, fnc: "gold" },
         { reg: /^#?钓鱼图鉴\s*(.*)$/, fnc: "dex" },
       ],
@@ -166,7 +166,7 @@ export class FishingBag extends plugin {
     return e.reply(`💰 ${displayName(user)} 当前金币：${user.gold}`)
   }
 
-  /** #钓鱼信息：角色等级与经验进度（原 #我的等级） */
+  /** #钓鱼信息：角色等级与经验进度 */
   levelInfo(user) {
     const p = characterProgress(user)
     const fmt = n => Number(n || 0).toLocaleString("en-US")
