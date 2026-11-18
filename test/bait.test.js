@@ -47,9 +47,12 @@ test("鱼价 +% 计入售价，存进鱼护后重新定价也不会丢（宠物�
   const entry = u.bag.at(-1)
   assert.equal(entry.m, 2.6)
   const item = items.find(i => i.id === entry.id)
-  const base = entryPrice({ ...entry, m: undefined }, item, cfg.size)
   assert.equal(entry.p, round.result.price)
-  assert.equal(entryPrice(entry, item, cfg.size), Math.round(base * 2.6))
+  // 鱼价没改：保持钓到时的价格
+  assert.equal(entryPrice(entry, item, cfg.size), entry.p)
+  // 鱼价改过（没有记录钓到时的鱼价）：按重量重新计算，倍率保留
+  const base = entryPrice({ ...entry, m: undefined, bp: undefined }, item, cfg.size)
+  assert.equal(entryPrice({ ...entry, bp: undefined }, item, cfg.size), Math.round(base * 2.6))
   assert.equal(repriceBag(u, new Map(items.map(i => [i.id, i])), cfg.size), 0)
   assert.equal(entry.p, round.result.price)
 })
@@ -110,4 +113,34 @@ test("连钓“售出预计获得金币”包含出售加成，与实际出售�
   // 和真正出售算出来的一样
   const u = { gold: 0, bag: [{ id: "tuna", p: 600 }], stats: { sold: 0 } }
   assert.equal(sellEntries(u, u.bag.slice(), 50).gold, 900)
+})
+
+test("连钓“售出预计”与实际出售完全一致；调整鱼价后鱼护里的鱼按新价格出售", async () => {
+  const { summarize } = await import("../components/Catch.js")
+  const { sellEntries } = await import("../components/Game.js")
+  const items = Config.items, itemMap = new Map(items.map(i => [i.id, i]))
+  const u = { gold: 0, bag: [], dex: {}, records: {}, stats: { casts: 0, catches: 0, junk: 0, empty: 0, escaped: 0, police: 0, heart: 0, ur: 0, earned: 0, sold: 0 }, period: {} }
+  const rng = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(42)
+  const rounds = Array.from({ length: 300 }, () => resolveCast(u, { items, cfg: { ...cfg, probability: { ...cfg.probability, protected: {} } }, shop, effects: { rarityTier: 18, priceBonus: 30, largeBoost: 60, xlBoost: 10 }, rng }))
+  const estimate = summarize(rounds).sale
+  // 打开鱼护 / 出售前会重新定价：鱼价没改时一条都不变
+  assert.equal(repriceBag(u, itemMap, cfg.size), 0)
+  const fish = u.bag.filter(e => itemMap.get(e.id)?.rarity !== "junk")
+  assert.equal(fish.reduce((a, e) => a + e.p, 0), estimate)
+  assert.equal(sellEntries(u, fish, 214.55).gold, Math.round(estimate * 3.1455))
+  // 鱼价调整后：重新定价生效
+  const v = { gold: 0, bag: [{ id: "tuna", p: 100, s: "large", w: 70, bp: 1, sp: 1.5 }], stats: { sold: 0 } }
+  assert.equal(repriceBag(v, itemMap, cfg.size), 1)
+  assert.notEqual(v.bag[0].p, 100)
+})
+
+test("报警奖励当场发放，不算进“售出预计”", async () => {
+  const { summarize, formatMulti } = await import("../components/Catch.js")
+  const police = Config.items.find(i => i.special === "police"), tuna = Config.items.find(i => i.id === "tuna")
+  const rounds = [
+    { snapped: false, value: 15000, reward: 15000, result: { type: "item", item: police, rarity: police.rarity, price: 0 } },
+    { snapped: false, value: 600, reward: 0, result: { type: "item", item: tuna, rarity: tuna.rarity, size: "large", price: 600 } },
+  ]
+  assert.equal(summarize(rounds).sale, 600)
+  assert.ok(formatMulti(rounds, { sellBonus: 100 }).includes("售出预计获得金币：1200"))
 })

@@ -30,7 +30,7 @@ export function addGroup(user, groupId) {
 export const FISH_XP = Object.freeze({ N: 4, R: 6, SR: 10, SSR: 16, UR: 25, EP: 40, MR: 60, hidden: 80 })
 
 /** 记录一次收杆结果；经验差额与鱼获统计一起写入存档。 */
-export function recordResult(user, result, { now = new Date(), policeReward = 0, protectedPenalty = {}, paimonGift = 0 } = {}) {
+export function recordResult(user, result, { now = new Date(), policeReward = 0, protectedPenalty = {}, paimonGift = 0, size: sizeCfg } = {}) {
   touchPeriods(user, now)
   const s = user.stats
   if (result.type === "empty") {
@@ -91,6 +91,9 @@ export function recordResult(user, result, { now = new Date(), policeReward = 0,
     if (result.size) entry.s = result.size
     if (result.weight != null) entry.w = result.weight
     if (result.mult && result.mult !== 1) entry.m = result.mult
+    // 记下钓到时的鱼价（和体型倍率）：之后鱼价没改过就按原价出售，与收网时的“售出预计”分毫不差
+    entry.bp = Number(item.price) || 0
+    if (result.size) entry.sp = Number(sizeCfg?.[result.size]?.price) || 1
     user.bag.push(entry)
     if (isDexFish(item) && result.weight != null && (!user.maxFish || result.weight > user.maxFish.w) && item.rarity !== "junk")
       user.maxFish = { id: item.id, w: result.weight, s: result.size }
