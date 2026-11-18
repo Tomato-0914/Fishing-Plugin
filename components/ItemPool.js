@@ -191,6 +191,10 @@ export function sizedPrice(item, sizeKey, t, size = {}) {
 export function entryPrice(entry, item, size = {}) {
   if (!entry || !item) return null
   if (item.rarity === "junk") return 0
+  // 钓到后鱼价、体型倍率都没改过：保持钓到时的价格（重新反推会因重量取整差 1 金币）
+  const sameBase = entry.bp != null && Number(entry.bp) === (Number(item.price) || 0)
+  const sameSize = !entry.s || entry.sp == null || Number(entry.sp) === (Number(size?.[entry.s]?.price) || 1)
+  if (sameBase && sameSize && entry.p != null) return entry.p
   // m：钓到时的售价倍率（鱼饵“鱼价 +%”、宠物“鱼价翻倍 / ×3”），重新定价时保留
   const m = Number(entry.m) > 0 ? Number(entry.m) : 1
   if (!Array.isArray(item.weight)) return Math.max(0, Math.round((Number(item.price) || 0) * m))

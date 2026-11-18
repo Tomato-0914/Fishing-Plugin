@@ -35,7 +35,7 @@ export function resolveCast(user, { items, cfg, shop, effects = {}, rng = Math.r
     user.stats.lineBreak = (user.stats.lineBreak || 0) + 1
     return { result, snapped: true, chance, reward: 0, value: 0, pet }
   }
-  const opts = { policeReward: cfg.policeReward, protectedPenalty: cfg.protectedPenalty, paimonGift: cfg.paimonGift, now }
+  const opts = { policeReward: cfg.policeReward, protectedPenalty: cfg.protectedPenalty, paimonGift: cfg.paimonGift, now, size: cfg.size }
   const { reward, value, penalty, paimon } = recordResult(user, result, opts)
   if (penalty && group) Object.assign(penalty, { group: group.add(), groupMax: group.max || 0 })
   // 宠物技能：钓到鱼时有概率多钓一条 / 两条（同样按当前品级分布，直接入鱼护，不会断线）
@@ -96,7 +96,8 @@ export function saleLine(value, sellBonus = 0, markdown = false) {
 
 /** 十连汇总 */
 export function summarize(rounds) {
-  const s = { fish: 0, junk: 0, empty: 0, snapped: 0, banned: 0, protected: 0, value: 0, best: null }
+  // value：本次鱼获总价值（含报警奖励）；sale：放进鱼护、能拿去出售的部分（报警奖励当场已发，不算）
+  const s = { fish: 0, junk: 0, empty: 0, snapped: 0, banned: 0, protected: 0, value: 0, sale: 0, best: null }
   for (const r of rounds) {
     if (r.banned) { s.banned++; continue }
     if (r.snapped) { s.snapped++; continue }
@@ -105,6 +106,7 @@ export function summarize(rounds) {
     if (r.result.rarity === "junk") s.junk++
     else s.fish++
     s.value += r.value
+    if (!r.result.item.special) s.sale += r.value
     if (r.result.rarity !== "junk" && (!s.best || r.value > s.best.value)) s.best = r
   }
   return s
@@ -178,7 +180,7 @@ export function formatMulti(rounds, { sizeLabels = {}, markdown = false, xpLine 
   const head = [
     markdown ? "**🎣 十连收网**" : "🎣 十连收网",
     ...(xpLine ? [xpLine] : []),
-    saleLine(sum.value, sellBonus, markdown),
+    saleLine(sum.sale, sellBonus, markdown),
     `🐟 鱼获 ${sum.fish}｜垃圾 ${sum.junk}｜空军 ${sum.empty}`,
   ]
   const tail = [
@@ -220,7 +222,7 @@ export function formatHundred(rounds, { markdown = false, xpLine = "", title = "
   const head = [
     markdown ? `**${title}** · ${rounds.filter(r => !r.extra).length} 竿` : `${title} · ${rounds.filter(r => !r.extra).length} 竿`,
     ...(xpLine ? [xpLine] : []),
-    saleLine(sum.value, sellBonus, markdown),
+    saleLine(sum.sale, sellBonus, markdown),
     `🐟 鱼获 ${sum.fish}｜垃圾 ${sum.junk}｜空军 ${sum.empty}`,
   ]
   const tail = [
