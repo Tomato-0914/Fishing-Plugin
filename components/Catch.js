@@ -142,61 +142,78 @@ export function roundLine(r, sizeLabels = {}) {
 }
 
 /**
- * 十连结果文字（简洁版）
- * - 稀有及以上、特殊事件逐条列出，同一种鱼合并为 “×N”
- * - 普通、高级只给数量和总价；垃圾、空军、断线只给数量
- * @param markdown true 时（QQBot）使用 Markdown 加粗标题与分区；否则为纯文本
+ * 连钓结果的公共排版
+ * - 顶部：标题、角色经验、售出预计、鱼获统计
+ * - QQBot Markdown：出售加成、宠物（经验 / 升级 / 能力提升 / 技能触发）、明细分别放进引用块
  */
-export function formatMulti(rounds, { sizeLabels = {}, markdown = false, xpLine = "", sellBonus = 0 } = {}) {
+function layout({ title, xpLine = "", petLines = [], sum, sellBonus = 0, detail = [], tail = [], markdown = false }) {
+  const b = Math.max(0, Number(sellBonus) || 0)
+  const gold = Math.round(sum.sale * (1 + b / 100))
+  const out = [title]
+  if (xpLine) out.push(xpLine)
+  if (markdown) {
+    out.push(`💰 **售出预计获得金币：${gold}**`)
+    // 引用块后必须空一行，否则下一行会被并进引用
+    if (b) out.push(`> 含出售加成 +${Number(b.toFixed(2))}%`, "")
+  } else out.push(`💰 售出预计获得金币：${gold}${b ? `（含出售加成 +${Number(b.toFixed(2))}%）` : ""}`)
+  out.push(`🐟 鱼获 ${sum.fish}｜垃圾 ${sum.junk}｜空军 ${sum.empty}`)
+  const block = lines => lines.length ? ["", ...(markdown ? lines.map(l => `> ${l}`) : lines)] : []
+  out.push(...block(petLines), ...block(detail))
+  if (tail.length) out.push("", ...tail)
+  // Markdown 引用块收尾留一个空行，调用方在后面接“剩余次数”等内容时不会被并进引用
+  else if (markdown && out.at(-1)?.startsWith("> ")) out.push("")
+  return out.join("\n")
+}
+
+/**
+ * 十连结果文字（简洁版）
+ * - 特殊事件（保护鱼类、报警、派蒙、隐藏款、断线）逐条列出
+ * - 鱼获只逐条列出本次最高品级的鱼（同一种合并为 ×N），其余品级合成一行“其他”
+ * - 空军、垃圾只给数量
+ * @param petLines 宠物经验、升级、能力提升、技能触发等行（QQBot 下放进引用块）
+ */
+export function formatMulti(rounds, { sizeLabels = {}, markdown = false, xpLine = "", petLines = [], sellBonus = 0 } = {}) {
   const sum = summarize(rounds)
-  const special = [], notable = new Map(), low = { N: [0, 0], R: [0, 0] }
+  const special = [], fish = []
   for (const r of rounds) {
     if (r.banned || r.result.type === "empty") continue
     const { item } = r.result
-    if (r.snapped || item.special) { special.push(r); continue }
-    if (item.rarity === "junk") continue
-    if (low[item.rarity]) { low[item.rarity][0]++; low[item.rarity][1] += r.value; continue }
-    const g = notable.get(item.id) || { r, count: 0, value: 0 }
-    g.count++; g.value += r.value
-    notable.set(item.id, g)
+    if (r.snapped || item.special || item.rarity === "hidden") { special.push(r); continue }
+    if (item.rarity !== "junk") fish.push(r)
   }
   const lines = []
-  // 特殊事件在最前：保护鱼类 → 报警 → 派蒙 → 断线
+  // 特殊事件在最前：保护鱼类 → 报警 → 派蒙 / 隐藏款 → 断线
   const order = r => r.snapped ? 3 : r.result.item.special === "protected" ? 0 : r.result.item.special === "police" ? 1 : 2
   for (const r of special.sort((a, b) => order(a) - order(b))) lines.push(roundLine(r, sizeLabels))
-  // 高级鱼：稀有度高的在前，同稀有度按总价
-  const groups = [...notable.values()].sort((a, b) =>
-    (TIER_RANK[b.r.result.rarity] || 0) - (TIER_RANK[a.r.result.rarity] || 0) || b.value - a.value)
-  for (const g of groups) {
-    if (g.count === 1) { lines.push(roundLine(g.r, sizeLabels)); continue }
-    const { item } = g.r.result
-    lines.push(`${RARITY_DOT[item.rarity] || ""}${item.emoji} ${item.name} ×${g.count} ${g.value}${FLASH.has(item.rarity) ? " ✨" : ""}`)
+  if (fish.length) {
+    const top = fish.reduce((m, r) => (TIER_RANK[r.result.rarity] || 0) > (TIER_RANK[m] || 0) ? r.result.rarity : m, fish[0].result.rarity)
+    const groups = new Map()
+    for (const r of fish.filter(r => r.result.rarity === top)) {
+      const g = groups.get(r.result.item.id) || { r, count: 0, value: 0 }
+      g.count++; g.value += r.value
+      groups.set(r.result.item.id, g)
+    }
+    lines.push(markdown ? `**✨ 本次最高：${RARITY_LABEL[top] || top}**` : `✨ 本次最高：${RARITY_LABEL[top] || top}`)
+    for (const g of [...groups.values()].sort((a, b) => b.value - a.value)) {
+      if (g.count === 1) { lines.push(roundLine(g.r, sizeLabels)); continue }
+      const { item } = g.r.result
+      lines.push(`${RARITY_DOT[item.rarity] || ""}${item.emoji} ${item.name} ×${g.count} ${g.value}${FLASH.has(item.rarity) ? " ✨" : ""}`)
+    }
+    const rest = fish.filter(r => r.result.rarity !== top)
+    if (rest.length) {
+      const counts = {}
+      for (const r of rest) counts[r.result.rarity] = (counts[r.result.rarity] || 0) + 1
+      const parts = Object.keys(RARITY_LABEL).filter(k => counts[k]).map(k => `${RARITY_DOT[k]} ${RARITY_LABEL[k]} ×${counts[k]}`)
+      lines.push(`📦 其他：${parts.join(" · ")} · 合计 ${rest.reduce((a, r) => a + r.value, 0)} 金币`)
+    }
   }
-  const lowParts = [["N", "⚪ 普通"], ["R", "🟢 高级"]].filter(([k]) => low[k][0]).map(([k, label]) => `${label} ×${low[k][0]}`)
-  const lowValue = low.N[1] + low.R[1]
-  if (lowParts.length) lines.push("📦 其他鱼获", ...lowParts, `合计 ${lowValue} 金币`)
-
-  // 保持两种协议相同的实际换行；QQBot 仅添加轻量 Markdown 样式。
-  const head = [
-    markdown ? "**🎣 十连收网**" : "🎣 十连收网",
-    ...(xpLine ? [xpLine] : []),
-    saleLine(sum.sale, sellBonus, markdown),
-    `🐟 鱼获 ${sum.fish}｜垃圾 ${sum.junk}｜空军 ${sum.empty}`,
-  ]
   const tail = [
     sum.snapped ? `💥 断线 ${sum.snapped}` : "",
     sum.protected ? `🚫 保护鱼类 ${sum.protected}` : "",
     sum.banned ? `⛔ 禁渔作废 ${sum.banned}` : "",
     sum.snapped ? "💡 更高阶或强化过的鱼线可减少断线" : "",
   ].filter(Boolean)
-  if (!lines.length) return [...head, ...tail].join("\n")
-  const detail = lines[0]?.startsWith("📦") ? lines : [markdown ? "**✨ 稀有鱼获 / 特殊事件**" : "✨ 稀有鱼获 / 特殊事件", ...lines]
-  if (markdown) {
-    // 恢复最初 QQBot 的 Markdown 引用列表；只对明细添加 >，保留顶部统计的完整宽度。
-    const quoted = detail.map(line => `> ${line}`)
-    return [...head, "", ...quoted, "", ...tail].join("\n")
-  }
-  return [...head, "", ...detail, ...tail].join("\n")
+  return layout({ title: markdown ? "**🎣 十连收网**" : "🎣 十连收网", xpLine, petLines, sum, sellBonus, detail: lines, tail, markdown })
 }
 
 const RARITY_LABEL = { MR: "神话", EP: "史诗", UR: "传说", SSR: "神器", SR: "稀有", R: "高级", N: "普通" }
@@ -205,7 +222,7 @@ const RARITY_LABEL = { MR: "神话", EP: "史诗", UR: "传说", SSR: "神器", 
  * 百连结果文字：只给各品级数量；空军、垃圾、断线照常统计；
  * 特殊事件（报警、派蒙、保护鱼类、隐藏款）逐条列出
  */
-export function formatHundred(rounds, { markdown = false, xpLine = "", title = "💯 百连收网", sellBonus = 0 } = {}) {
+export function formatHundred(rounds, { markdown = false, xpLine = "", petLines = [], title = "💯 百连收网", sellBonus = 0 } = {}) {
   const sum = summarize(rounds)
   const counts = {}, special = []
   for (const r of rounds) {
@@ -219,18 +236,11 @@ export function formatHundred(rounds, { markdown = false, xpLine = "", title = "
     ...special.sort((a, b) => order(a) - order(b)).map(r => roundLine(r, {})),
     ...Object.keys(RARITY_LABEL).filter(k => counts[k]).map(k => `${RARITY_DOT[k]} ${RARITY_LABEL[k]} ×${counts[k]}${FLASH.has(k) ? " ✨" : ""}`),
   ]
-  const head = [
-    markdown ? `**${title}** · ${rounds.filter(r => !r.extra).length} 竿` : `${title} · ${rounds.filter(r => !r.extra).length} 竿`,
-    ...(xpLine ? [xpLine] : []),
-    saleLine(sum.sale, sellBonus, markdown),
-    `🐟 鱼获 ${sum.fish}｜垃圾 ${sum.junk}｜空军 ${sum.empty}`,
-  ]
   const tail = [
     sum.snapped ? `💥 断线 ${sum.snapped}` : "",
     sum.protected ? `🚫 保护鱼类 ${sum.protected}` : "",
     sum.banned ? `⛔ 禁渔作废 ${sum.banned} 竿（鱼饵不退）` : "",
   ].filter(Boolean)
-  if (!lines.length) return [...head, ...tail].join("\n")
-  const detail = markdown ? lines.map(l => `> ${l}`) : lines
-  return [...head, "", ...detail, ...(tail.length ? ["", ...tail] : [])].join("\n")
+  const casts = rounds.filter(r => !r.extra).length
+  return layout({ title: markdown ? `**${title}** · ${casts} 竿` : `${title} · ${casts} 竿`, xpLine, petLines, sum, sellBonus, detail: lines, tail, markdown })
 }
