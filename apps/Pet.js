@@ -65,7 +65,11 @@ export class FishingPet extends plugin {
       row.push(this.own(e, "🍖 喂 1 份", "#喂食宠物 1"))
       if (fill > 1) row.push(this.own(e, `🍖 喂饱（${fill} 份）`, `#喂食宠物 ${fill}`))
     }
-    return [row.slice(0, 4), [{ text: "🐾 我的宠物", callback: "#我的宠物" }, { text: "🛒 宠物商店", callback: "#宠物商店" }, B.fish]].filter(r => r.length)
+    const nav = [{ text: "🐾 我的宠物", callback: "#我的宠物" }]
+    // 有两只以上宠物才显示：点按后在输入框填好 “#宠物出战 ”，补上名字即可
+    if (Object.keys(p.owned || {}).length > 1) nav.push({ text: "🔄 切换宠物…", input: "#宠物出战 ", permission: e.user_id })
+    nav.push({ text: "🛒 宠物商店", callback: "#宠物商店" }, B.fish)
+    return [row.slice(0, 4), nav].filter(r => r.length)
   }
 
   /* ---------------- 宠物商店 ---------------- */

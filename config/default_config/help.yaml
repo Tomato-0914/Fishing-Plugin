@@ -42,7 +42,7 @@
     - { icon: 🎒, title: "#我的鱼护", desc: 查看鱼获及鱼护容量 }
     - { icon: 🏷️, title: "#出售 名称 数量", desc: 出售指定鱼获 }
     - { icon: 💰, title: "#一键出售", desc: 出售全部可售鱼获 }
-    - { icon: ♻️, title: "#清理垃圾", desc: 回收鱼护中的垃圾 }
+    - { icon: ♻️, title: "#回收垃圾", desc: 回收鱼护中的垃圾 }
 - group: 🏪 鱼饵商店
   list:
     - { icon: 🏪, title: "#鱼饵商店", desc: 查看鱼饵种类与价格 }

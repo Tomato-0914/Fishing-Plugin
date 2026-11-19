@@ -55,7 +55,7 @@ export const B = {
   bag: { text: "🎒 我的鱼护", callback: "#我的鱼护" },
   sellAll: { text: "💰 一键出售", callback: "#一键出售" },
   sell: { text: "🏷️ 出售…", input: "#出售 " },
-  discard: { text: "♻️ 清理垃圾", callback: "#清理垃圾" },
+  discard: { text: "♻️ 回收垃圾", callback: "#回收垃圾" },
   help: { text: "📖 钓鱼帮助", callback: "#钓鱼帮助" },
   shop: { text: "🏪 鱼饵商店", callback: "#鱼饵商店" },
   workshop: { text: "🔧 购买渔具", callback: "#购买渔具" },
