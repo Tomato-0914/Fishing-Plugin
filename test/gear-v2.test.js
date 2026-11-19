@@ -1,8 +1,9 @@
+import { levelThreshold } from "../components/Progression.js"
 import test from "node:test"
 import assert from "node:assert/strict"
 import { buyGear,equipGear,cultivateGear,ownedGear,gearLevel,successRate,unlockedTier,tierNeedLevel,gearEffects,bagCapacity } from "../components/Gear.js"
 const shop={gearV2:{prices:Array.from({length:20},(_,i)=>200+100*i+50*i*i)}}
-const player=(level=43)=>({gold:1000000,stats:{casts:25*(level-1)*level,catches:0},gearV2:{items:{},equipped:{}}})
+const player=(level=43)=>({gold:1000000,stats:{casts:levelThreshold(level),catches:0},gearV2:{items:{},equipped:{}}})
 test("20阶按角色等级解锁购买，装备必须已拥有",()=>{
   const u=player(43)
   assert.equal(unlockedTier(u),9)

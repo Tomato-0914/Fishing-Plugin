@@ -1,6 +1,7 @@
 /** 用户存档：默认存入 data/fishing.db（SQLite），也可配置为 data/Fishing_<user_id>.yaml；所有群共享 */
 import { Data_Path } from "./Paths.js"
 import Config from "./Config.js"
+import { experience, levelAtXp, oldLevelAt, LEVEL_VERSION } from "./Progression.js"
 import { YamlBackend, SqliteBackend, migrateYamlToDb, exportDbToYaml, readYamlDir, safeId } from "./Storage.js"
 
 export { safeId }
@@ -32,11 +33,12 @@ export function newUser(id) {
     records: {},
     checkin: { day: "", luck: 0, time: 0, streak: 0, total: 0, history: [] },
     created: Date.now(),
+    levelV: LEVEL_VERSION,
   }
 }
 
 /** 补齐旧存档缺失的字段 */
-function normalize(data, id) {
+export function normalize(data, id) {
   const base = newUser(id)
   const user = { ...base, ...data }
   user.stats = { ...base.stats, ...(data?.stats || {}) }
@@ -72,6 +74,16 @@ function normalize(data, id) {
   user.checkin = { ...base.checkin, ...(data?.checkin || {}) }
   if (!Array.isArray(user.checkin.history)) user.checkin.history = []
   user.user_id = String(user.user_id || id)
+  // 升级曲线调整前的老存档：记录当时的等级作为保底，曲线变陡后不会掉级（宠物同理，宠物旧曲线为 40 × N × (N-1)）
+  if ((Number(data?.levelV) || 0) < LEVEL_VERSION) {
+    const old = oldLevelAt(experience(user))
+    if (old > levelAtXp(experience(user))) user.levelFloor = Math.max(Number(user.levelFloor) || 0, old)
+    for (const d of [...Object.values(user.pets?.owned || {}), ...Object.values(user.pets?.lost || {})]) {
+      const oldPet = oldLevelAt(d?.xp, 40)
+      if (d && oldPet > 1) d.levelFloor = Math.max(Number(d.levelFloor) || 0, oldPet)
+    }
+    user.levelV = LEVEL_VERSION
+  }
   return user
 }
 
