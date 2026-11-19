@@ -9,7 +9,7 @@
  */
 import Config from "./Config.js"
 import { periodKey } from "./Period.js"
-import { characterProgress } from "./Progression.js"
+import { characterProgress, levelThreshold, levelAtXp } from "./Progression.js"
 
 const HOUR = 3600000
 const n0 = v => Math.max(0, Number(v) || 0)
@@ -53,15 +53,17 @@ export function ensurePets(user) {
 
 /* ---------------- 等级与形态 ---------------- */
 
-export const petThreshold = (level, c = petCfg()) => c.xpFactor * Math.max(0, level - 1) * Math.max(1, level)
-/** 经验对应的等级（不考虑进化方向） */
+/** 升到 Lv N 需要的总经验：角色升级曲线 × (xpFactor / 25)，默认是角色的 1.6 倍，宠物等级始终落后于角色 */
+export const petThreshold = (level, c = petCfg()) => Math.ceil(levelThreshold(level) * c.xpFactor / 25)
+/** 经验对应的等级（不考虑进化方向和保底） */
 export function rawPetLevel(xp, c = petCfg()) {
-  const lv = Math.floor((1 + Math.sqrt(1 + 4 * n0(xp) / c.xpFactor)) / 2)
-  return Math.min(c.maxLevel, Math.max(1, lv))
+  return Math.min(c.maxLevel, levelAtXp(Math.floor(n0(xp) * 25 / c.xpFactor)))
 }
+/** 经验等级与保底等级（曲线调整前已达到的等级）取高 */
+export const effectivePetLevel = (data, c = petCfg()) => Math.min(c.maxLevel, Math.max(rawPetLevel(data?.xp, c), Math.floor(n0(data?.levelFloor))))
 /** 实际等级：没选进化方向时停在选择等级 */
 export function petLevel(data, c = petCfg()) {
-  const raw = rawPetLevel(data?.xp, c)
+  const raw = effectivePetLevel(data, c)
   return data?.branch ? raw : Math.min(raw, branchLevel(c))
 }
 /** 阶段 1~5；没选方向时最多三阶 */
@@ -71,7 +73,7 @@ export function petStage(data, c = petCfg()) {
   return Math.max(1, Math.min(byLevel, data?.branch ? 5 : 3))
 }
 /** 是否等待选择进化方向 */
-export const needsBranch = (data, c = petCfg()) => !data?.branch && rawPetLevel(data?.xp, c) >= branchLevel(c)
+export const needsBranch = (data, c = petCfg()) => !data?.branch && effectivePetLevel(data, c) >= branchLevel(c)
 
 export const branchDef = (def, branchId) => def?.branches?.find(b => b.id === branchId) || null
 
@@ -360,7 +362,8 @@ export function addPetXp(user, gain, now = Date.now(), c = petCfg(), defs = petD
   gain = Math.floor(n0(gain))
   if (!d || !gain) return null
   const cap = petThreshold(c.maxLevel, c)
-  if (n0(d.xp) >= cap) return null
+  // 满级（含保底满级）后不再获得经验，也不显示
+  if (n0(d.xp) >= cap || (d.branch && petLevel(d, c) >= c.maxLevel)) return null
   const def = petDef(id, defs)
   const before = petLevel(d, c), stageBefore = petStage(d, c), waiting = needsBranch(d, c)
   const abilitiesBefore = petAbilities(def, d, c)
@@ -382,11 +385,11 @@ export function petGainLines(r, c = petCfg()) {
   const choose = (def.branches || []).map(b => `#宠物进化 ${b.name}`).join(" / ")
   // 已经在等待选择方向：只提醒一行（经验照常累积）
   if (needsBranch(data, c) && !r.branchReady)
-    return [`${emoji} ${name} 经验 +${r.gain}（Lv${r.after} · 等待选择进化方向，经验已够 Lv${rawPetLevel(data.xp, c)}）· ${choose}`]
+    return [`${emoji} ${name} 经验 +${r.gain}（Lv${r.after} · 等待选择进化方向，经验已够 Lv${effectivePetLevel(data, c)}）· ${choose}`]
   const lines = []
   const next = r.max ? "已满级" : needsBranch(data, c)
     ? "等待选择进化方向"
-    : `距离 Lv${r.after + 1} 还需 ${(petThreshold(r.after + 1, c) - data.xp).toLocaleString("en-US")}`
+    : `距离 Lv${r.after + 1} 还需 ${Math.max(0, petThreshold(r.after + 1, c) - data.xp).toLocaleString("en-US")}`
   lines.push(`${emoji} ${name} 经验 +${r.gain}（Lv${r.after} · ${next}）`)
   if (r.after > r.before) {
     lines.push(`🎉 宠物升级：Lv${r.before} → Lv${r.after}${r.max ? " 🏆 已满级" : ""}`)

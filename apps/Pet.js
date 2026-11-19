@@ -3,7 +3,7 @@ import { plugin, puppeteer } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import {
-  petCfg, petDefs, petDef, ensurePets, refreshPets, petLevel, rawPetLevel, petStage, needsBranch, branchLevel, branchDef,
+  petCfg, petDefs, petDef, ensurePets, refreshPets, petLevel, effectivePetLevel, petStage, needsBranch, branchLevel, branchDef,
   formAt, currentForm, petName, satPerDay, petAbilities, petSkills, skillText, petThreshold, isHungry, satText, satHours, findOwnedPet, findPetDef,
   buyPet, setActivePet, feedPet, evolvePet, renamePet, recallPet, lostPets, petNotices,
 } from "../components/Pet.js"
@@ -135,16 +135,16 @@ export class FishingPet extends plugin {
 
   petCard(user, id, d) {
     const c = this.c, def = petDef(id), form = currentForm(def, d, c)
-    const level = petLevel(d, c), stage = petStage(d, c), max = rawPetLevel(d.xp, c) >= c.maxLevel && !!d.branch
+    const level = petLevel(d, c), stage = petStage(d, c), max = effectivePetLevel(d, c) >= c.maxLevel && !!d.branch
     const cur = petThreshold(level, c), next = petThreshold(level + 1, c)
     const waiting = needsBranch(d, c)
     const hours = satHours(user, id, c)
     return {
       id, def, data: d, defName: def?.name || id, name: petName(def, d, c), form: form?.name, emoji: form?.emoji || "🐾",
       icon: petIcon(id, form), level, stage, stageCn: STAGE_CN[stage], active: user.pets.active === id,
-      branch: branchDef(def, d.branch)?.name || "", waiting, rawLevel: rawPetLevel(d.xp, c), max,
-      xpText: max ? "已满级" : waiting ? `经验已够 Lv${rawPetLevel(d.xp, c)}，选择方向后升级` : `${money(d.xp - cur)} / ${money(next - cur)}`,
-      xpPct: max || waiting ? 100 : Math.min(100, Math.floor((d.xp - cur) / (next - cur) * 100)),
+      branch: branchDef(def, d.branch)?.name || "", waiting, rawLevel: effectivePetLevel(d, c), max,
+      xpText: max ? "已满级" : waiting ? `经验已够 Lv${effectivePetLevel(d, c)}，选择方向后升级` : `${money(Math.max(0, d.xp - cur))} / ${money(next - cur)}`,
+      xpPct: max || waiting ? 100 : Math.max(0, Math.min(100, Math.floor((d.xp - cur) / (next - cur) * 100))),
       sat: satText(d, c), satPct: Math.max(0, Math.min(100, d.sat / c.satiety.max * 100)), hungry: isHungry(d, c), warn: d.sat < c.satiety.warn,
       hungryIn: hoursText(hours.hungry), goneIn: hoursText(hours.gone), perDay: satPerDay(d, user.pets.active === id, c),
     }

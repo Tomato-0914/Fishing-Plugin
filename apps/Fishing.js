@@ -7,7 +7,7 @@ import { addBait, consumeBait, totalBait, usableBait, baitLevel, baitCount, bait
 import { resolveCast, summarize, formatMulti, formatHundred, withExtras, petProcLine } from "../components/Catch.js"
 import { addPetXp, petGainLines, petNotices, skillFor, needsBranch, petDef } from "../components/Pet.js"
 import GroupDaily, { groupKey } from "../components/GroupDaily.js"
-import { experience, characterProgress, xpGainText } from "../components/Progression.js"
+import { experience, characterProgress, xpGainText, limitXp } from "../components/Progression.js"
 import { checkTitles, getEffects, effectText, titleUpText } from "../components/Titles.js"
 import { withButtons, B, fishRow } from "../components/Button.js"
 const withButtonsBase = withButtons
@@ -35,8 +35,10 @@ const sec = n => Math.max(0, Math.round(n))
  * 返回：角色经验 + 宠物经验 / 进化 + 饥饿、离家出走提醒（满级时对应行不显示）
  */
 function xpParts(user, before) {
-  const pet = addPetXp(user, experience(user) - before)
-  return { xp: xpGainText(user, before), pet: [...petGainLines(pet), ...petNotices(user)].filter(Boolean) }
+  // 每日经验规则：超出部分按比例计、每天有上限；宠物获得的经验与角色实际获得的相同
+  const lim = limitXp(user, before)
+  const pet = addPetXp(user, lim.gain)
+  return { xp: xpGainText(user, before, lim), pet: [...petGainLines(pet), ...petNotices(user)].filter(Boolean) }
 }
 function xpSettlement(user, before) {
   const { xp, pet } = xpParts(user, before)
@@ -292,6 +294,8 @@ export class Fishing extends plugin {
       return this.settle(e, id, user, s, `🪝 你没来得及收杆，但${hook?.name || "鱼钩"}牢牢钩住了它！`)
     }
     user.stats.escaped++
+    // 抛竿的经验也按每日规则结算（这里不显示）
+    xpParts(user, s.xpBefore ?? experience(user) - 1)
     this.startCooldown(id, user)
     UserData.save(id)
     const canUpgrade = gearLevel(user, "hook") < maxLevel(shop, "hook")

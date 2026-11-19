@@ -79,6 +79,13 @@ export default [
   num("protectedPenalty.goldRate", "误钓罚款比例(%)", "按当前金币的百分比罚款，0 为固定罚款", { max: 100, step: 0.1 }),
   num("protectedPenalty.gold", "误钓罚款上限(金币)", "按比例罚款时的上限；比例为 0 时为固定罚款，金币不足时扣到 0 为止"),
 
+  { label: "升级节奏", component: "SOFT_GROUP_BEGIN" },
+  num("level.curveFrom", "曲线变陡起始等级", "从这一级以后，每级所需经验逐级增加", { min: 1, max: 100 }),
+  num("level.curveGrowth", "每级额外增加", "例如 0.08 表示每多一级所需经验再多 8%（相对旧曲线）", { max: 1, step: 0.01 }),
+  num("level.dailySoft", "每日全额经验", "每天前这么多经验全额获得"),
+  num("level.softRate", "超出后经验比例(%)", "超出每日全额经验后，只按这个比例获得", { max: 100 }),
+  num("level.dailyMax", "每日经验上限", "每天最多获得的经验（0 为不限制）"),
+
   { label: "宠物", component: "SOFT_GROUP_BEGIN" },
   num("pet.unlockLevel", "开放等级", "角色达到这个等级后开放宠物商店", { max: 100 }),
   num("pet.price", "宠物价格(金币)", "宠物商店里一阶宠物的价格"),
