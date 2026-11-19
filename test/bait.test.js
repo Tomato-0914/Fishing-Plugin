@@ -155,3 +155,14 @@ test("海洋之心不参与一键出售，只能手动出售", async () => {
   const bag = [{ id: "tuna", p: 600 }, { id: "ocean_heart", p: 18888 }, { id: "can", p: 0 }]
   assert.deepEqual(bag.filter(x => autoSellable(it(x.id))).map(x => x.id), ["tuna"])
 })
+
+test("强化 / 锻造费用：前段小幅上涨，强化 +11、锻造 +6 起每级是上一级的 3 倍；旧渔具回收按旧价估算", async () => {
+  const { enhanceCost, forgeCost, gearSpent } = await import("../components/Gear.js")
+  assert.deepEqual([1, 5, 10].map(l => enhanceCost(shop, 20, l)), [1000, 5000, 10000])
+  assert.deepEqual([11, 12, 13, 14, 15].map(l => enhanceCost(shop, 20, l)), [30000, 90000, 270000, 810000, 2430000])
+  assert.deepEqual([5, 6, 7, 8].map(l => forgeCost(shop, 20, l)), [10000, 30000, 90000, 270000])
+  assert.equal(enhanceCost(shop, 5, 11), 3 * enhanceCost(shop, 5, 10))
+  // 没有记录投入的旧渔具，回收估价仍按旧的线性价格，不会被新价格抬高
+  const legacy = gearSpent(shop, "rod", 20, { enhance: 15, forge: 8 })
+  assert.equal(legacy, 20150 + 50 * 20 * 120 + 100 * 20 * 36)
+})

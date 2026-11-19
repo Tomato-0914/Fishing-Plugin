@@ -141,8 +141,24 @@ export function equipGearSet(user, tier) {
   return {ok:true,slots:[...SLOTS]}
 }
 export const MAX_ENHANCE = 15, MAX_FORGE = 8
-export const enhanceCost = (shop,tier,target) => Math.ceil((Number(shop?.gearV2?.enhanceCostFactor)||50)*tier*target)
-export const forgeCost = (shop,tier,target) => Math.ceil((Number(shop?.gearV2?.forgeCostFactor)||100)*tier*target)
+/**
+ * 强化 / 锻造到 target 级的单次费用
+ * - 前段（强化 ≤ +10、锻造 ≤ +5）：系数 × 阶位 × 等级，小幅上涨
+ * - 后段：每一级是上一级的 mult 倍（默认 3 倍），用于消耗高端玩家的金币
+ * 由 shop.yaml gearV2.costGrowth 调整：{ enhanceFrom, forgeFrom, mult }
+ */
+export function cultivateCost(shop, type, tier, target) {
+  const g = shop?.gearV2 || {}, growth = g.costGrowth || {}
+  const factor = type === "enhance" ? (Number(g.enhanceCostFactor) || 50) : (Number(g.forgeCostFactor) || 100)
+  const from = Math.max(1, Math.floor(Number(type === "enhance" ? growth.enhanceFrom ?? 10 : growth.forgeFrom ?? 5) || 1))
+  const mult = Math.max(1, Number(growth.mult ?? 3) || 1)
+  if (target <= from) return Math.ceil(factor * tier * target)
+  return Math.ceil(factor * tier * from * mult ** (target - from))
+}
+export const enhanceCost = (shop,tier,target) => cultivateCost(shop,"enhance",tier,target)
+export const forgeCost = (shop,tier,target) => cultivateCost(shop,"forge",tier,target)
+/** 旧版（线性）费用：只用于估算没有记录投入的旧存档渔具的回收价，避免按新价格高估 */
+const legacyCost = (shop,type,tier,target) => Math.ceil((Number(type==="enhance"?shop?.gearV2?.enhanceCostFactor:shop?.gearV2?.forgeCostFactor)||(type==="enhance"?50:100))*tier*target)
 /** 默认成功率：每行 [目标等级上限, 基础成功率(%), 每次失败补偿(百分点)]；前 3 级必定成功 */
 export const DEFAULT_RATES = {
   enhance: [[3,100,0],[4,90,2],[5,85,2],[6,80,3],[7,70,3],[8,60,4],[9,50,5],[10,40,5],[11,32,6],[12,25,7],[13,18,8],[14,12,9],[15,8,10]],
@@ -188,8 +204,8 @@ export const recycleCfg = shop => ({
 export function gearSpent(shop,slot,tier,item) {
   if (item?.spent != null) return Math.max(0,Number(item.spent)||0)
   let sum=tier>1?tierPrice(shop,tier):0
-  for (let l=1;l<=(Number(item?.enhance)||0);l++) sum+=enhanceCost(shop,tier,l)
-  for (let l=1;l<=(Number(item?.forge)||0);l++) sum+=forgeCost(shop,tier,l)
+  for (let l=1;l<=(Number(item?.enhance)||0);l++) sum+=legacyCost(shop,"enhance",tier,l)
+  for (let l=1;l<=(Number(item?.forge)||0);l++) sum+=legacyCost(shop,"forge",tier,l)
   return sum
 }
 
