@@ -10,7 +10,12 @@ enable: true
 # 从 yaml 切到 db 时会自动导入旧存档，原文件移到 data/yaml_backup_<时间>/
 storage: db
 
-# 群黑名单 / 白名单（白名单不为空时只在白名单群可用）
+# 群开关：每个群要由主人、群主或管理员发送 #开启钓鱼 后才能钓鱼（#关闭钓鱼 关闭，存档不受影响）
+#   groupDefault 为没设置过的群的默认状态：false 默认关闭，true 默认开启；私聊不受影响
+#   开关状态保存在 data/group_switch.json
+groupDefault: false
+
+# 群黑名单 / 白名单（白名单不为空时只在白名单群可用；白名单里的群默认开启）
 blackGroups: []
 whiteGroups: []
 

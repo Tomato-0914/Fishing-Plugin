@@ -12,7 +12,7 @@ import { checkTitles, getEffects, effectText, titleUpText } from "../components/
 import { withButtons, B, fishRow } from "../components/Button.js"
 const withButtonsBase = withButtons
 import { batchCfg, batchLeftText, useBatch, protectedScaleFor } from "../components/Batch.js"
-import { groupAllowed, displayName, updateNickname, pick, itemMap, playerEffects, sellBonusOf } from "../components/common.js"
+import { groupAllowed, groupState, displayName, updateNickname, pick, itemMap, playerEffects, sellBonusOf } from "../components/common.js"
 
 /** 进行中的钓鱼：user_id → { stage: "waiting" | "bite" | "multi", timer, castAt, biteAt } */
 const sessions = new Map()
@@ -232,6 +232,8 @@ export class Fishing extends plugin {
   }
 
   async cast(e) {
+    // 本群没开启：只有 #钓鱼 提示一下怎么开启，其他指令直接忽略
+    if (groupState(e) === "off") return e.reply("🔒 本群还没有开启钓鱼，请群主或管理员发送 #开启钓鱼")
     if (!groupAllowed(e)) return false
     const ctx = await this.precheck(e)
     if (!ctx) return true
