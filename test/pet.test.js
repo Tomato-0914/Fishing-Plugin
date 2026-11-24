@@ -186,3 +186,36 @@ test("宠物配平：同等级的各条路线每竿收益相差不超过 ±5%（
     }
   }
 })
+
+import { oathPet, petMaxed, refreshPets as refreshForOath, feedPet as feedForOath, isHungry as hungryForOath, satRate as rateForOath, petThreshold as thForOath } from "../components/Pet.js"
+
+test("永恒誓约：仅限满级宠物，确认后扣 1 亿，之后永远不饿", () => {
+  const H = 3600000, t0 = 1_700_000_000_000
+  const maxXp = thForOath(100)
+  const user = { gold: 2e8, stats: {}, pets: { active: "koi", owned: {
+    koi: { xp: maxXp, branch: null, sat: 40, t: t0 },
+    bird: { xp: 0, branch: null, sat: 100, t: t0 },
+  }, lost: {}, seen: [] } }
+  // 没选方向不算满级
+  assert.equal(oathPet(user, "koi", true, t0).reason, "level")
+  user.pets.owned.koi.branch = "dragon"
+  assert.equal(petMaxed(user.pets.owned.koi), true)
+  assert.equal(oathPet(user, "bird", true, t0).reason, "level")
+  // 预览不扣钱
+  const pre = oathPet(user, "koi", false, t0)
+  assert.deepEqual([pre.ok, pre.preview, user.gold, !!user.pets.owned.koi.oath], [true, true, 2e8, false])
+  const ret = oathPet(user, "koi", true, t0)
+  assert.equal(ret.ok, true)
+  assert.equal(user.gold, 1e8)
+  const koi = user.pets.owned.koi
+  assert.deepEqual([koi.oath, koi.sat, rateForOath(koi, true)], [true, 100, 0])
+  assert.equal(oathPet(user, "koi", true, t0).reason, "done")
+  // 一年后依然是满的，也不会离家出走
+  refreshForOath(user, t0 + 365 * 24 * H)
+  assert.equal(user.pets.owned.koi.sat, 100)
+  assert.equal(hungryForOath(user.pets.owned.koi), false)
+  assert.equal(feedForOath(user, "koi", 1, t0 + H).reason, "oath")
+  // 金币不足
+  const poor = { gold: 5, stats: {}, pets: { active: "koi", owned: { koi: { xp: maxXp, branch: "dragon", sat: 100, t: t0 } }, lost: {}, seen: [] } }
+  assert.equal(oathPet(poor, "koi", false, t0).reason, "gold")
+})

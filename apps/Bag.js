@@ -196,7 +196,7 @@ export class FishingBag extends plugin {
     return {
       icon: petIcon(id, form), name: petName(def, d, c), form: form?.name, level: petLevel(d, c),
       stage: ["", "一阶", "二阶", "三阶", "四阶", "五阶"][stage], branch: branchDef(def, d.branch)?.name || "",
-      sat: satText(d, c), satPct: Math.max(0, Math.min(100, d.sat / c.satiety.max * 100)), hungry: isHungry(d, c), low: d.sat < c.satiety.warn,
+      sat: satText(d, c), satPct: Math.max(0, Math.min(100, d.sat / c.satiety.max * 100)), hungry: isHungry(d, c), low: d.sat < c.satiety.warn, oath: !!d.oath,
       skills: petAbilities(def, d, c).map(s => ({ name: s.name, text: skillText(s.effect, s.value), talent: !!s.talent })),
     }
   }
@@ -278,7 +278,7 @@ export class FishingBag extends plugin {
       `👛 金币：${data.gold} · 🪱 鱼饵：${data.bait}`,
       `今日运势：${data.luck}（幸运值 ${luck}）· 连续打卡 ${data.streak} 天（累计 ${data.checkinTotal} 天）`,
       `🧰 ${equipment.map(i=>i.name).join(" · ")}`,
-      data.pet.none ? "🐾 出战宠物：无" : `🐾 ${data.pet.name} Lv${data.pet.level}（${data.pet.stage}）· 饱食度 ${data.pet.sat}${data.pet.hungry ? "（饥饿，技能失效）" : ""}`,
+      data.pet.none ? "🐾 出战宠物：无" : `🐾 ${data.pet.name} Lv${data.pet.level}（${data.pet.stage}）· ${data.pet.oath ? "💍 永恒誓约" : `饱食度 ${data.pet.sat}`}${data.pet.hungry ? "（饥饿，技能失效）" : ""}`,
       ...(data.pet.none ? [] : data.pet.skills.map(k => `　「${k.name}」${k.text}`)),
       ...data.attrs.map(a => `${a.label}：${a.value}`),
       ...stats.map(i=>`${i.label}：${i.value}${i.unit}`),

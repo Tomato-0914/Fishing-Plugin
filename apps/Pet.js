@@ -1,11 +1,11 @@
-/** 宠物：商店、我的宠物、出战、进化、喂食、改名、寻回 */
+/** 宠物：商店、我的宠物、出战、进化、喂食、改名、寻回、永恒誓约 */
 import { plugin, puppeteer } from "../components/yunzai.js"
 import Config from "../components/Config.js"
 import UserData from "../components/UserData.js"
 import {
   petCfg, petDefs, petDef, ensurePets, refreshPets, petLevel, effectivePetLevel, petStage, needsBranch, branchLevel, branchDef,
   formAt, currentForm, petName, satPerDay, petAbilities, petSkills, skillText, petThreshold, isHungry, satText, satHours, findOwnedPet, findPetDef,
-  buyPet, setActivePet, feedPet, evolvePet, renamePet, recallPet, lostPets, petNotices,
+  buyPet, setActivePet, feedPet, evolvePet, renamePet, recallPet, lostPets, petNotices, petMaxed, oathPet,
 } from "../components/Pet.js"
 import { petIcon } from "../components/PetIcons.js"
 import { characterProgress } from "../components/Progression.js"
@@ -16,7 +16,7 @@ import { groupAllowed, displayName, updateNickname } from "../components/common.
 const LINE = "━━━━━━━━━━━━"
 const STAGE_CN = ["", "一阶", "二阶", "三阶", "四阶", "五阶"]
 const money = n => Number(n || 0).toLocaleString("en-US")
-const wan = n => n >= 10000 && n % 10000 === 0 ? `${n / 10000} 万` : money(n)
+const wan = n => n >= 1e8 && n % 1e8 === 0 ? `${n / 1e8} 亿` : n >= 10000 && n % 10000 === 0 ? `${n / 10000} 万` : money(n)
 const hoursText = h => !Number.isFinite(h) ? "—" : h >= 48 ? `约 ${Math.floor(h / 24)} 天` : h >= 1 ? `约 ${Math.floor(h)} 小时` : `不到 1 小时`
 const dayLeft = ms => { const h = ms / 3600000; return h >= 24 ? `${Math.floor(h / 24)} 天 ${Math.floor(h % 24)} 小时` : `${Math.max(1, Math.floor(h))} 小时` }
 
@@ -36,6 +36,7 @@ export class FishingPet extends plugin {
         { reg: /^#?(?:喂食宠物|宠物喂食|喂宠物)\s*(.*)$/, fnc: "feed" },
         { reg: /^#?宠物改名\s*(.+)$/, fnc: "rename" },
         { reg: /^#?寻回宠物\s*(.*)$/, fnc: "recall" },
+        { reg: /^#?(?:使用)?永恒誓约\s*(.*)$/, fnc: "oath" },
       ],
     })
   }
@@ -55,13 +56,15 @@ export class FishingPet extends plugin {
   /** 操作自己宠物的按钮：只有本人能点，避免误替别人花钱 */
   own(e, text, callback) { return { text, callback, permission: e.user_id } }
 
-  /** 每行最多 3 个（手机端 4 个会显示不全）：进化方向 / 喂食 + 切换宠物 / 导航 */
+  /** 每行最多 3 个（手机端 4 个会显示不全）：进化方向 或 永恒誓约 / 喂食 + 切换宠物 / 导航 */
   petButtons(e, user) {
     const p = user.pets, c = this.c
     const id = p.active, d = id && p.owned[id]
     const branch = d && needsBranch(d, c) ? (petDef(id)?.branches || []).map(b => this.own(e, `🔀 ${b.name}`, `#宠物进化 ${b.name}`)) : []
+    // 满级还没缔结誓约：先展示说明和确认按钮，不会直接扣钱
+    if (d && !d.oath && petMaxed(d, c)) branch.push(this.own(e, "💍 永恒誓约", `#永恒誓约 ${petName(petDef(id), d, c)}`))
     const row = []
-    if (d && d.sat < c.satiety.max) {
+    if (d && !d.oath && d.sat < c.satiety.max) {
       const fill = Math.ceil((c.satiety.max - d.sat) / c.food.value - 1e-9)
       row.push(this.own(e, "🍖 喂 1 份", "#喂食宠物 1"))
       if (fill > 1) row.push(this.own(e, `🍖 喂饱（${fill} 份）`, `#喂食宠物 ${fill}`))
@@ -151,6 +154,7 @@ export class FishingPet extends plugin {
       xpPct: max || waiting ? 100 : Math.max(0, Math.min(100, Math.floor((d.xp - cur) / (next - cur) * 100))),
       sat: satText(d, c), satPct: Math.max(0, Math.min(100, d.sat / c.satiety.max * 100)), hungry: isHungry(d, c), warn: d.sat < c.satiety.warn,
       hungryIn: hoursText(hours.hungry), goneIn: hoursText(hours.gone), perDay: satPerDay(d, user.pets.active === id, c),
+      oath: !!d.oath,
     }
   }
 
@@ -193,7 +197,7 @@ export class FishingPet extends plugin {
     return {
       name: displayName(user), gold: money(user.gold), main, rest, detail, lost, empty: !cards.length && !lost.length,
       foodPrice: money(c.food.price), foodValue: c.food.value, hungry: c.satiety.hungry, satMax: c.satiety.max,
-      recallPrice: wan(c.recall.price), recallDays: c.recall.days, notices: petNotices(user),
+      recallPrice: wan(c.recall.price), recallDays: c.recall.days, notices: petNotices(user), oathPrice: wan(c.oath.price),
       branchLv: branchLevel(c),
     }
   }
@@ -220,11 +224,11 @@ export class FishingPet extends plugin {
     const lines = [`🐾 ${data.name} 的宠物`, LINE]
     if (m) {
       lines.push(`${m.emoji} ${m.name}（${m.form} · ${m.stageCn}${m.branch ? ` · ${m.branch}` : ""}）Lv${m.level} · 出战中`,
-        `📈 经验：${m.xpText}`, `🍖 饱食度：${m.sat}${m.hungry ? "（饥饿，技能失效）" : ""}`,
+        `📈 经验：${m.xpText}`, m.oath ? `💍 永恒誓约：饱食度永远 ${m.sat}，不会饥饿` : `🍖 饱食度：${m.sat}${m.hungry ? "（饥饿，技能失效）" : ""}`,
         "✨ 技能：", ...data.detail.skills.map(s => `　「${s.name}」${s.text}`),
         ...data.detail.next.map(n => `🔮 ${n.title}：${n.skill}`))
     } else lines.push("💤 当前没有出战的宠物，发送 #宠物出战 名称")
-    for (const r of data.rest) lines.push(`💤 ${r.emoji} ${r.name} Lv${r.level} · 饱食度 ${r.sat}`)
+    for (const r of data.rest) lines.push(`💤 ${r.emoji} ${r.name} Lv${r.level} · ${r.oath ? "💍 永恒誓约" : `饱食度 ${r.sat}`}`)
     for (const l of data.lost) lines.push(`😢 ${l.name} 离家出走中，还剩 ${l.left} 可 #寻回宠物 ${l.defName}（${data.recallPrice} 金币）`)
     lines.push(...data.notices)
     return lines.join("\n")
@@ -307,6 +311,7 @@ export class FishingPet extends plugin {
     if (!ret.ok) {
       const why = {
         full: `😋 ${name} 已经吃饱了（饱食度 ${satText(d, c)}）`,
+        oath: `💍 ${name} 已经缔结永恒誓约，永远不会饿，不用喂啦`,
         gold: `👛 金币不足：${ret.cost / c.food.price} 份口粮需要 ${money(ret.cost)} 金币${ret.afford ? `，最多买得起 ${ret.afford} 份` : ""}`,
       }[ret.reason] || "喂食失败"
       return e.reply(withButtons(e, why, [{ text: "🐾 我的宠物", callback: "#我的宠物" }]))
@@ -350,5 +355,41 @@ export class FishingPet extends plugin {
     this.save(user)
     return e.reply(withButtons(e, [`🎉 找到 ${name} 了！它饿坏了，已经喂饱`, `💰 花费 ${money(ret.cost)} 金币（剩余 ${money(user.gold)}）`, `📈 等级、经验、进化方向都保留着（Lv${petLevel(user.pets.owned[pick.id], c)}）`].join("\n"),
       [{ text: "🐾 我的宠物", callback: "#我的宠物" }, B.fish]))
+  }
+
+  /** #永恒誓约 [名称] [确认]：先展示说明和确认按钮，带“确认”才扣钱 */
+  async oath(e) {
+    if (!groupAllowed(e)) return false
+    const user = this.load(e), c = this.c
+    let kw = e.msg.replace(/^#?(?:使用)?永恒誓约\s*/, "").trim()
+    const confirm = /(?:^|\s)确认$/.test(kw)
+    kw = kw.replace(/(?:^|\s)确认$/, "").trim()
+    const id = kw ? findOwnedPet(user, kw, c) : user.pets.active
+    const back = [{ text: "🐾 我的宠物", callback: "#我的宠物" }]
+    if (!id) return e.reply(withButtons(e, kw ? `❓ 你没有叫「${kw}」的宠物` : "🐾 你还没有出战的宠物，可以 #永恒誓约 名称", back))
+    const d = user.pets.owned[id], def = petDef(id), name = petName(def, d, c), price = c.oath.price
+    const ret = oathPet(user, id, confirm, Date.now(), c)
+    if (!ret.ok) {
+      const why = {
+        done: `💍 ${name} 已经和你缔结过永恒誓约了，它永远不会饿`,
+        level: `🔒 永恒誓约仅限满级宠物（Lv${ret.max} 且已选择进化方向），${name} 当前 Lv${ret.level}`,
+        gold: `👛 金币不足：永恒誓约需要 ${money(price)} 金币（当前 ${money(user.gold)}）`,
+      }[ret.reason] || "缔结失败"
+      return e.reply(withButtons(e, why, back))
+    }
+    if (ret.preview) return e.reply(withButtons(e, [
+      `💍 永恒誓约 · ${name}`,
+      LINE,
+      "缔结后它的饱食度永远是 100：不会再饥饿，技能一直生效，也不会离家出走，从此不用再买口粮",
+      `💰 需要 ${money(price)} 金币（当前 ${money(user.gold)}）`,
+      "⚠️ 誓约只对这一只宠物生效，缔结后不能撤销",
+      `确认请发送 #永恒誓约 ${name} 确认`,
+    ].join("\n"), [this.own(e, `💍 确认缔结（${wan(price)}金币）`, `#永恒誓约 ${name} 确认`)], back))
+    this.save(user)
+    return e.reply(withButtons(e, [
+      `💍 ${name} 与你缔结了永恒誓约！`,
+      `🍖 从此饱食度永远 ${c.satiety.max}/${c.satiety.max}，再也不会饿了`,
+      `💰 花费 ${money(ret.cost)} 金币（剩余 ${money(user.gold)}）`,
+    ].join("\n"), [{ text: "🐾 我的宠物", callback: "#我的宠物" }, B.fish]))
   }
 }

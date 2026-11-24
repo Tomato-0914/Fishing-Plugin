@@ -24,6 +24,7 @@
     .bar i { display:block; height:100%; border-radius:5px; background:var(--accent); }
     .bar.sat i { background:linear-gradient(90deg,#f0a742,#ffd36a); }
     .bar.sat.low i { background:#d9534f; }
+    .bar.sat.oath i { background:linear-gradient(90deg,#ffd36a,#fff3c4,#ffd36a); box-shadow:0 0 8px #ffd36a; }
     .skill { display:flex; gap:12px; align-items:center; padding:10px 12px; border-radius:12px; background:var(--me); margin-bottom:8px; }
     .skill:last-child { margin-bottom:0; }
     .skill .st { flex:none; width:46px; text-align:center; font-size:12px; font-weight:800; padding:3px 0; border-radius:8px; background:var(--accent); color:#fff; }
@@ -73,11 +74,16 @@
             <span class="chip gold">Lv.{{main.level}}</span>
             <span class="chip">{{main.stageCn}}{{if main.branch}} · {{main.branch}}{{/if}}</span>
             <span class="chip">🎣 出战中</span>
+            {{if main.oath}}<span class="chip gold">💍 永恒誓约</span>{{/if}}
             {{if main.hungry}}<span class="chip red">饥饿 · 技能失效</span>{{/if}}
             {{if main.waiting}}<span class="chip red">待选择进化方向</span>{{/if}}
           </div>
           <div class="row"><div class="lab"><span>📈 经验</span><span>{{main.xpText}}</span></div><div class="bar"><i style="width:{{main.xpPct}}%"></i></div></div>
+          {{if main.oath}}
+          <div class="row"><div class="lab"><span>🍖 饱食度 {{main.sat}}</span><span>💍 永恒誓约 · 永不饥饿</span></div><div class="bar sat oath"><i style="width:100%"></i></div></div>
+          {{else}}
           <div class="row"><div class="lab"><span>🍖 饱食度 {{main.sat}}</span><span>每天 -{{main.perDay}} · {{main.hungry ? '已饥饿' : main.hungryIn + '后饥饿'}}</span></div><div class="bar sat {{main.warn ? 'low' : ''}}"><i style="width:{{main.satPct}}%"></i></div></div>
+          {{/if}}
         </div>
       </div>
     </div>
@@ -106,7 +112,7 @@
     <div class="card">
       <div class="card-title">🏠 其他宠物</div>
       <div class="mini">
-        {{each rest r}}<div class="m"><div class="ic">{{@r.icon}}</div><div><div class="mn">{{r.name}} · Lv{{r.level}}</div><div class="md">💤 休息中 · 🍖 {{r.sat}}</div></div></div>{{/each}}
+        {{each rest r}}<div class="m"><div class="ic">{{@r.icon}}</div><div><div class="mn">{{r.name}} · Lv{{r.level}}</div><div class="md">💤 休息中 · {{if r.oath}}💍 永恒誓约{{else}}🍖 {{r.sat}}{{/if}}</div></div></div>{{/each}}
         {{each lost l}}<div class="m" style="opacity:.6"><div class="ic"><span class="pet-emoji">😢</span></div><div><div class="mn">{{l.name}} · Lv{{l.level}}</div><div class="md">离家出走 · 还剩 {{l.left}} 可寻回</div></div></div>{{/each}}
       </div>
     </div>
@@ -114,7 +120,7 @@
 
     {{if notices.length}}<div class="card notice">{{each notices t}}<div>{{t}}</div>{{/each}}</div>{{/if}}
 
-    <div class="footer">口粮 {{foodPrice}} 金币/份（+{{foodValue}} 饱食度）· 阶段越高饱食度消耗越多 · 饱食度 ≤ {{hungry}} 技能失效，降到 0 会离家出走（{{recallDays}} 天内 {{recallPrice}}金币寻回）<br/>#喂食宠物 份数 · #宠物出战 名称（每天 1 次）· #宠物改名 名字 · #宠物商店</div>
+    <div class="footer">口粮 {{foodPrice}} 金币/份（+{{foodValue}} 饱食度）· 阶段越高饱食度消耗越多 · 饱食度 ≤ {{hungry}} 技能失效，降到 0 会离家出走（{{recallDays}} 天内 {{recallPrice}}金币寻回）· 满级宠物可缔结永恒誓约（{{oathPrice}}金币），永不饥饿<br/>#喂食宠物 份数 · #宠物出战 名称（每天 1 次）· #宠物改名 名字 · #宠物商店</div>
   </div>
   <script src="{{_res}}/common/twemoji.min.js"></script>
   <script src="{{_res}}/common/emoji.js"></script>
