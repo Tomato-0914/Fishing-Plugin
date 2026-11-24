@@ -1,4 +1,5 @@
 import Config from "./Config.js"
+import GroupSwitch from "./GroupSwitch.js"
 import { RARITY_INFO } from "./ItemPool.js"
 import { getEffects, mergeEffects } from "./Titles.js"
 import { luckEffects } from "./Game.js"
@@ -24,16 +25,25 @@ export function sellBonusOf(user) {
   return mergeEffects(getEffects(user, Config.titles, Config.items), gearEffects(user, Config.shop), petEffects(user)).sellBonus || 0
 }
 
-/** 本群是否可用 */
-export function groupAllowed(e) {
-  const cfg = Config.config
-  if (cfg.enable === false) return false
-  if (!e.isGroup) return true
+/**
+ * 本群的可用状态：
+ * - "ok" 可以钓鱼（私聊总是可以）
+ * - "off" 本群没有开启（#开启钓鱼；没设置过的群按 groupDefault，白名单里的群默认开启）
+ * - "blocked" 插件总开关关闭 / 黑名单 / 不在白名单
+ */
+export function groupState(e, cfg = Config.config, store = GroupSwitch) {
+  if (cfg.enable === false) return "blocked"
+  if (!e?.isGroup) return "ok"
   const gid = String(e.group_id)
-  if ((cfg.blackGroups || []).map(String).includes(gid)) return false
+  if ((cfg.blackGroups || []).map(String).includes(gid)) return "blocked"
   const white = (cfg.whiteGroups || []).map(String)
-  return !white.length || white.includes(gid)
+  if (white.length && !white.includes(gid)) return "blocked"
+  const on = store.get(gid) ?? (white.includes(gid) || cfg.groupDefault === true)
+  return on ? "ok" : "off"
 }
+
+/** 本群是否可用 */
+export const groupAllowed = e => groupState(e) === "ok"
 
 /** 物品表 id → item */
 export function itemMap() {

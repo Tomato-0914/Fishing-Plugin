@@ -58,6 +58,8 @@
     - { icon: 🌏, title: "#钓鱼总榜", desc: 查看全服累计排行 }
 - group: ⚙️ 管理
   list:
+    - { icon: 🔓, title: "#开启钓鱼", desc: 主人、群主、管理员开启本群钓鱼（默认关闭） }
+    - { icon: 🔒, title: "#关闭钓鱼", desc: 关闭本群钓鱼，存档保留 }
     - { icon: 🔄, title: "#钓鱼更新", desc: 主人拉取插件更新 }
     - { icon: ⚠️, title: "#钓鱼强制更新", desc: 主人强制覆盖本地修改并更新 }
     - { icon: 📊, title: "#钓鱼存储状态", desc: 主人查看存储方式与存档数量 }
