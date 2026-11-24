@@ -89,7 +89,7 @@ export default [
   { label: "宠物", component: "SOFT_GROUP_BEGIN" },
   num("pet.unlockLevel", "开放等级", "角色达到这个等级后开放宠物商店", { max: 100 }),
   num("pet.price", "宠物价格(金币)", "宠物商店里一阶宠物的价格"),
-  num("pet.xpFactor", "升级经验系数", "升到 Lv N 需要的总经验 = 系数 × N × (N-1)；宠物经验与角色同时获得的经验相同。默认 40", { min: 1 }),
+  num("pet.xpFactor", "升级经验系数", "宠物每级所需经验为角色的 系数/25 倍；宠物经验与角色同时获得的经验相同。默认 40（1.6 倍）", { min: 1 }),
   num("pet.levelGrowth", "技能每级成长(%)", "技能解锁后每升一级，提升基础值的百分之多少", { max: 20, step: 0.1 }),
   num("pet.lineGuardPerLevel", "天赋护线(每级断线 -%)", "所有宠物共有的天赋：每级降低断线概率", { max: 5, step: 0.05 }),
   num("pet.switchPerDay", "每天更换出战次数", "", { min: 1, max: 10 }),
@@ -100,6 +100,7 @@ export default [
   num("pet.food.value", "每份口粮恢复饱食度", "最多喂到 100，多余的份数不扣费", { min: 0.1 }),
   num("pet.recall.price", "寻回价格(金币)", "饱食度降到 0 宠物离家出走后，寻回需要的金币"),
   num("pet.recall.days", "寻回期限(天)", "离家出走超过这么多天就彻底失去", { max: 365 }),
+  num("pet.oath.price", "永恒誓约价格(金币)", "仅限满级宠物使用，缔结后饱食度永远 100，不再饥饿"),
   num("paimonGift", "派蒙谢礼(金币)", "已有称号后再钓到派蒙时赠送"),
 
   { label: "体型与奖励", component: "SOFT_GROUP_BEGIN" },

@@ -1,7 +1,7 @@
 /**
  * 宠物：购买、经验与进化、饱食度、出战、寻回（纯逻辑，便于测试）
  * 存档 user.pets = {
- *   owned: { <宠物 id>: { xp, branch, name, sat, t, at } },  // sat 饱食度，t 上次结算饱食度的时间
+ *   owned: { <宠物 id>: { xp, branch, name, sat, t, at, oath } },  // sat 饱食度，t 上次结算饱食度的时间，oath 已缔结永恒誓约（永不饥饿）
  *   active: <宠物 id> | null, switchDay, switchCount,
  *   lost: { <宠物 id>: { ...宠物数据, lostAt, notified } },   // 离家出走，pet.recall.days 天内可寻回
  *   seen: [<形态 id>],                                         // 见过的形态（宠物图鉴）
@@ -33,6 +33,7 @@ export function petCfg(cfg = Config.config?.pet) {
     },
     food: { price: n0(food.price ?? 10000), value: Math.max(0.1, Number(food.value) || 5) },
     recall: { price: n0(recall.price ?? 1000000), days: n0(recall.days ?? 7) },
+    oath: { price: n0((c.oath || {}).price ?? 100000000) },
   }
 }
 
@@ -132,6 +133,7 @@ export const skillText = (effect, value) => (SKILL_TEXT[effect] || (v => `${effe
 
 /** 每小时消耗的饱食度：出战 / 休息的基础消耗 × 当前阶段的消耗比例（阶段越低消耗越少） */
 export function satRate(data, active, c = petCfg()) {
+  if (data?.oath) return 0
   const base = active ? c.satiety.active : c.satiety.rest
   return base * (c.satiety.stageRate[petStage(data, c) - 1] ?? 100) / 100
 }
@@ -147,6 +149,8 @@ export function refreshPets(user, now = Date.now(), c = petCfg()) {
   const p = ensurePets(user)
   const gone = []
   for (const [id, d] of Object.entries(p.owned)) {
+    // 永恒誓约：饱食度永远是满的
+    if (d.oath) { d.sat = c.satiety.max; d.t = now; continue }
     const t = Number(d.t) || now
     const rate = satRate(d, id === p.active, c)
     const sat = Math.min(c.satiety.max, n0(d.sat))
@@ -165,7 +169,7 @@ export function refreshPets(user, now = Date.now(), c = petCfg()) {
   return gone
 }
 
-export const isHungry = (data, c = petCfg()) => n0(data?.sat) <= c.satiety.hungry
+export const isHungry = (data, c = petCfg()) => !data?.oath && n0(data?.sat) <= c.satiety.hungry
 export const satText = (data, c = petCfg()) => `${Math.ceil(n0(data?.sat))}/${c.satiety.max}`
 /** 饱食度还能撑多少小时（降到饥饿 / 降到 0） */
 export function satHours(user, id, c = petCfg()) {
@@ -267,6 +271,7 @@ export function feedPet(user, id, count, now = Date.now(), c = petCfg()) {
   refreshPets(user, now, c)
   const d = p.owned[id]
   if (!d) return { ok: false, reason: "not_owned" }
+  if (d.oath) return { ok: false, reason: "oath" }
   const room = c.satiety.max - n0(d.sat)
   const need = Math.ceil(room / c.food.value - 1e-9)
   if (need <= 0) return { ok: false, reason: "full" }
@@ -282,6 +287,33 @@ export function feedPet(user, id, count, now = Date.now(), c = petCfg()) {
   user.stats ||= {}
   user.stats.petSpent = (user.stats.petSpent || 0) + cost
   return { ok: true, units, cost, sat: d.sat, capped: units < want }
+}
+
+/** 宠物是否已满级（Lv100 且已选进化方向），可以缔结永恒誓约 */
+export const petMaxed = (data, c = petCfg()) => !!data?.branch && effectivePetLevel(data, c) >= c.maxLevel
+
+/**
+ * 永恒誓约：仅限满级宠物，花费 oath.price 金币；之后饱食度永远是满的，不再饥饿、不会离家出走
+ * @param confirm 为 false 时只检查条件，不扣钱（用于先展示确认）
+ */
+export function oathPet(user, id, confirm = true, now = Date.now(), c = petCfg()) {
+  const p = ensurePets(user)
+  refreshPets(user, now, c)
+  const d = p.owned[id]
+  if (!d) return { ok: false, reason: "not_owned" }
+  if (d.oath) return { ok: false, reason: "done" }
+  if (!petMaxed(d, c)) return { ok: false, reason: "level", level: petLevel(d, c), max: c.maxLevel }
+  const cost = c.oath.price
+  if (user.gold < cost) return { ok: false, reason: "gold", cost }
+  if (!confirm) return { ok: true, preview: true, cost }
+  user.gold -= cost
+  d.oath = true
+  d.oathAt = now
+  d.sat = c.satiety.max
+  d.t = now
+  user.stats ||= {}
+  user.stats.petSpent = (user.stats.petSpent || 0) + cost
+  return { ok: true, cost }
 }
 
 /** 选择进化方向（不能更改） */
